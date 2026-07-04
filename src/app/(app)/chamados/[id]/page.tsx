@@ -9,6 +9,8 @@ import {
   Send,
   Paperclip,
   CheckCheck,
+  Users,
+  X,
 } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import { ehLideranca } from "@/lib/permissions";
@@ -16,6 +18,7 @@ import {
   obterChamado,
   listarComentarios,
   listarHistorico,
+  listarMembros,
   mapaDePerfis,
 } from "@/features/chamados/data";
 import {
@@ -25,6 +28,8 @@ import {
   aceitarChamado,
   aprovarChamado,
   reprovarChamado,
+  adicionarMembro,
+  removerMembro,
 } from "@/features/chamados/actions";
 import { PainelStatus } from "@/features/chamados/painel-status";
 import { PageHeader } from "@/components/shared/page-header";
@@ -40,6 +45,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Avatar } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import {
   ChamadoStatusBadge,
   ChamadoPrioridadeBadge,
@@ -61,9 +67,10 @@ export default async function ChamadoDetalhePage({
   const chamado = await obterChamado(id);
   if (!chamado) notFound();
 
-  const [comentarios, historico, perfis] = await Promise.all([
+  const [comentarios, historico, membrosIds, perfis] = await Promise.all([
     listarComentarios(id),
     listarHistorico(id),
+    listarMembros(id),
     mapaDePerfis(),
   ]);
 
@@ -71,7 +78,8 @@ export default async function ChamadoDetalhePage({
   const ehResponsavel = chamado.responsavel_id === usuario.id;
   const podeEditarStatus = lideranca || ehResponsavel;
   const ehGerente = usuario.role === "gerente";
-  const podeAceitar = lideranca && !chamado.aceito_por;
+  // Somente o líder aceita para iniciar; o gerente só aprova/reprova.
+  const podeAceitar = usuario.role === "lider" && !chamado.aceito_por;
   const aprovacao = chamado.aprovacao ?? "pendente";
   const aceitoNome = chamado.aceito_por
     ? perfis.get(chamado.aceito_por)?.nome
@@ -88,6 +96,12 @@ export default async function ChamadoDetalhePage({
     ? perfis.get(chamado.responsavel_id)
     : null;
   const colaboradores = Array.from(perfis.values());
+  const membros = membrosIds
+    .map((mid) => perfis.get(mid))
+    .filter((p): p is Profile => Boolean(p));
+  const disponiveis = colaboradores.filter(
+    (p) => !membrosIds.includes(p.id) && p.id !== chamado.responsavel_id
+  );
 
   return (
     <div className="space-y-6">
@@ -375,6 +389,89 @@ export default async function ChamadoDetalhePage({
                 statusAtual={chamado.status}
                 podeEditar={podeEditarStatus}
               />
+            </CardContent>
+          </Card>
+
+          {/* Membros */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Users className="size-4" /> Membros
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <ul className="space-y-2">
+                {responsavel ? (
+                  <li className="flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <Avatar
+                        nome={responsavel.nome}
+                        src={responsavel.avatar_url}
+                        className="size-7"
+                      />
+                      <span className="truncate text-sm">
+                        {responsavel.nome}
+                      </span>
+                    </div>
+                    <Badge variant="secondary">Responsável</Badge>
+                  </li>
+                ) : null}
+                {membros.map((m) => (
+                  <li
+                    key={m.id}
+                    className="flex items-center justify-between gap-2"
+                  >
+                    <div className="flex min-w-0 items-center gap-2">
+                      <Avatar
+                        nome={m.nome}
+                        src={m.avatar_url}
+                        className="size-7"
+                      />
+                      <span className="truncate text-sm">{m.nome}</span>
+                    </div>
+                    {lideranca ? (
+                      <form action={removerMembro.bind(null, id)}>
+                        <input type="hidden" name="profile_id" value={m.id} />
+                        <Button
+                          type="submit"
+                          variant="ghost"
+                          size="icon"
+                          className="size-7"
+                          title="Remover membro"
+                        >
+                          <X className="size-4" />
+                        </Button>
+                      </form>
+                    ) : null}
+                  </li>
+                ))}
+                {membros.length === 0 && !responsavel ? (
+                  <li className="text-sm text-muted-foreground">
+                    Ninguém adicionado ainda.
+                  </li>
+                ) : null}
+              </ul>
+
+              {lideranca && disponiveis.length > 0 ? (
+                <form
+                  action={adicionarMembro.bind(null, id)}
+                  className="flex gap-2 border-t pt-3"
+                >
+                  <Select name="profile_id" defaultValue="" className="h-9">
+                    <option value="" disabled>
+                      Adicionar membro...
+                    </option>
+                    {disponiveis.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.nome}
+                      </option>
+                    ))}
+                  </Select>
+                  <Button type="submit" size="sm">
+                    Adicionar
+                  </Button>
+                </form>
+              ) : null}
             </CardContent>
           </Card>
 

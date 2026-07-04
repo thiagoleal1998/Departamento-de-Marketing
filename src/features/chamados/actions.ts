@@ -458,3 +458,54 @@ export async function aprovarChamado(chamadoId: string, formData: FormData) {
 export async function reprovarChamado(chamadoId: string, formData: FormData) {
   return decidirAprovacao(chamadoId, formData, "reprovado");
 }
+
+/** Adiciona um membro ao chamado (apenas liderança). */
+export async function adicionarMembro(chamadoId: string, formData: FormData) {
+  const perfil = await perfilAtual();
+  if (!perfil) redirect("/login");
+  if (perfil.role !== "gerente" && perfil.role !== "lider") return;
+
+  const profileId = String(formData.get("profile_id") ?? "").trim();
+  if (!profileId) return;
+
+  const supabase = await criarClienteServidor();
+  const { error } = await supabase
+    .from("chamado_membros")
+    .insert({ chamado_id: chamadoId, profile_id: profileId });
+  if (error) return;
+
+  const { data: chamado } = await supabase
+    .from("chamados")
+    .select("numero")
+    .eq("id", chamadoId)
+    .single();
+  if (chamado && profileId !== perfil.id) {
+    await notificar(
+      profileId,
+      "chamado_membro",
+      `Você foi incluído no chamado #${chamado.numero}`,
+      `/chamados/${chamadoId}`
+    );
+  }
+
+  revalidatePath(`/chamados/${chamadoId}`);
+}
+
+/** Remove um membro do chamado (apenas liderança). */
+export async function removerMembro(chamadoId: string, formData: FormData) {
+  const perfil = await perfilAtual();
+  if (!perfil) redirect("/login");
+  if (perfil.role !== "gerente" && perfil.role !== "lider") return;
+
+  const profileId = String(formData.get("profile_id") ?? "").trim();
+  if (!profileId) return;
+
+  const supabase = await criarClienteServidor();
+  await supabase
+    .from("chamado_membros")
+    .delete()
+    .eq("chamado_id", chamadoId)
+    .eq("profile_id", profileId);
+
+  revalidatePath(`/chamados/${chamadoId}`);
+}

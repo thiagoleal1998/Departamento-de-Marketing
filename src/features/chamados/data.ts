@@ -60,3 +60,15 @@ export async function listarHistorico(
     .order("created_at", { ascending: false });
   return (data as ChamadoHistorico[] | null) ?? [];
 }
+
+/** IDs dos membros adicionais do chamado (tolerante se a tabela não existir). */
+export async function listarMembros(chamadoId: string): Promise<string[]> {
+  const supabase = await criarClienteServidor();
+  const { data } = await supabase
+    .from("chamado_membros")
+    .select("profile_id")
+    .eq("chamado_id", chamadoId);
+  return ((data as { profile_id: string }[] | null) ?? []).map(
+    (m) => m.profile_id
+  );
+}
