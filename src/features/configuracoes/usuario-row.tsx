@@ -30,8 +30,17 @@ export function UsuarioRow({
     atualizarPerfilUsuario,
     inicial
   );
-  const [flash, setFlash] = useState(false);
 
+  // Campos controlados: evitam o reset automático de formulário do React 19,
+  // garantindo que a seleção do usuário seja submetida e permaneça visível.
+  const [nome, setNome] = useState(p.nome);
+  const [email, setEmail] = useState(p.email);
+  const [role, setRole] = useState(p.role);
+  const [cargo, setCargo] = useState(p.cargo ?? "");
+  const [areaId, setAreaId] = useState(p.area_id ?? "");
+  const [ativo, setAtivo] = useState(p.ativo);
+
+  const [flash, setFlash] = useState(false);
   useEffect(() => {
     if (estado.ok) {
       setFlash(true);
@@ -67,14 +76,15 @@ export function UsuarioRow({
           <input type="hidden" name="id" value={p.id} />
 
           <div className="flex items-center gap-3">
-            <Avatar nome={p.nome} src={p.avatar_url} className="size-10" />
+            <Avatar nome={nome} src={p.avatar_url} className="size-10" />
             <div className="grid flex-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor={`nome-${p.id}`}>Nome</Label>
                 <Input
                   id={`nome-${p.id}`}
                   name="nome"
-                  defaultValue={p.nome}
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
                   required
                 />
               </div>
@@ -84,7 +94,8 @@ export function UsuarioRow({
                   id={`email-${p.id}`}
                   name="email"
                   type="email"
-                  defaultValue={p.email}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
             </div>
@@ -93,7 +104,12 @@ export function UsuarioRow({
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label htmlFor={`role-${p.id}`}>Papel</Label>
-              <Select id={`role-${p.id}`} name="role" defaultValue={p.role}>
+              <Select
+                id={`role-${p.id}`}
+                name="role"
+                value={role}
+                onChange={(e) => setRole(e.target.value as Profile["role"])}
+              >
                 <option value="gerente">Gerente</option>
                 <option value="lider">Líder</option>
                 <option value="colaborador">Colaborador</option>
@@ -104,7 +120,8 @@ export function UsuarioRow({
               <Input
                 id={`cargo-${p.id}`}
                 name="cargo"
-                defaultValue={p.cargo ?? ""}
+                value={cargo}
+                onChange={(e) => setCargo(e.target.value)}
                 placeholder="Ex.: Analista"
               />
             </div>
@@ -113,7 +130,8 @@ export function UsuarioRow({
               <Select
                 id={`area-${p.id}`}
                 name="area_id"
-                defaultValue={p.area_id ?? ""}
+                value={areaId}
+                onChange={(e) => setAreaId(e.target.value)}
               >
                 <option value="">Sem área</option>
                 {areas.map((a) => (
@@ -130,7 +148,8 @@ export function UsuarioRow({
               <input
                 type="checkbox"
                 name="ativo"
-                defaultChecked={p.ativo}
+                checked={ativo}
+                onChange={(e) => setAtivo(e.target.checked)}
                 className="size-4 rounded border-input"
               />
               Ativo
@@ -145,7 +164,7 @@ export function UsuarioRow({
                 Salvar
               </Button>
               {podeExcluir ? (
-                <ExcluirUsuarioButton id={p.id} nome={p.nome} />
+                <ExcluirUsuarioButton id={p.id} nome={nome} />
               ) : null}
             </div>
           </div>
