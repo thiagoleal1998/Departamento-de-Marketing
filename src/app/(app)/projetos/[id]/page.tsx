@@ -1,0 +1,230 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { ArrowLeft, ListChecks, Plus, X, CalendarRange } from "lucide-react";
+import { exigirUsuario } from "@/lib/auth";
+import { ehLideranca } from "@/lib/permissions";
+import { obterProjeto, listarEtapas } from "@/features/projetos/data";
+import { mapaDePerfis } from "@/features/chamados/data";
+import { listarColaboradores } from "@/features/desenvolvimento/data";
+import { adicionarEtapa, removerEtapa } from "@/features/projetos/actions";
+import { EtapaStatusControl } from "@/features/projetos/etapa-status-control";
+import { ProjetoStatusControl } from "@/features/projetos/projeto-status-control";
+import { PageHeader } from "@/components/shared/page-header";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { DateInputBR } from "@/components/ui/date-input-br";
+import { formatarData } from "@/lib/utils";
+import { PROJETO_STATUS_META } from "@/types";
+
+export const dynamic = "force-dynamic";
+
+export default async function ProjetoDetalhePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const usuario = await exigirUsuario();
+  const projeto = await obterProjeto(id);
+  if (!projeto) notFound();
+
+  const lideranca = ehLideranca(usuario.role);
+  const [etapas, perfis, pessoas] = await Promise.all([
+    listarEtapas(id),
+    mapaDePerfis(),
+    lideranca ? listarColaboradores() : Promise.resolve([]),
+  ]);
+
+  const concluidas = etapas.filter((e) => e.status === "concluida").length;
+  const progresso =
+    etapas.length > 0 ? Math.round((concluidas / etapas.length) * 100) : 0;
+  const responsavel = projeto.responsavel_id
+    ? perfis.get(projeto.responsavel_id)
+    : null;
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        titulo={projeto.nome}
+        descricao="Acompanhe as etapas do projeto."
+        acoes={
+          <Button asChild variant="outline">
+            <Link href="/projetos">
+              <ArrowLeft className="size-4" /> Voltar
+            </Link>
+          </Button>
+        }
+      />
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Etapas */}
+        <div className="space-y-4 lg:col-span-2">
+          <Card>
+            <CardHeader className="flex-row items-center justify-between space-y-0">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ListChecks className="size-4" /> Etapas
+              </CardTitle>
+              <span className="text-sm text-muted-foreground">
+                {concluidas}/{etapas.length} concluídas
+              </span>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Progresso */}
+              <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${progresso}%` }}
+                />
+              </div>
+
+              {etapas.length === 0 ? (
+                <p className="py-4 text-center text-sm text-muted-foreground">
+                  Nenhuma etapa ainda. Adicione a primeira abaixo.
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {etapas.map((e) => (
+                    <li
+                      key={e.id}
+                      className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">{e.titulo}</p>
+                        {e.descricao ? (
+                          <p className="text-xs text-muted-foreground">
+                            {e.descricao}
+                          </p>
+                        ) : null}
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {e.responsavel_id
+                            ? perfis.get(e.responsavel_id)?.nome ?? "—"
+                            : "Sem responsável"}
+                          {e.prazo ? ` · prazo ${formatarData(e.prazo)}` : ""}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <EtapaStatusControl
+                          etapaId={e.id}
+                          status={e.status}
+                          podeEditar={lideranca}
+                        />
+                        {lideranca ? (
+                          <form action={removerEtapa.bind(null, id)}>
+                            <input type="hidden" name="etapa_id" value={e.id} />
+                            <Button
+                              type="submit"
+                              variant="ghost"
+                              size="icon"
+                              className="size-8"
+                              title="Remover etapa"
+                            >
+                              <X className="size-4" />
+                            </Button>
+                          </form>
+                        ) : null}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {/* Adicionar etapa */}
+              {lideranca ? (
+                <form
+                  action={adicionarEtapa.bind(null, id)}
+                  className="space-y-3 border-t pt-4"
+                >
+                  <p className="text-sm font-medium">Nova etapa</p>
+                  <Input
+                    name="titulo"
+                    placeholder="Ex.: Contratação de stand"
+                    required
+                  />
+                  <Textarea
+                    name="descricao"
+                    rows={2}
+                    placeholder="Detalhes da etapa (opcional)"
+                  />
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Select name="responsavel_id" defaultValue="">
+                      <option value="">Sem responsável</option>
+                      {pessoas.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.nome}
+                        </option>
+                      ))}
+                    </Select>
+                    <DateInputBR name="prazo" />
+                  </div>
+                  <div className="flex justify-end">
+                    <Button type="submit" size="sm">
+                      <Plus className="size-4" /> Adicionar etapa
+                    </Button>
+                  </div>
+                </form>
+              ) : null}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Lateral */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Situação</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {lideranca ? (
+                <ProjetoStatusControl
+                  projetoId={id}
+                  status={projeto.status}
+                />
+              ) : (
+                <Badge variant={PROJETO_STATUS_META[projeto.status].variant}>
+                  {PROJETO_STATUS_META[projeto.status].label}
+                </Badge>
+              )}
+              <div className="text-sm">
+                <p className="text-xs text-muted-foreground">Responsável</p>
+                <p className="font-medium">{responsavel?.nome ?? "—"}</p>
+              </div>
+              {projeto.data_inicio || projeto.data_fim ? (
+                <div className="text-sm">
+                  <p className="text-xs text-muted-foreground">Período</p>
+                  <p className="flex items-center gap-1 font-medium">
+                    <CalendarRange className="size-3.5" />
+                    {formatarData(projeto.data_inicio)} –{" "}
+                    {formatarData(projeto.data_fim)}
+                  </p>
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
+
+          {projeto.descricao ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Descrição</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="whitespace-pre-wrap text-sm text-foreground/90">
+                  {projeto.descricao}
+                </p>
+              </CardContent>
+            </Card>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}

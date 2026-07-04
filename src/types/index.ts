@@ -117,6 +117,36 @@ export const FEEDBACK_STATUS_META: Record<
   realizado: { label: "Realizado", variant: "success" },
 };
 
+/* ------------------------------------------------------------------ */
+/* Projetos maiores                                                    */
+/* ------------------------------------------------------------------ */
+export type ProjetoStatus =
+  | "planejamento"
+  | "em_andamento"
+  | "concluido"
+  | "cancelado";
+
+export const PROJETO_STATUS_META: Record<
+  ProjetoStatus,
+  { label: string; variant: BadgeVariant }
+> = {
+  planejamento: { label: "Planejamento", variant: "info" },
+  em_andamento: { label: "Em andamento", variant: "warning" },
+  concluido: { label: "Concluído", variant: "success" },
+  cancelado: { label: "Cancelado", variant: "muted" },
+};
+
+export type EtapaStatus = "a_fazer" | "em_andamento" | "concluida";
+
+export const ETAPA_STATUS_META: Record<
+  EtapaStatus,
+  { label: string; variant: BadgeVariant }
+> = {
+  a_fazer: { label: "A fazer", variant: "muted" },
+  em_andamento: { label: "Em andamento", variant: "warning" },
+  concluida: { label: "Concluída", variant: "success" },
+};
+
 export type PlanoAcaoStatus = "aberto" | "em_andamento" | "concluido";
 
 export const PLANO_STATUS_META: Record<

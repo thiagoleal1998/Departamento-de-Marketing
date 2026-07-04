@@ -95,6 +95,30 @@ export interface Tarefa {
   created_at: string;
 }
 
+export interface Projeto {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  responsavel_id: string | null;
+  status: import("@/types").ProjetoStatus;
+  data_inicio: string | null;
+  data_fim: string | null;
+  criado_por: string | null;
+  created_at: string;
+}
+
+export interface ProjetoEtapa {
+  id: string;
+  projeto_id: string;
+  titulo: string;
+  descricao: string | null;
+  status: import("@/types").EtapaStatus;
+  responsavel_id: string | null;
+  prazo: string | null;
+  ordem: number;
+  created_at: string;
+}
+
 export interface Notificacao {
   id: string;
   destinatario_id: string;

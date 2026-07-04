@@ -5,6 +5,7 @@ import {
   Palette,
   BarChart3,
   KanbanSquare,
+  FolderKanban,
   Settings,
   type LucideIcon,
 } from "lucide-react";
@@ -56,6 +57,12 @@ export const NAVEGACAO: ItemNav[] = [
     label: "Operacional",
     icone: KanbanSquare,
     descricao: "Tarefas e kanban",
+  },
+  {
+    href: "/projetos",
+    label: "Projetos",
+    icone: FolderKanban,
+    descricao: "Projetos maiores e eventos",
   },
   {
     href: "/configuracoes",
