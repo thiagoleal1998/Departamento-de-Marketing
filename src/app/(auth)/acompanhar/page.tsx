@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { obterConfig } from "@/lib/config";
 import { AcompanharForm } from "@/features/portal/acompanhar-form";
 import { Marca } from "@/components/shared/marca";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
@@ -22,11 +23,14 @@ export default async function AcompanharPage() {
           />
           <span className="text-sm font-semibold">{textos.painel_nome}</span>
         </Link>
-        <Button asChild variant="outline" size="sm">
-          <Link href="/">
-            <ArrowLeft className="size-4" /> Abrir chamado
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Button asChild variant="outline" size="sm">
+            <Link href="/">
+              <ArrowLeft className="size-4" /> Abrir chamado
+            </Link>
+          </Button>
+        </div>
       </header>
 
       <main className="mx-auto max-w-3xl px-4 pb-16 pt-6">

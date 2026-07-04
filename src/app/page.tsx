@@ -3,6 +3,7 @@ import { LogIn, Clock, Palette, MessagesSquare, Search } from "lucide-react";
 import { obterConfig } from "@/lib/config";
 import { PortalForm } from "@/features/portal/portal-form";
 import { Marca } from "@/components/shared/marca";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +25,7 @@ export default async function PortalPage() {
           <span className="text-sm font-semibold">{textos.painel_nome}</span>
         </div>
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <Button asChild variant="ghost" size="sm">
             <Link href="/acompanhar">
               <Search className="size-4" /> Acompanhar chamado

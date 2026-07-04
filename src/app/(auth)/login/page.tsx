@@ -4,6 +4,7 @@ import { LoginForm } from "@/features/auth/login-form";
 import { supabaseConfigurado } from "@/lib/supabase/env";
 import { obterConfig } from "@/lib/config";
 import { Marca } from "@/components/shared/marca";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +14,10 @@ export default async function LoginPage() {
   const { textos, logo } = await obterConfig();
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-accent/40 p-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-accent/40 p-4">
+      <div className="absolute right-4 top-4">
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-md">
         <div className="mb-8 flex flex-col items-center text-center">
           <Marca
