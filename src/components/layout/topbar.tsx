@@ -4,16 +4,20 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { sair } from "@/features/auth/actions";
+import { NotificacoesBell } from "@/features/notificacoes/bell";
+import { obterNotificacoes } from "@/features/notificacoes/data";
 import { PAPEL_LABEL } from "@/types";
 import type { Profile } from "@/types/database";
 
-export function Topbar({
+export async function Topbar({
   usuario,
   nomePainel,
 }: {
   usuario: Profile;
   nomePainel: string;
 }) {
+  const { itens, naoLidas } = await obterNotificacoes();
+
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b bg-card px-4 sm:px-6">
       <div className="lg:hidden">
@@ -21,7 +25,8 @@ export function Topbar({
       </div>
       <div className="hidden lg:block" />
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
+        <NotificacoesBell itens={itens} naoLidas={naoLidas} />
         <Badge variant="secondary" className="hidden sm:inline-flex">
           {PAPEL_LABEL[usuario.role]}
         </Badge>

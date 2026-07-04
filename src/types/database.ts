@@ -87,6 +87,16 @@ export interface Tarefa {
   created_at: string;
 }
 
+export interface Notificacao {
+  id: string;
+  destinatario_id: string;
+  tipo: string;
+  titulo: string;
+  link: string | null;
+  lida: boolean;
+  created_at: string;
+}
+
 export interface Feedback {
   id: string;
   colaborador_id: string;
