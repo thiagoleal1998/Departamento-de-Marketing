@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
+import { ehLideranca } from "@/lib/permissions";
 import { listarChamados, mapaDePerfis } from "@/features/chamados/data";
 import {
   ChamadosLista,
@@ -16,7 +17,7 @@ export default async function ChamadosPage({
 }: {
   searchParams: Promise<{ situacao?: string }>;
 }) {
-  await exigirUsuario();
+  const usuario = await exigirUsuario();
   const { situacao } = await searchParams;
   const [chamados, perfis] = await Promise.all([
     listarChamados(),
@@ -56,7 +57,11 @@ export default async function ChamadosPage({
           </Button>
         }
       />
-      <ChamadosLista chamados={view} situacaoInicial={situacao ?? ""} />
+      <ChamadosLista
+        chamados={view}
+        situacaoInicial={situacao ?? ""}
+        podeMover={ehLideranca(usuario.role)}
+      />
     </div>
   );
 }

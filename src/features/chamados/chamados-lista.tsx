@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { LayoutGrid, List, Search, AlertCircle, X } from "lucide-react";
+import { alterarStatusChamado } from "./actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -12,7 +13,7 @@ import {
   ChamadoPrioridadeBadge,
 } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
-import { formatarData } from "@/lib/utils";
+import { cn, formatarData } from "@/lib/utils";
 import {
   CHAMADO_STATUS_META,
   CHAMADO_STATUS_FLUXO,
@@ -43,12 +44,31 @@ function prazoAtrasado(prazo: string | null, status: ChamadoStatus) {
   return new Date(prazo).getTime() < Date.now();
 }
 
-function LinhaChamado({ c }: { c: ChamadoView }) {
+function LinhaChamado({
+  c,
+  draggable,
+  arrastando,
+  onDragStart,
+  onDragEnd,
+}: {
+  c: ChamadoView;
+  draggable?: boolean;
+  arrastando?: boolean;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
+}) {
   const atrasado = prazoAtrasado(c.prazo_sla, c.status);
   return (
     <Link
       href={`/chamados/${c.id}`}
-      className="block rounded-lg border bg-card p-3 transition-colors hover:border-primary/40 hover:bg-accent/30"
+      draggable={draggable}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      className={cn(
+        "block rounded-lg border bg-card p-3 transition-colors hover:border-primary/40 hover:bg-accent/30",
+        draggable && "cursor-grab active:cursor-grabbing",
+        arrastando && "opacity-50"
+      )}
     >
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-medium leading-tight">
@@ -107,9 +127,11 @@ function passaSituacao(c: ChamadoView, situacao: string): boolean {
 export function ChamadosLista({
   chamados,
   situacaoInicial = "",
+  podeMover = false,
 }: {
   chamados: ChamadoView[];
   situacaoInicial?: string;
+  podeMover?: boolean;
 }) {
   const [visao, setVisao] = useState<"lista" | "board">("lista");
   const [busca, setBusca] = useState("");
@@ -119,9 +141,26 @@ export function ChamadosLista({
   const [situacao, setSituacao] = useState<string>(
     SITUACAO_LABEL[situacaoInicial] ? situacaoInicial : ""
   );
+  const [lista, setLista] = useState(chamados);
+  const [arrastando, setArrastando] = useState<string | null>(null);
+  const [sobre, setSobre] = useState<ChamadoStatus | null>(null);
+  const [, startTransition] = useTransition();
+
+  function soltar(status: ChamadoStatus) {
+    const id = arrastando;
+    setArrastando(null);
+    setSobre(null);
+    if (!id) return;
+    const alvo = lista.find((c) => c.id === id);
+    if (!alvo || alvo.status === status) return;
+    setLista((l) => l.map((c) => (c.id === id ? { ...c, status } : c)));
+    startTransition(async () => {
+      await alterarStatusChamado(id, status);
+    });
+  }
 
   const filtrados = useMemo(() => {
-    return chamados.filter((c) => {
+    return lista.filter((c) => {
       if (situacao && !passaSituacao(c, situacao)) return false;
       if (fStatus && c.status !== fStatus) return false;
       if (fPrioridade && c.prioridade !== fPrioridade) return false;
@@ -136,7 +175,7 @@ export function ChamadosLista({
       }
       return true;
     });
-  }, [chamados, situacao, fStatus, fPrioridade, fTipo, busca]);
+  }, [lista, situacao, fStatus, fPrioridade, fTipo, busca]);
 
   return (
     <div className="space-y-4">
@@ -237,26 +276,62 @@ export function ChamadosLista({
           ))}
         </div>
       ) : (
+        <>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {CHAMADO_STATUS_FLUXO.map((status) => {
             const doStatus = filtrados.filter((c) => c.status === status);
             return (
-              <div key={status} className="space-y-2">
+              <div
+                key={status}
+                onDragOver={
+                  podeMover
+                    ? (e) => {
+                        e.preventDefault();
+                        setSobre(status);
+                      }
+                    : undefined
+                }
+                onDragLeave={
+                  podeMover
+                    ? () => setSobre((s) => (s === status ? null : s))
+                    : undefined
+                }
+                onDrop={podeMover ? () => soltar(status) : undefined}
+                className="space-y-2"
+              >
                 <div className="flex items-center justify-between px-1">
                   <ChamadoStatusBadge status={status} />
                   <span className="text-xs text-muted-foreground">
                     {doStatus.length}
                   </span>
                 </div>
-                <div className="space-y-2 rounded-lg bg-muted/40 p-2 min-h-16">
+                <div
+                  className={cn(
+                    "min-h-16 space-y-2 rounded-lg border border-transparent bg-muted/40 p-2 transition-colors",
+                    podeMover && sobre === status && "border-primary/50 bg-primary/5"
+                  )}
+                >
                   {doStatus.map((c) => (
-                    <LinhaChamado key={c.id} c={c} />
+                    <LinhaChamado
+                      key={c.id}
+                      c={c}
+                      draggable={podeMover}
+                      arrastando={arrastando === c.id}
+                      onDragStart={() => setArrastando(c.id)}
+                      onDragEnd={() => setArrastando(null)}
+                    />
                   ))}
                 </div>
               </div>
             );
           })}
         </div>
+        {podeMover ? (
+          <p className="text-center text-xs text-muted-foreground">
+            Arraste os chamados entre as colunas para mudar o status.
+          </p>
+        ) : null}
+        </>
       )}
     </div>
   );
