@@ -86,6 +86,15 @@ export async function abrirChamado(formData: FormData) {
   const referencia = await uploadReferencia(
     formData.get("referencia") as File | null
   );
+  const referenciaLinkRaw = String(formData.get("referencia_link") ?? "").trim();
+  const referenciaLink = referenciaLinkRaw
+    ? referenciaLinkRaw.startsWith("http")
+      ? referenciaLinkRaw
+      : `https://${referenciaLinkRaw}`
+    : null;
+  const referencia_url = referencia?.url ?? referenciaLink;
+  const referencia_nome =
+    referencia?.nome ?? (referenciaLink ? "Link de referência" : null);
 
   // Herda a área do solicitante.
   const { data: perfil } = await supabase
@@ -105,8 +114,8 @@ export async function abrirChamado(formData: FormData) {
     subtipo,
     material_grafico,
     prazo_entrega,
-    referencia_url: referencia?.url ?? null,
-    referencia_nome: referencia?.nome ?? null,
+    referencia_url,
+    referencia_nome,
     prioridade,
     solicitante_id: uid,
     area_id: perfil?.area_id ?? null,

@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { SelectMenu } from "@/components/ui/select-menu";
+import { DateInputBR } from "@/components/ui/date-input-br";
 import { CamposPecaChamado } from "@/features/chamados/campos-peca";
 
 export const dynamic = "force-dynamic";
@@ -101,13 +102,13 @@ export default async function NovoChamadoPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="prazo_sla">Prazo desejado</Label>
-                <Input id="prazo_sla" name="prazo_sla" type="date" />
+                <DateInputBR id="prazo_sla" name="prazo_sla" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="prazo_entrega">
                   Prazo de entrega do marketing
                 </Label>
-                <Input id="prazo_entrega" name="prazo_entrega" type="date" />
+                <DateInputBR id="prazo_entrega" name="prazo_entrega" />
               </div>
             </div>
 

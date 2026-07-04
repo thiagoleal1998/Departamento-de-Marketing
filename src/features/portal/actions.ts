@@ -66,6 +66,15 @@ export async function abrirChamadoPublico(
   const referencia = await uploadReferencia(
     formData.get("referencia") as File | null
   );
+  const referenciaLinkRaw = String(formData.get("referencia_link") ?? "").trim();
+  const referenciaLink = referenciaLinkRaw
+    ? referenciaLinkRaw.startsWith("http")
+      ? referenciaLinkRaw
+      : `https://${referenciaLinkRaw}`
+    : null;
+  const referencia_url = referencia?.url ?? referenciaLink;
+  const referencia_nome =
+    referencia?.nome ?? (referenciaLink ? "Link de referência" : null);
 
   const supabase = criarClienteAdmin();
   const { data, error } = await inserirChamado(supabase, {
@@ -78,8 +87,8 @@ export async function abrirChamadoPublico(
     subtipo,
     material_grafico,
     prazo_entrega,
-    referencia_url: referencia?.url ?? null,
-    referencia_nome: referencia?.nome ?? null,
+    referencia_url,
+    referencia_nome,
     tipo,
     prioridade,
     status: "aberto",

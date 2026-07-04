@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { SelectMenu } from "@/components/ui/select-menu";
+import { DateInputBR } from "@/components/ui/date-input-br";
 import { CamposPecaChamado } from "@/features/chamados/campos-peca";
 
 const estadoInicial: EstadoPortal = {};
@@ -148,7 +149,7 @@ export function PortalForm({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="prazo_entrega">Prazo de entrega</Label>
-              <Input id="prazo_entrega" name="prazo_entrega" type="date" />
+              <DateInputBR id="prazo_entrega" name="prazo_entrega" />
             </div>
           </div>
 

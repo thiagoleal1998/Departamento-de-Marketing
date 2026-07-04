@@ -5,6 +5,7 @@ import { Paperclip, Upload } from "lucide-react";
 import { Select } from "@/components/ui/select";
 import { SelectMenu } from "@/components/ui/select-menu";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CHAMADO_TIPO_LABEL } from "@/types";
 
@@ -126,7 +127,21 @@ export function CamposPecaChamado() {
             </div>
             <p className="text-xs text-muted-foreground">
               Opcional. Envie uma imagem, vídeo ou documento de referência (até
-              30 MB). Para arquivos maiores, cole um link na descrição.
+              30 MB).
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="referencia_link">Ou cole um link de referência</Label>
+            <Input
+              id="referencia_link"
+              name="referencia_link"
+              type="url"
+              placeholder="https://drive.google.com/..."
+            />
+            <p className="text-xs text-muted-foreground">
+              Use um link (Google Drive, YouTube, etc.) no lugar do arquivo, se
+              preferir.
             </p>
           </div>
         </div>
