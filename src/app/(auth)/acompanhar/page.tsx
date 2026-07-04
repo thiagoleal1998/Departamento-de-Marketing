@@ -30,6 +30,12 @@ export default async function AcompanharPage() {
       </header>
 
       <main className="mx-auto max-w-3xl px-4 pb-16 pt-6">
+        <Link
+          href="/"
+          className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="size-4" /> Voltar para a central
+        </Link>
         <div className="mb-6 space-y-2">
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
             Acompanhar chamado
