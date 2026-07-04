@@ -19,11 +19,9 @@ export default async function PortalPage() {
             logoUrl={logo}
             boxClassName="size-9 rounded-xl"
             iconClassName="size-5"
-            imgClassName="h-10 max-w-[180px]"
+            imgClassName="h-10 max-w-[160px]"
           />
-          {logo ? null : (
-            <span className="text-sm font-semibold">{textos.painel_nome}</span>
-          )}
+          <span className="text-sm font-semibold">{textos.painel_nome}</span>
         </div>
         <Button asChild variant="outline" size="sm">
           <Link href="/login">

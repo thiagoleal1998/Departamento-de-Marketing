@@ -27,13 +27,11 @@ export function Sidebar({
           logoUrl={logoUrl}
           boxClassName="size-8"
           iconClassName="size-4"
-          imgClassName="h-9 max-w-[150px]"
+          imgClassName="h-8 max-w-[104px]"
         />
-        {logoUrl ? null : (
-          <span className="text-sm font-semibold leading-tight">
-            {nomePainel}
-          </span>
-        )}
+        <span className="truncate text-sm font-semibold leading-tight">
+          {nomePainel}
+        </span>
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
