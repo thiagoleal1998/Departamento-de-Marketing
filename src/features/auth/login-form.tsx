@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
-import { LogIn, Loader2 } from "lucide-react";
+import { useActionState, useState } from "react";
+import { LogIn, Loader2, Eye, EyeOff } from "lucide-react";
 import { entrar, type EstadoLogin } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ const estadoInicial: EstadoLogin = {};
 
 export function LoginForm() {
   const [estado, formAction, pendente] = useActionState(entrar, estadoInicial);
+  const [mostrarSenha, setMostrarSenha] = useState(false);
 
   return (
     <form action={formAction} className="space-y-4">
@@ -27,14 +28,30 @@ export function LoginForm() {
       </div>
       <div className="space-y-2">
         <Label htmlFor="senha">Senha</Label>
-        <Input
-          id="senha"
-          name="senha"
-          type="password"
-          placeholder="••••••••"
-          autoComplete="current-password"
-          required
-        />
+        <div className="relative">
+          <Input
+            id="senha"
+            name="senha"
+            type={mostrarSenha ? "text" : "password"}
+            placeholder="••••••••"
+            autoComplete="current-password"
+            required
+            className="pr-10"
+          />
+          <button
+            type="button"
+            onClick={() => setMostrarSenha((v) => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+            title={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+          >
+            {mostrarSenha ? (
+              <EyeOff className="size-4" />
+            ) : (
+              <Eye className="size-4" />
+            )}
+          </button>
+        </div>
       </div>
 
       {estado.erro ? (
