@@ -1,6 +1,6 @@
 "use server";
 
-import { obterClienteIA, iaDisponivel, MODELO_IA } from "@/lib/ai/anthropic";
+import { obterClienteIA, iaDisponivel, MODELO_IA } from "@/lib/ai/gemini";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { ETAPAS_FEEDBACK, FRASE_GUIA, MOMENTO_OPCOES } from "./roteiro-config";
 import type {
@@ -11,7 +11,7 @@ import type {
 } from "./ai-types";
 
 const MSG_SEM_CHAVE =
-  "A IA ainda não está configurada. Peça para adicionar a chave ANTHROPIC_API_KEY no arquivo .env.local para ativar o assistente.";
+  "A IA ainda não está configurada. Peça para adicionar a chave GEMINI_API_KEY no arquivo .env.local para ativar o assistente.";
 
 const MSG_ERRO =
   "Não consegui falar com a IA agora. Tente novamente em instantes.";
@@ -85,14 +85,10 @@ export async function analisarComunicacao(
   const momento = rotuloMomento(dados);
 
   try {
-    const resposta = await cliente.messages.create({
+    const resposta = await cliente.models.generateContent({
       model: MODELO_IA,
-      max_tokens: 1600,
-      system: CONTEXTO_METODO,
-      messages: [
-        {
-          role: "user",
-          content: `O líder está preparando esta conversa ${momento}. Abaixo está o rascunho do roteiro dele.
+      config: { systemInstruction: CONTEXTO_METODO },
+      contents: `O líder está preparando esta conversa ${momento}. Abaixo está o rascunho do roteiro dele.
 
 Sua tarefa: avaliar se a comunicação está clara ou confusa e ajudar a ajustar. Seja breve e útil.
 
@@ -110,15 +106,9 @@ Não invente informações que não estão no roteiro. Se algo importante estive
 
 Roteiro:
 ${roteiro}`,
-        },
-      ],
     });
 
-    const texto = resposta.content
-      .map((b) => (b.type === "text" ? b.text : ""))
-      .join("\n")
-      .trim();
-
+    const texto = (resposta.text ?? "").trim();
     if (!texto) return { ok: false, erro: MSG_ERRO };
     return { ok: true, texto };
   } catch {
@@ -126,52 +116,16 @@ ${roteiro}`,
   }
 }
 
-const SCHEMA_PLANO = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    resumo: {
-      type: "string",
-      description: "Resumo curto e acolhedor do que foi conversado e combinado.",
-    },
-    resultado_esperado: {
-      type: "string",
-      description: "O que estará diferente e como saberemos que evoluiu.",
-    },
-    plano_acao: {
-      type: "array",
-      description: "Ações concretas, de preferência propostas pela própria pessoa.",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          acao: { type: "string" },
-          prazo_sugestao: {
-            type: "string",
-            description: "Sugestão de prazo em linguagem natural (ex.: 'em 2 semanas').",
-          },
-        },
-        required: ["acao", "prazo_sugestao"],
-      },
-    },
-    pontos_acompanhamento: {
-      type: "array",
-      description: "O que o líder deve observar até a próxima conversa.",
-      items: { type: "string" },
-    },
-    proxima_conversa_sugestao: {
-      type: "string",
-      description: "Sugestão de quando e sobre o que deve ser a próxima conversa.",
-    },
-  },
-  required: [
-    "resumo",
-    "resultado_esperado",
-    "plano_acao",
-    "pontos_acompanhamento",
-    "proxima_conversa_sugestao",
+/** Formato JSON esperado do resultado — descrito no prompt para o Gemini. */
+const FORMATO_PLANO = `{
+  "resumo": "Resumo curto e acolhedor do que foi conversado e combinado.",
+  "resultado_esperado": "O que estará diferente e como saberemos que evoluiu.",
+  "plano_acao": [
+    { "acao": "Ação concreta, de preferência proposta pela própria pessoa.", "prazo_sugestao": "Prazo em linguagem natural, ex.: 'em 2 semanas'." }
   ],
-} as const;
+  "pontos_acompanhamento": ["O que o líder deve observar até a próxima conversa."],
+  "proxima_conversa_sugestao": "Sugestão de quando e sobre o que deve ser a próxima conversa."
+}`;
 
 /**
  * Gera um resultado da conversa: resumo, plano de ação, pontos de
@@ -197,32 +151,26 @@ export async function gerarResumoEPlano(
   const momento = rotuloMomento(dados);
 
   try {
-    const resposta = await cliente.messages.create({
+    const resposta = await cliente.models.generateContent({
       model: MODELO_IA,
-      max_tokens: 2000,
-      system: CONTEXTO_METODO,
-      output_config: { format: { type: "json_schema", schema: SCHEMA_PLANO } },
-      messages: [
-        {
-          role: "user",
-          content: `Com base no roteiro de feedback abaixo (preenchido ${momento}), gere um resultado da conversa que ajude no plano de ação.
+      config: {
+        systemInstruction: CONTEXTO_METODO,
+        responseMimeType: "application/json",
+      },
+      contents: `Com base no roteiro de feedback abaixo (preenchido ${momento}), gere um resultado da conversa que ajude no plano de ação.
 
 Regras:
 - Baseie-se apenas no que está no roteiro; não invente fatos.
 - As ações devem ser concretas e, sempre que possível, refletir o que a própria pessoa propôs.
 - Tom acolhedor e orientado ao desenvolvimento.
+- Responda APENAS com um JSON válido exatamente neste formato (sem texto fora do JSON):
+${FORMATO_PLANO}
 
 Roteiro:
 ${roteiro}`,
-        },
-      ],
     });
 
-    const texto = resposta.content
-      .map((b) => (b.type === "text" ? b.text : ""))
-      .join("")
-      .trim();
-
+    const texto = (resposta.text ?? "").trim();
     if (!texto) return { ok: false, erro: MSG_ERRO };
 
     const plano = JSON.parse(texto) as ResultadoPlano;

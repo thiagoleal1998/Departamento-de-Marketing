@@ -1,6 +1,6 @@
 {
   "name": "painel-marketing",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.110.0",
+    "@google/genai": "^2.10.0",
     "@hookform/resolvers": "^3.10.0",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.48.1",
