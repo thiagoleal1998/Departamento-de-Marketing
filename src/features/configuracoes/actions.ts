@@ -14,22 +14,29 @@ import type { Papel } from "@/types";
 
 const PAPEIS: Papel[] = ["gerente", "lider", "colaborador"];
 
+export type EstadoEdicaoUsuario = { ok?: boolean; erro?: string };
+
 /** Edita um usuário: nome, e-mail, papel, cargo, área e status (só Gerente). */
-export async function atualizarPerfilUsuario(formData: FormData) {
+export async function atualizarPerfilUsuario(
+  _prev: EstadoEdicaoUsuario,
+  formData: FormData
+): Promise<EstadoEdicaoUsuario> {
   const supabase = await criarClienteServidor();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return;
+  if (!user) return { erro: "Sessão expirada." };
   const { data: eu } = await supabase
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single();
-  if (eu?.role !== "gerente") return;
+  if (eu?.role !== "gerente") {
+    return { erro: "Apenas gerentes podem editar usuários." };
+  }
 
   const id = String(formData.get("id") ?? "").trim();
-  if (!id) return;
+  if (!id) return { erro: "Usuário inválido." };
 
   const nome = String(formData.get("nome") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
@@ -38,7 +45,7 @@ export async function atualizarPerfilUsuario(formData: FormData) {
   const cargo = String(formData.get("cargo") ?? "").trim() || null;
   const area_id = String(formData.get("area_id") ?? "").trim() || null;
   const ativo = formData.get("ativo") === "on";
-  if (!nome) return;
+  if (!nome) return { erro: "Informe o nome." };
 
   // E-mail atual (antes de atualizar) para saber se mudou.
   const { data: atual } = await supabase
@@ -46,14 +53,15 @@ export async function atualizarPerfilUsuario(formData: FormData) {
     .select("email")
     .eq("id", id)
     .single();
-  const emailMudou = Boolean(
-    email && atual?.email?.toLowerCase() !== email
-  );
+  const emailMudou = Boolean(email && atual?.email?.toLowerCase() !== email);
 
-  await supabase
+  const { error } = await supabase
     .from("profiles")
     .update({ nome, email, role, cargo, area_id, ativo })
     .eq("id", id);
+  if (error) {
+    return { erro: "Não foi possível salvar. Tente novamente." };
+  }
 
   // Sincroniza o e-mail de login (auth) quando mudou.
   if (emailMudou && servicoDisponivel()) {
@@ -62,6 +70,7 @@ export async function atualizarPerfilUsuario(formData: FormData) {
   }
 
   revalidatePath("/configuracoes");
+  return { ok: true };
 }
 
 export type EstadoCriarUsuario = { ok?: boolean; erro?: string };
