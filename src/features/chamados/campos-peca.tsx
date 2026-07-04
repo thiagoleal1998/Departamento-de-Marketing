@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { Paperclip } from "lucide-react";
+import { useRef, useState } from "react";
+import { Paperclip, Upload } from "lucide-react";
 import { Select } from "@/components/ui/select";
 import { SelectMenu } from "@/components/ui/select-menu";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { CHAMADO_TIPO_LABEL } from "@/types";
 
@@ -29,6 +30,8 @@ const OBS_BRINDES =
 export function CamposPecaChamado() {
   const [tipo, setTipo] = useState("");
   const [formato, setFormato] = useState("");
+  const [nomeArquivo, setNomeArquivo] = useState("");
+  const arquivoRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="space-y-4">
@@ -42,6 +45,7 @@ export function CamposPecaChamado() {
           onChange={(e) => {
             setTipo(e.target.value);
             setFormato("");
+            setNomeArquivo("");
           }}
         >
           <option value="" disabled>
@@ -94,15 +98,32 @@ export function CamposPecaChamado() {
           ) : null}
 
           <div className="space-y-2">
-            <Label htmlFor="referencia" className="flex items-center gap-1.5">
+            <Label className="flex items-center gap-1.5">
               <Paperclip className="size-4" /> Arquivo de referência
             </Label>
             <input
+              ref={arquivoRef}
               id="referencia"
               name="referencia"
               type="file"
-              className="block w-full cursor-pointer rounded-md border border-input bg-background text-sm text-muted-foreground file:mr-3 file:cursor-pointer file:border-0 file:bg-muted file:px-3 file:py-2 file:text-sm file:font-medium file:text-foreground hover:file:bg-muted/70"
+              className="hidden"
+              onChange={(e) =>
+                setNomeArquivo(e.target.files?.[0]?.name ?? "")
+              }
             />
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => arquivoRef.current?.click()}
+              >
+                <Upload className="size-4" /> Escolher arquivo
+              </Button>
+              <span className="truncate text-sm text-muted-foreground">
+                {nomeArquivo || "Nenhum arquivo selecionado"}
+              </span>
+            </div>
             <p className="text-xs text-muted-foreground">
               Opcional. Envie uma imagem, vídeo ou documento de referência (até
               30 MB). Para arquivos maiores, cole um link na descrição.
