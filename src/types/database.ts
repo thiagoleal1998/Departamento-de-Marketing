@@ -90,6 +90,7 @@ export interface Tarefa {
   status: TarefaStatus;
   responsavel_id: string | null;
   chamado_id: string | null;
+  etapa_id: string | null;
   prazo: string | null;
   ordem: number;
   created_at: string;
@@ -116,6 +117,24 @@ export interface ProjetoEtapa {
   responsavel_id: string | null;
   prazo: string | null;
   ordem: number;
+  created_at: string;
+}
+
+export interface ProjetoDocumento {
+  id: string;
+  projeto_id: string;
+  nome: string;
+  url: string;
+  created_at: string;
+}
+
+export interface ProjetoComparativo {
+  id: string;
+  projeto_id: string;
+  item: string;
+  fornecedor: string;
+  valor: number | null;
+  observacao: string | null;
   created_at: string;
 }
 

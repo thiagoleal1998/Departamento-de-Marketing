@@ -16,7 +16,8 @@ export interface TarefaView {
   descricao: string | null;
   status: TarefaStatus;
   responsavel_nome: string | null;
-  chamado_id: string | null;
+  href: string | null;
+  origemLabel: string | null;
   prazo: string | null;
 }
 
@@ -95,12 +96,12 @@ export function KanbanTarefas({ tarefas }: { tarefas: TarefaView[] }) {
                   onDragStart={() => setArrastando(t.id)}
                   onDragEnd={() => setArrastando(null)}
                   onClick={() => {
-                    if (t.chamado_id) router.push(`/chamados/${t.chamado_id}`);
+                    if (t.href) router.push(t.href);
                   }}
-                  role={t.chamado_id ? "button" : undefined}
+                  role={t.href ? "button" : undefined}
                   className={cn(
                     "group rounded-lg border bg-card p-3 shadow-sm transition-colors",
-                    t.chamado_id
+                    t.href
                       ? "cursor-pointer hover:border-primary/40 hover:bg-accent/30"
                       : "cursor-grab active:cursor-grabbing",
                     arrastando === t.id && "opacity-50"
@@ -123,9 +124,9 @@ export function KanbanTarefas({ tarefas }: { tarefas: TarefaView[] }) {
                         </span>
                         {t.prazo ? <span>{formatarData(t.prazo)}</span> : null}
                       </div>
-                      {t.chamado_id ? (
+                      {t.href ? (
                         <span className="mt-2 inline-flex items-center gap-1 text-xs text-primary">
-                          <Ticket className="size-3" /> Abrir chamado
+                          <Ticket className="size-3" /> {t.origemLabel}
                         </span>
                       ) : null}
                     </div>

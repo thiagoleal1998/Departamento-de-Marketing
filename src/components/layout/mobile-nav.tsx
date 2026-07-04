@@ -25,7 +25,7 @@ export function MobileNav({ papel }: { papel: Papel }) {
             className={cn(
               "flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
               ativo
-                ? "bg-primary text-primary-foreground"
+                ? cn("bg-gradient-to-r text-white shadow-sm", item.gradiente)
                 : "text-muted-foreground hover:bg-accent"
             )}
           >

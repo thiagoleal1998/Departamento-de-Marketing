@@ -1,12 +1,34 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ListChecks, Plus, X, CalendarRange } from "lucide-react";
+import {
+  ArrowLeft,
+  ListChecks,
+  Plus,
+  X,
+  CalendarRange,
+  FileText,
+  Scale,
+  Upload,
+  ExternalLink,
+} from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import { ehLideranca } from "@/lib/permissions";
-import { obterProjeto, listarEtapas } from "@/features/projetos/data";
+import {
+  obterProjeto,
+  listarEtapas,
+  listarDocumentos,
+  listarComparativos,
+} from "@/features/projetos/data";
 import { mapaDePerfis } from "@/features/chamados/data";
 import { listarColaboradores } from "@/features/desenvolvimento/data";
-import { adicionarEtapa, removerEtapa } from "@/features/projetos/actions";
+import {
+  adicionarEtapa,
+  removerEtapa,
+  adicionarDocumento,
+  removerDocumento,
+  adicionarComparativo,
+  removerComparativo,
+} from "@/features/projetos/actions";
 import { EtapaStatusControl } from "@/features/projetos/etapa-status-control";
 import { ProjetoStatusControl } from "@/features/projetos/projeto-status-control";
 import { PageHeader } from "@/components/shared/page-header";
@@ -22,8 +44,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DateInputBR } from "@/components/ui/date-input-br";
-import { formatarData } from "@/lib/utils";
+import { FileInputBR } from "@/components/ui/file-input-br";
+import { formatarData, formatarMoeda, cn } from "@/lib/utils";
 import { PROJETO_STATUS_META } from "@/types";
 
 export const dynamic = "force-dynamic";
@@ -39,11 +63,28 @@ export default async function ProjetoDetalhePage({
   if (!projeto) notFound();
 
   const lideranca = ehLideranca(usuario.role);
-  const [etapas, perfis, pessoas] = await Promise.all([
+  const [etapas, documentos, comparativos, perfis, pessoas] = await Promise.all([
     listarEtapas(id),
+    listarDocumentos(id),
+    listarComparativos(id),
     mapaDePerfis(),
     lideranca ? listarColaboradores() : Promise.resolve([]),
   ]);
+
+  // Menor e maior valor por item (para destacar preço no comparativo).
+  const valoresPorItem = new Map<string, number[]>();
+  for (const c of comparativos) {
+    if (c.valor == null) continue;
+    const arr = valoresPorItem.get(c.item) ?? [];
+    arr.push(c.valor);
+    valoresPorItem.set(c.item, arr);
+  }
+  const minPorItem = new Map<string, number>();
+  const maxPorItem = new Map<string, number>();
+  for (const [item, vals] of valoresPorItem) {
+    minPorItem.set(item, Math.min(...vals));
+    maxPorItem.set(item, Math.max(...vals));
+  }
 
   const concluidas = etapas.filter((e) => e.status === "concluida").length;
   const progresso =
@@ -67,8 +108,16 @@ export default async function ProjetoDetalhePage({
       />
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Etapas */}
+        {/* Conteúdo do projeto */}
         <div className="space-y-4 lg:col-span-2">
+          <Tabs defaultValue="etapas">
+            <TabsList>
+              <TabsTrigger value="etapas">Etapas</TabsTrigger>
+              <TabsTrigger value="documentos">Documentos</TabsTrigger>
+              <TabsTrigger value="comparativos">Comparativos</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="etapas">
           <Card>
             <CardHeader className="flex-row items-center justify-between space-y-0">
               <CardTitle className="flex items-center gap-2 text-base">
@@ -175,6 +224,188 @@ export default async function ProjetoDetalhePage({
               ) : null}
             </CardContent>
           </Card>
+            </TabsContent>
+
+            {/* Documentos */}
+            <TabsContent value="documentos">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <FileText className="size-4" /> Documentos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {documentos.length === 0 ? (
+                    <p className="py-4 text-center text-sm text-muted-foreground">
+                      Nenhum documento ainda.
+                    </p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {documentos.map((d) => (
+                        <li
+                          key={d.id}
+                          className="flex items-center justify-between gap-2 rounded-lg border p-3"
+                        >
+                          <a
+                            href={d.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex min-w-0 items-center gap-2 text-sm font-medium text-primary hover:underline"
+                          >
+                            <FileText className="size-4 shrink-0" />
+                            <span className="truncate">{d.nome}</span>
+                            <ExternalLink className="size-3 shrink-0" />
+                          </a>
+                          {lideranca ? (
+                            <form action={removerDocumento.bind(null, id)}>
+                              <input type="hidden" name="doc_id" value={d.id} />
+                              <Button
+                                type="submit"
+                                variant="ghost"
+                                size="icon"
+                                className="size-8"
+                                title="Remover documento"
+                              >
+                                <X className="size-4" />
+                              </Button>
+                            </form>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {lideranca ? (
+                    <form
+                      action={adicionarDocumento.bind(null, id)}
+                      className="space-y-3 border-t pt-4"
+                    >
+                      <p className="text-sm font-medium">Adicionar documento</p>
+                      <Input name="nome" placeholder="Nome do documento" />
+                      <Input
+                        name="url"
+                        type="url"
+                        placeholder="Cole um link (Google Drive, etc.)"
+                      />
+                      <FileInputBR name="arquivo" />
+                      <p className="text-xs text-muted-foreground">
+                        Envie um arquivo (até 30 MB) OU informe um link.
+                      </p>
+                      <div className="flex justify-end">
+                        <Button type="submit" size="sm">
+                          <Plus className="size-4" /> Adicionar
+                        </Button>
+                      </div>
+                    </form>
+                  ) : null}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Comparativos */}
+            <TabsContent value="comparativos">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Scale className="size-4" /> Comparativos de custo
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-xs text-muted-foreground">
+                    Compare fornecedores por item (stand, brindes, etc.). O menor
+                    valor de cada item fica em verde; o maior, em vermelho.
+                  </p>
+                  {comparativos.length === 0 ? (
+                    <p className="py-4 text-center text-sm text-muted-foreground">
+                      Nenhum comparativo ainda.
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b text-left text-xs text-muted-foreground">
+                            <th className="py-2 pr-2">Item</th>
+                            <th className="pr-2">Fornecedor</th>
+                            <th className="pr-2 text-right">Valor</th>
+                            <th className="pr-2">Obs.</th>
+                            <th />
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {comparativos.map((c) => {
+                            const min = minPorItem.get(c.item);
+                            const max = maxPorItem.get(c.item);
+                            const isMin = c.valor != null && c.valor === min;
+                            const isMax =
+                              c.valor != null &&
+                              c.valor === max &&
+                              min !== max;
+                            return (
+                              <tr key={c.id} className="border-b last:border-0">
+                                <td className="py-2 pr-2 font-medium">
+                                  {c.item}
+                                </td>
+                                <td className="pr-2">{c.fornecedor}</td>
+                                <td
+                                  className={cn(
+                                    "pr-2 text-right font-medium tabular-nums",
+                                    isMin && "text-emerald-600",
+                                    isMax && "text-destructive"
+                                  )}
+                                >
+                                  {formatarMoeda(c.valor)}
+                                </td>
+                                <td className="pr-2 text-xs text-muted-foreground">
+                                  {c.observacao ?? ""}
+                                </td>
+                                <td>
+                                  {lideranca ? (
+                                    <form
+                                      action={removerComparativo.bind(null, id)}
+                                    >
+                                      <input
+                                        type="hidden"
+                                        name="comp_id"
+                                        value={c.id}
+                                      />
+                                      <Button
+                                        type="submit"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="size-7"
+                                        title="Remover"
+                                      >
+                                        <X className="size-3.5" />
+                                      </Button>
+                                    </form>
+                                  ) : null}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  {lideranca ? (
+                    <form
+                      action={adicionarComparativo.bind(null, id)}
+                      className="grid gap-2 border-t pt-4 sm:grid-cols-4"
+                    >
+                      <Input name="item" placeholder="Item (ex.: Stand)" required />
+                      <Input name="fornecedor" placeholder="Fornecedor" required />
+                      <Input name="valor" inputMode="decimal" placeholder="Valor (R$)" />
+                      <Input name="observacao" placeholder="Observação" />
+                      <div className="flex justify-end sm:col-span-4">
+                        <Button type="submit" size="sm">
+                          <Plus className="size-4" /> Adicionar comparativo
+                        </Button>
+                      </div>
+                    </form>
+                  ) : null}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* Lateral */}

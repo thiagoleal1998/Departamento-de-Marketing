@@ -31,6 +31,15 @@ export function formatarDataHora(data: string | Date | null | undefined): string
   });
 }
 
+/** Formata um valor numérico como moeda brasileira (R$). */
+export function formatarMoeda(valor: number | null | undefined): string {
+  if (valor == null || Number.isNaN(valor)) return "—";
+  return valor.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
 /** Retorna as iniciais de um nome para avatares. */
 export function iniciais(nome: string | null | undefined): string {
   if (!nome) return "?";
