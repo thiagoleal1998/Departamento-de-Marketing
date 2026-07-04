@@ -12,6 +12,7 @@ import {
 } from "@/types";
 import type { Chamado } from "@/types/database";
 import { inserirChamado } from "./inserir";
+import { uploadReferencia } from "./upload";
 
 async function usuarioId() {
   const supabase = await criarClienteServidor();
@@ -68,6 +69,12 @@ export async function abrirChamado(formData: FormData) {
   const departamento =
     String(formData.get("departamento") ?? "").trim() || null;
   const segmento = String(formData.get("segmento") ?? "").trim() || null;
+  const formato = String(formData.get("formato") ?? "").trim() || null;
+  const subtipo = String(formData.get("subtipo") ?? "").trim() || null;
+  const material_grafico =
+    String(formData.get("material_grafico") ?? "").trim() || null;
+  const prazo_entrega =
+    String(formData.get("prazo_entrega") ?? "").trim() || null;
   const prioridade = String(
     formData.get("prioridade") ?? "media"
   ) as ChamadoPrioridade;
@@ -75,6 +82,10 @@ export async function abrirChamado(formData: FormData) {
   const prazo_sla = prazoRaw ? new Date(prazoRaw).toISOString() : null;
 
   if (!titulo) return;
+
+  const referencia = await uploadReferencia(
+    formData.get("referencia") as File | null
+  );
 
   // Herda a área do solicitante.
   const { data: perfil } = await supabase
@@ -90,6 +101,12 @@ export async function abrirChamado(formData: FormData) {
     categoria,
     departamento,
     segmento,
+    formato,
+    subtipo,
+    material_grafico,
+    prazo_entrega,
+    referencia_url: referencia?.url ?? null,
+    referencia_nome: referencia?.nome ?? null,
     prioridade,
     solicitante_id: uid,
     area_id: perfil?.area_id ?? null,

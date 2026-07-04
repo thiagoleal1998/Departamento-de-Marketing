@@ -12,6 +12,12 @@ const nextConfig = {
     // Versão do sistema (fonte única: package.json), visível na interface.
     NEXT_PUBLIC_APP_VERSION: pkg.version,
   },
+  experimental: {
+    // Permite upload de arquivos de referência maiores via Server Actions.
+    serverActions: {
+      bodySizeLimit: "30mb",
+    },
+  },
 };
 
 export default nextConfig;

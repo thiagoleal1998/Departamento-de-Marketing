@@ -30,6 +30,7 @@ export type ChamadoTipo =
   | "criacao_peca"
   | "alteracao"
   | "correcao"
+  | "material_grafico"
   | "revisao"
   | "aprovacao"
   | "suporte"
@@ -70,6 +71,7 @@ export const CHAMADO_TIPO_LABEL: Record<ChamadoTipo, string> = {
   criacao_peca: "Criação de peça",
   alteracao: "Alteração",
   correcao: "Correção",
+  material_grafico: "Material gráfico",
   revisao: "Revisão",
   aprovacao: "Aprovação",
   suporte: "Suporte",

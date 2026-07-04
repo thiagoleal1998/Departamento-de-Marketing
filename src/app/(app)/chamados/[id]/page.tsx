@@ -7,6 +7,7 @@ import {
   KanbanSquare,
   UserCog,
   Send,
+  Paperclip,
 } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import { ehLideranca } from "@/lib/permissions";
@@ -100,6 +101,17 @@ export default async function ChamadoDetalhePage({
               <p className="whitespace-pre-wrap text-sm text-foreground/90">
                 {chamado.descricao || "Sem descrição."}
               </p>
+              {chamado.referencia_url ? (
+                <a
+                  href={chamado.referencia_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-accent/40"
+                >
+                  <Paperclip className="size-4" />
+                  {chamado.referencia_nome ?? "Arquivo de referência"}
+                </a>
+              ) : null}
               <div className="grid grid-cols-2 gap-4 border-t pt-4 text-sm sm:grid-cols-4">
                 <div>
                   <p className="text-xs text-muted-foreground">Solicitante</p>
@@ -124,6 +136,36 @@ export default async function ChamadoDetalhePage({
                   <p className="text-xs text-muted-foreground">Canal</p>
                   <p className="font-medium">{chamado.categoria ?? "—"}</p>
                 </div>
+                {chamado.formato ? (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Formato</p>
+                    <p className="font-medium">{chamado.formato}</p>
+                  </div>
+                ) : null}
+                {chamado.subtipo ? (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Tipo de peça</p>
+                    <p className="font-medium">{chamado.subtipo}</p>
+                  </div>
+                ) : null}
+                {chamado.material_grafico ? (
+                  <div>
+                    <p className="text-xs text-muted-foreground">
+                      Material gráfico
+                    </p>
+                    <p className="font-medium">{chamado.material_grafico}</p>
+                  </div>
+                ) : null}
+                {chamado.prazo_entrega ? (
+                  <div>
+                    <p className="text-xs text-muted-foreground">
+                      Entrega do marketing
+                    </p>
+                    <p className="font-medium">
+                      {formatarData(chamado.prazo_entrega)}
+                    </p>
+                  </div>
+                ) : null}
                 <div>
                   <p className="text-xs text-muted-foreground">Responsável</p>
                   <p className="font-medium">

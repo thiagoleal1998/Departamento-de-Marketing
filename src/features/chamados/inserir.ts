@@ -2,7 +2,16 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Colunas adicionadas por migrations posteriores; se ainda não existirem no
 // banco, removemos do payload e tentamos de novo (não quebra a criação).
-const COLUNAS_OPCIONAIS = ["departamento", "segmento"];
+const COLUNAS_OPCIONAIS = [
+  "departamento",
+  "segmento",
+  "formato",
+  "subtipo",
+  "material_grafico",
+  "prazo_entrega",
+  "referencia_url",
+  "referencia_nome",
+];
 
 /**
  * Insere um chamado tolerando colunas opcionais ausentes (caso as migrations

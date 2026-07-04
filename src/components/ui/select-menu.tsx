@@ -17,6 +17,7 @@ export function SelectMenu({
   required = false,
   id,
   className,
+  onValueChange,
 }: {
   name: string;
   options: string[];
@@ -25,10 +26,17 @@ export function SelectMenu({
   required?: boolean;
   id?: string;
   className?: string;
+  onValueChange?: (valor: string) => void;
 }) {
   const [value, setValue] = useState(defaultValue);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  function selecionar(opt: string) {
+    setValue(opt);
+    setOpen(false);
+    onValueChange?.(opt);
+  }
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -96,10 +104,7 @@ export function SelectMenu({
                 type="button"
                 role="option"
                 aria-selected={selecionado}
-                onClick={() => {
-                  setValue(opt);
-                  setOpen(false);
-                }}
+                onClick={() => selecionar(opt)}
                 className={cn(
                   "flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors",
                   selecionado

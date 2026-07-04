@@ -39,6 +39,12 @@ export interface Chamado {
   status: ChamadoStatus;
   departamento: string | null;
   segmento: string | null;
+  formato: string | null;
+  subtipo: string | null;
+  material_grafico: string | null;
+  prazo_entrega: string | null;
+  referencia_url: string | null;
+  referencia_nome: string | null;
   solicitante_id: string | null;
   solicitante_nome: string | null;
   solicitante_email: string | null;

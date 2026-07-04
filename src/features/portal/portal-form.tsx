@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { SelectMenu } from "@/components/ui/select-menu";
-import { CHAMADO_TIPO_LABEL } from "@/types";
+import { CamposPecaChamado } from "@/features/chamados/campos-peca";
 
 const estadoInicial: EstadoPortal = {};
 
@@ -115,6 +115,8 @@ export function PortalForm({
             />
           </div>
 
+          <CamposPecaChamado />
+
           <div className="space-y-1.5">
             <Label htmlFor="descricao">Detalhes</Label>
             <Textarea
@@ -126,16 +128,6 @@ export function PortalForm({
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="tipo">Tipo</Label>
-              <Select id="tipo" name="tipo" defaultValue="criacao_peca">
-                {Object.entries(CHAMADO_TIPO_LABEL).map(([k, v]) => (
-                  <option key={k} value={k}>
-                    {v}
-                  </option>
-                ))}
-              </Select>
-            </div>
             <div className="space-y-1.5">
               <Label htmlFor="prioridade">Prioridade</Label>
               <Select id="prioridade" name="prioridade" defaultValue="media">
@@ -153,6 +145,10 @@ export function PortalForm({
                 options={canais}
                 placeholder="Selecione o canal"
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="prazo_entrega">Prazo de entrega</Label>
+              <Input id="prazo_entrega" name="prazo_entrega" type="date" />
             </div>
           </div>
 

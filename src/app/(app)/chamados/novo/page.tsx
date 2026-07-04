@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { SelectMenu } from "@/components/ui/select-menu";
-import { CHAMADO_TIPO_LABEL } from "@/types";
+import { CamposPecaChamado } from "@/features/chamados/campos-peca";
 
 export const dynamic = "force-dynamic";
 
@@ -68,6 +68,8 @@ export default async function NovoChamadoPage() {
               />
             </div>
 
+            <CamposPecaChamado />
+
             <div className="space-y-2">
               <Label htmlFor="descricao">Descrição</Label>
               <Textarea
@@ -79,16 +81,6 @@ export default async function NovoChamadoPage() {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="tipo">Tipo</Label>
-                <Select id="tipo" name="tipo" defaultValue="outro">
-                  {Object.entries(CHAMADO_TIPO_LABEL).map(([k, v]) => (
-                    <option key={k} value={k}>
-                      {v}
-                    </option>
-                  ))}
-                </Select>
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="prioridade">Prioridade</Label>
                 <Select id="prioridade" name="prioridade" defaultValue="media">
@@ -110,6 +102,12 @@ export default async function NovoChamadoPage() {
               <div className="space-y-2">
                 <Label htmlFor="prazo_sla">Prazo desejado</Label>
                 <Input id="prazo_sla" name="prazo_sla" type="date" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="prazo_entrega">
+                  Prazo de entrega do marketing
+                </Label>
+                <Input id="prazo_entrega" name="prazo_entrega" type="date" />
               </div>
             </div>
 

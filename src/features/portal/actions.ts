@@ -2,6 +2,7 @@
 
 import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { inserirChamado } from "@/features/chamados/inserir";
+import { uploadReferencia } from "@/features/chamados/upload";
 import type { ChamadoTipo, ChamadoPrioridade } from "@/types";
 
 export type EstadoPortal = { numero?: number; erro?: string };
@@ -33,6 +34,12 @@ export async function abrirChamadoPublico(
   const categoria = String(formData.get("categoria") ?? "").trim() || null;
   const departamento = String(formData.get("departamento") ?? "").trim() || null;
   const segmento = String(formData.get("segmento") ?? "").trim() || null;
+  const formato = String(formData.get("formato") ?? "").trim() || null;
+  const subtipo = String(formData.get("subtipo") ?? "").trim() || null;
+  const material_grafico =
+    String(formData.get("material_grafico") ?? "").trim() || null;
+  const prazo_entrega =
+    String(formData.get("prazo_entrega") ?? "").trim() || null;
 
   const tipoRaw = String(formData.get("tipo") ?? "outro") as ChamadoTipo;
   const tipo = TIPOS.includes(tipoRaw) ? tipoRaw : "outro";
@@ -56,6 +63,10 @@ export async function abrirChamadoPublico(
     return { erro: "Informe um e-mail válido." };
   }
 
+  const referencia = await uploadReferencia(
+    formData.get("referencia") as File | null
+  );
+
   const supabase = criarClienteAdmin();
   const { data, error } = await inserirChamado(supabase, {
     titulo,
@@ -63,6 +74,12 @@ export async function abrirChamadoPublico(
     categoria,
     departamento,
     segmento,
+    formato,
+    subtipo,
+    material_grafico,
+    prazo_entrega,
+    referencia_url: referencia?.url ?? null,
+    referencia_nome: referencia?.nome ?? null,
     tipo,
     prioridade,
     status: "aberto",
