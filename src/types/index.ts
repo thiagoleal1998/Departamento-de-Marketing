@@ -28,6 +28,8 @@ export type ChamadoPrioridade = "baixa" | "media" | "alta" | "urgente";
 
 export type ChamadoTipo =
   | "criacao_peca"
+  | "alteracao"
+  | "correcao"
   | "revisao"
   | "aprovacao"
   | "suporte"
@@ -66,6 +68,8 @@ export const CHAMADO_PRIORIDADE_META: Record<
 
 export const CHAMADO_TIPO_LABEL: Record<ChamadoTipo, string> = {
   criacao_peca: "Criação de peça",
+  alteracao: "Alteração",
+  correcao: "Correção",
   revisao: "Revisão",
   aprovacao: "Aprovação",
   suporte: "Suporte",

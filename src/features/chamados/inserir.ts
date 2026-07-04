@@ -14,8 +14,7 @@ export async function inserirChamado(
 ) {
   const atual: Record<string, unknown> = { ...payload };
 
-  // Tenta até remover cada coluna opcional citada em erro de schema.
-  for (let tentativa = 0; tentativa <= COLUNAS_OPCIONAIS.length; tentativa++) {
+  for (let tentativa = 0; tentativa < COLUNAS_OPCIONAIS.length + 3; tentativa++) {
     const res = await supabase
       .from("chamados")
       .insert(atual)
@@ -25,11 +24,21 @@ export async function inserirChamado(
     if (!res.error) return res;
 
     const msg = (res.error.message ?? "").toLowerCase();
-    const remover = COLUNAS_OPCIONAIS.find(
-      (c) => c in atual && msg.includes(c)
-    );
-    if (!remover) return res; // erro não relacionado a coluna opcional
-    delete atual[remover];
+
+    // Coluna opcional ainda inexistente (migration não aplicada): remove e tenta.
+    const remover = COLUNAS_OPCIONAIS.find((c) => c in atual && msg.includes(c));
+    if (remover) {
+      delete atual[remover];
+      continue;
+    }
+
+    // Tipo com valor de enum ainda não criado (0005 não aplicada): usa 'outro'.
+    if (msg.includes("chamado_tipo") && atual.tipo !== "outro") {
+      atual.tipo = "outro";
+      continue;
+    }
+
+    return res; // erro não tratável aqui
   }
 
   return supabase.from("chamados").insert(atual).select("id, numero").single();
