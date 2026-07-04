@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Ticket, GripVertical } from "lucide-react";
 import { moverTarefa } from "./actions";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,7 @@ const COLUNAS: TarefaStatus[] = [
 ];
 
 export function KanbanTarefas({ tarefas }: { tarefas: TarefaView[] }) {
+  const router = useRouter();
   const [lista, setLista] = useState(tarefas);
   const [arrastando, setArrastando] = useState<string | null>(null);
   const [sobre, setSobre] = useState<TarefaStatus | null>(null);
@@ -93,8 +94,15 @@ export function KanbanTarefas({ tarefas }: { tarefas: TarefaView[] }) {
                   draggable
                   onDragStart={() => setArrastando(t.id)}
                   onDragEnd={() => setArrastando(null)}
+                  onClick={() => {
+                    if (t.chamado_id) router.push(`/chamados/${t.chamado_id}`);
+                  }}
+                  role={t.chamado_id ? "button" : undefined}
                   className={cn(
-                    "group cursor-grab rounded-lg border bg-card p-3 shadow-sm active:cursor-grabbing",
+                    "group rounded-lg border bg-card p-3 shadow-sm transition-colors",
+                    t.chamado_id
+                      ? "cursor-pointer hover:border-primary/40 hover:bg-accent/30"
+                      : "cursor-grab active:cursor-grabbing",
                     arrastando === t.id && "opacity-50"
                   )}
                 >
@@ -116,13 +124,9 @@ export function KanbanTarefas({ tarefas }: { tarefas: TarefaView[] }) {
                         {t.prazo ? <span>{formatarData(t.prazo)}</span> : null}
                       </div>
                       {t.chamado_id ? (
-                        <Link
-                          href={`/chamados/${t.chamado_id}`}
-                          className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Ticket className="size-3" /> Ver chamado
-                        </Link>
+                        <span className="mt-2 inline-flex items-center gap-1 text-xs text-primary">
+                          <Ticket className="size-3" /> Abrir chamado
+                        </span>
                       ) : null}
                     </div>
                   </div>
