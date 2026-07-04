@@ -14,23 +14,52 @@ import type { Papel } from "@/types";
 
 const PAPEIS: Papel[] = ["gerente", "lider", "colaborador"];
 
-/** Atualiza papel, cargo, área e status de um usuário (somente Gerente via RLS). */
+/** Edita um usuário: nome, e-mail, papel, cargo, área e status (só Gerente). */
 export async function atualizarPerfilUsuario(formData: FormData) {
   const supabase = await criarClienteServidor();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+  const { data: eu } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (eu?.role !== "gerente") return;
 
   const id = String(formData.get("id") ?? "").trim();
   if (!id) return;
 
+  const nome = String(formData.get("nome") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const roleRaw = String(formData.get("role") ?? "colaborador") as Papel;
   const role = PAPEIS.includes(roleRaw) ? roleRaw : "colaborador";
   const cargo = String(formData.get("cargo") ?? "").trim() || null;
   const area_id = String(formData.get("area_id") ?? "").trim() || null;
   const ativo = formData.get("ativo") === "on";
+  if (!nome) return;
+
+  // E-mail atual (antes de atualizar) para saber se mudou.
+  const { data: atual } = await supabase
+    .from("profiles")
+    .select("email")
+    .eq("id", id)
+    .single();
+  const emailMudou = Boolean(
+    email && atual?.email?.toLowerCase() !== email
+  );
 
   await supabase
     .from("profiles")
-    .update({ role, cargo, area_id, ativo })
+    .update({ nome, email, role, cargo, area_id, ativo })
     .eq("id", id);
+
+  // Sincroniza o e-mail de login (auth) quando mudou.
+  if (emailMudou && servicoDisponivel()) {
+    const admin = criarClienteAdmin();
+    await admin.auth.admin.updateUserById(id, { email });
+  }
 
   revalidatePath("/configuracoes");
 }

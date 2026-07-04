@@ -52,8 +52,12 @@ on conflict do nothing;
 
 -- ---- Área e ajustes de perfil ---------------------------------------
 insert into areas (id, nome, lider_id)
-values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Marketing Digital', '22222222-2222-2222-2222-222222222222')
+values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Estratégico', '22222222-2222-2222-2222-222222222222')
 on conflict (id) do nothing;
+
+insert into areas (nome) values
+  ('Tático'), ('Operacional'), ('Criação'), ('Redes Sociais')
+on conflict do nothing;
 
 update profiles set area_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', cargo = 'Gerente de Marketing'
   where id = '11111111-1111-1111-1111-111111111111';

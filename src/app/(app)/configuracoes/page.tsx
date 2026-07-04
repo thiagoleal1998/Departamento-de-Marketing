@@ -52,29 +52,37 @@ export default async function ConfiguracoesPage() {
         {perfis.map((p) => (
           <Card key={p.id}>
             <CardContent className="pt-6">
-              <form
-                action={atualizarPerfilUsuario}
-                className="grid items-end gap-4 md:grid-cols-[1fr_auto]"
-              >
+              <form action={atualizarPerfilUsuario} className="space-y-4">
                 <input type="hidden" name="id" value={p.id} />
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <div className="flex items-center gap-3 sm:col-span-2 lg:col-span-1">
-                    <Avatar nome={p.nome} src={p.avatar_url} />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{p.nome}</p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {p.email}
-                      </p>
+
+                <div className="flex items-center gap-3">
+                  <Avatar nome={p.nome} src={p.avatar_url} className="size-10" />
+                  <div className="grid flex-1 gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label htmlFor={`nome-${p.id}`}>Nome</Label>
+                      <Input
+                        id={`nome-${p.id}`}
+                        name="nome"
+                        defaultValue={p.nome}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor={`email-${p.id}`}>E-mail</Label>
+                      <Input
+                        id={`email-${p.id}`}
+                        name="email"
+                        type="email"
+                        defaultValue={p.email}
+                      />
                     </div>
                   </div>
+                </div>
 
+                <div className="grid gap-3 sm:grid-cols-3">
                   <div className="space-y-1.5">
                     <Label htmlFor={`role-${p.id}`}>Papel</Label>
-                    <Select
-                      id={`role-${p.id}`}
-                      name="role"
-                      defaultValue={p.role}
-                    >
+                    <Select id={`role-${p.id}`} name="role" defaultValue={p.role}>
                       <option value="gerente">Gerente</option>
                       <option value="lider">Líder</option>
                       <option value="colaborador">Colaborador</option>
@@ -108,7 +116,7 @@ export default async function ConfiguracoesPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center justify-between gap-4 border-t pt-3">
                   <label className="flex items-center gap-2 text-sm">
                     <input
                       type="checkbox"
@@ -118,12 +126,14 @@ export default async function ConfiguracoesPage() {
                     />
                     Ativo
                   </label>
-                  <Button type="submit" size="sm">
-                    <Save className="size-4" /> Salvar
-                  </Button>
-                  {p.id !== usuario.id ? (
-                    <ExcluirUsuarioButton id={p.id} nome={p.nome} />
-                  ) : null}
+                  <div className="flex items-center gap-2">
+                    <Button type="submit" size="sm">
+                      <Save className="size-4" /> Salvar
+                    </Button>
+                    {p.id !== usuario.id ? (
+                      <ExcluirUsuarioButton id={p.id} nome={p.nome} />
+                    ) : null}
+                  </div>
                 </div>
               </form>
             </CardContent>
