@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, Target, Sparkles } from "lucide-react";
+import { ArrowLeft, Target, Sparkles, Clock } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import { ehLideranca } from "@/lib/permissions";
 import { obterFeedback, obterPerfil } from "@/features/desenvolvimento/data";
@@ -71,8 +71,16 @@ export default async function FeedbackDetalhePage({
         }
       />
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <FeedbackStatusBadge status={feedback.status} />
+        {roteiro.momento ? (
+          <span className="inline-flex items-center gap-1 rounded-full border border-warm/30 bg-warm/10 px-2.5 py-0.5 text-xs font-medium text-warm">
+            <Clock className="size-3" />
+            {roteiro.momento === "durante"
+              ? "Registrado durante a conversa"
+              : "Preparado antes da conversa"}
+          </span>
+        ) : null}
       </div>
 
       {/* Banner filosofia */}

@@ -187,8 +187,13 @@ export interface PlanoAcao {
 /* Estruturas JSONB dos roteiros                                       */
 /* ------------------------------------------------------------------ */
 
+/** Quando o roteiro está sendo preenchido em relação à conversa. */
+export type MomentoFeedback = "antes" | "durante";
+
 /** Roteiro guiado de feedback (uma chave por etapa). */
 export interface RoteiroFeedback {
+  /** Preparação antes da conversa ou registro durante a conversa. */
+  momento: MomentoFeedback;
   abertura: string;
   pontos_positivos: string;
   melhorias_tecnicas: string;

@@ -2,6 +2,20 @@ import type { RoteiroFeedback, AnotacoesUmAUm } from "@/types/database";
 
 export const FRASE_GUIA = "O foco não é convencer. É gerar consciência.";
 
+/** Opções do momento em que o roteiro está sendo preenchido. */
+export const MOMENTO_OPCOES = [
+  {
+    valor: "antes" as const,
+    titulo: "Antes da conversa",
+    descricao: "Estou preparando o roteiro para conduzir a conversa depois.",
+  },
+  {
+    valor: "durante" as const,
+    titulo: "Durante a conversa",
+    descricao: "Estou registrando enquanto a conversa acontece.",
+  },
+];
+
 export type TipoCampo = "textarea" | "text" | "checkbox" | "date";
 
 export interface CampoRoteiro {
@@ -194,6 +208,7 @@ export const ETAPAS_FEEDBACK: EtapaFeedback[] = [
 ];
 
 export const ROTEIRO_VAZIO: RoteiroFeedback = {
+  momento: "antes",
   abertura: "",
   pontos_positivos: "",
   melhorias_tecnicas: "",
