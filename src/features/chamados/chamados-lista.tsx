@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import {
   ChamadoStatusBadge,
   ChamadoPrioridadeBadge,
+  AprovacaoBadge,
 } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { cn, formatarData } from "@/lib/utils";
@@ -21,6 +22,7 @@ import {
   type ChamadoStatus,
   type ChamadoPrioridade,
   type ChamadoTipo,
+  type AprovacaoStatus,
 } from "@/types";
 
 export interface ChamadoView {
@@ -30,6 +32,7 @@ export interface ChamadoView {
   tipo: ChamadoTipo;
   prioridade: ChamadoPrioridade;
   status: ChamadoStatus;
+  aprovacao: AprovacaoStatus;
   departamento: string | null;
   segmento: string | null;
   solicitante_nome: string;
@@ -74,7 +77,12 @@ function LinhaChamado({
         <p className="text-sm font-medium leading-tight">
           <span className="text-muted-foreground">#{c.numero}</span> {c.titulo}
         </p>
-        <ChamadoPrioridadeBadge prioridade={c.prioridade} />
+        <div className="flex shrink-0 items-center gap-1.5">
+          {c.aprovacao !== "aprovado" ? (
+            <AprovacaoBadge status={c.aprovacao} />
+          ) : null}
+          <ChamadoPrioridadeBadge prioridade={c.prioridade} />
+        </div>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <span>{CHAMADO_TIPO_LABEL[c.tipo]}</span>

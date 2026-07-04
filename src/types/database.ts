@@ -3,6 +3,7 @@ import type {
   ChamadoStatus,
   ChamadoPrioridade,
   ChamadoTipo,
+  AprovacaoStatus,
   TarefaStatus,
   FeedbackStatus,
   PlanoAcaoStatus,
@@ -37,6 +38,13 @@ export interface Chamado {
   categoria: string | null;
   prioridade: ChamadoPrioridade;
   status: ChamadoStatus;
+  aprovacao: AprovacaoStatus;
+  aprovacao_justificativa: string | null;
+  aprovado_por: string | null;
+  aprovado_em: string | null;
+  aceito_por: string | null;
+  aceite_justificativa: string | null;
+  aceito_em: string | null;
   departamento: string | null;
   segmento: string | null;
   formato: string | null;

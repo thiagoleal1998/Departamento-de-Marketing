@@ -1,5 +1,12 @@
 import { redirect } from "next/navigation";
-import { Ticket, Clock, CheckCircle2, AlertTriangle, Timer } from "lucide-react";
+import {
+  Ticket,
+  Clock,
+  CheckCircle2,
+  AlertTriangle,
+  Timer,
+  Stamp,
+} from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import { pode } from "@/lib/permissions";
 import { criarClienteServidor } from "@/lib/supabase/server";
@@ -59,6 +66,9 @@ export default async function GestaoPage() {
   const emAndamento = chamados.filter((c) => c.status === "em_andamento");
   const atrasados = abertos.filter(
     (c) => c.prazo_sla && new Date(c.prazo_sla).getTime() < Date.now()
+  );
+  const aguardandoAprovacao = chamados.filter(
+    (c) => (c.aprovacao ?? "pendente") === "pendente"
   );
 
   // Tempo médio de resolução (dias) usando updated_at como proxy de conclusão.
@@ -130,6 +140,13 @@ export default async function GestaoPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <DataCard
+          titulo="Aguardando aprovação"
+          valor={aguardandoAprovacao.length}
+          icone={Stamp}
+          descricao="Pendentes do gerente"
+          href="/chamados"
+        />
         <DataCard
           titulo="Tempo médio de resolução"
           valor={tempoMedio === "—" ? "—" : `${tempoMedio} dias`}

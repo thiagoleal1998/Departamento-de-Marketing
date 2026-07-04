@@ -8,6 +8,7 @@ import {
   UserCog,
   Send,
   Paperclip,
+  CheckCheck,
 } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import { ehLideranca } from "@/lib/permissions";
@@ -21,6 +22,9 @@ import {
   comentarChamado,
   triarChamado,
   converterEmTarefa,
+  aceitarChamado,
+  aprovarChamado,
+  reprovarChamado,
 } from "@/features/chamados/actions";
 import { PainelStatus } from "@/features/chamados/painel-status";
 import { PageHeader } from "@/components/shared/page-header";
@@ -39,6 +43,7 @@ import { Avatar } from "@/components/ui/avatar";
 import {
   ChamadoStatusBadge,
   ChamadoPrioridadeBadge,
+  AprovacaoBadge,
 } from "@/components/shared/status-badge";
 import { formatarDataHora, formatarData } from "@/lib/utils";
 import { CHAMADO_TIPO_LABEL } from "@/types";
@@ -65,6 +70,15 @@ export default async function ChamadoDetalhePage({
   const lideranca = ehLideranca(usuario.role);
   const ehResponsavel = chamado.responsavel_id === usuario.id;
   const podeEditarStatus = lideranca || ehResponsavel;
+  const ehGerente = usuario.role === "gerente";
+  const podeAceitar = lideranca && !chamado.aceito_por;
+  const aprovacao = chamado.aprovacao ?? "pendente";
+  const aceitoNome = chamado.aceito_por
+    ? perfis.get(chamado.aceito_por)?.nome
+    : null;
+  const aprovadoNome = chamado.aprovado_por
+    ? perfis.get(chamado.aprovado_por)?.nome
+    : null;
 
   const solicitanteNome =
     (chamado.solicitante_id ? perfis.get(chamado.solicitante_id)?.nome : null) ??
@@ -246,6 +260,111 @@ export default async function ChamadoDetalhePage({
 
         {/* Coluna lateral */}
         <div className="space-y-6">
+          {/* Aprovação */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CheckCheck className="size-4" /> Aprovação
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <AprovacaoBadge status={aprovacao} />
+
+              {aceitoNome ? (
+                <div className="rounded-md border bg-muted/40 p-2 text-xs">
+                  <p className="font-medium">
+                    Aceito por {aceitoNome}
+                    {chamado.aceito_em
+                      ? ` · ${formatarData(chamado.aceito_em)}`
+                      : ""}
+                  </p>
+                  {chamado.aceite_justificativa ? (
+                    <p className="mt-0.5 text-muted-foreground">
+                      “{chamado.aceite_justificativa}”
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {aprovadoNome ? (
+                <div className="rounded-md border bg-muted/40 p-2 text-xs">
+                  <p className="font-medium">
+                    {aprovacao === "reprovado" ? "Reprovado" : "Aprovado"} por{" "}
+                    {aprovadoNome}
+                    {chamado.aprovado_em
+                      ? ` · ${formatarData(chamado.aprovado_em)}`
+                      : ""}
+                  </p>
+                  {chamado.aprovacao_justificativa ? (
+                    <p className="mt-0.5 text-muted-foreground">
+                      “{chamado.aprovacao_justificativa}”
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {/* Líder aceita (justificativa obrigatória) */}
+              {podeAceitar ? (
+                <form
+                  action={aceitarChamado.bind(null, id)}
+                  className="space-y-2 border-t pt-3"
+                >
+                  <Label htmlFor="just_aceite" className="text-xs">
+                    Aceitar a demanda — justifique (obrigatório)
+                  </Label>
+                  <Textarea
+                    id="just_aceite"
+                    name="justificativa"
+                    rows={2}
+                    required
+                    placeholder="Por que está aceitando iniciar agora?"
+                  />
+                  <Button type="submit" size="sm" className="w-full">
+                    Aceitar e iniciar
+                  </Button>
+                </form>
+              ) : null}
+
+              {/* Gerente aprova/reprova (justificativa opcional) */}
+              {ehGerente && aprovacao === "pendente" ? (
+                <form
+                  action={aprovarChamado.bind(null, id)}
+                  className="space-y-2 border-t pt-3"
+                >
+                  <Label htmlFor="just_aprov" className="text-xs">
+                    Justificativa (opcional)
+                  </Label>
+                  <Textarea
+                    id="just_aprov"
+                    name="justificativa"
+                    rows={2}
+                    placeholder="Observação da decisão (opcional)"
+                  />
+                  <div className="flex gap-2">
+                    <Button type="submit" size="sm" className="flex-1">
+                      Aprovar
+                    </Button>
+                    <Button
+                      type="submit"
+                      size="sm"
+                      variant="destructive"
+                      className="flex-1"
+                      formAction={reprovarChamado.bind(null, id)}
+                    >
+                      Reprovar
+                    </Button>
+                  </div>
+                </form>
+              ) : null}
+
+              {!lideranca ? (
+                <p className="text-xs text-muted-foreground">
+                  A liderança avalia a aprovação deste chamado.
+                </p>
+              ) : null}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Status</CardTitle>

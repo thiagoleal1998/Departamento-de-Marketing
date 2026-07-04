@@ -31,6 +31,7 @@ export default async function ChamadosPage({
     tipo: c.tipo,
     prioridade: c.prioridade,
     status: c.status,
+    aprovacao: c.aprovacao ?? "pendente",
     departamento: c.departamento,
     segmento: c.segmento,
     solicitante_nome:

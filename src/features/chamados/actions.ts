@@ -56,6 +56,38 @@ async function notificar(
   });
 }
 
+/** Perfil (id, nome, papel) do usuário autenticado. */
+async function perfilAtual() {
+  const supabase = await criarClienteServidor();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, nome, role")
+    .eq("id", user.id)
+    .single();
+  return data as { id: string; nome: string; role: string } | null;
+}
+
+/** Notifica todos os gerentes (exceto quem disparou). */
+async function notificarGerentes(
+  tipo: string,
+  titulo: string,
+  link: string,
+  exceto?: string
+) {
+  const supabase = await criarClienteServidor();
+  const { data } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("role", "gerente");
+  for (const g of (data as { id: string }[] | null) ?? []) {
+    if (g.id !== exceto) await notificar(g.id, tipo, titulo, link);
+  }
+}
+
 export async function abrirChamado(formData: FormData) {
   const uid = await usuarioId();
   if (!uid) redirect("/login");
@@ -312,4 +344,117 @@ export async function converterEmTarefa(chamadoId: string) {
 
   revalidatePath(`/chamados/${chamadoId}`);
   revalidatePath("/operacional");
+}
+
+/**
+ * Líder aceita a demanda para começar (justificativa OBRIGATÓRIA).
+ * A aprovação continua pendente até o OK de um gerente.
+ */
+export async function aceitarChamado(chamadoId: string, formData: FormData) {
+  const perfil = await perfilAtual();
+  if (!perfil) redirect("/login");
+  if (perfil.role !== "gerente" && perfil.role !== "lider") return;
+
+  const justificativa = String(formData.get("justificativa") ?? "").trim();
+  if (!justificativa) return; // obrigatória para o líder
+
+  const supabase = await criarClienteServidor();
+  const { data: chamado } = await supabase
+    .from("chamados")
+    .select("numero, solicitante_id")
+    .eq("id", chamadoId)
+    .single();
+
+  await supabase
+    .from("chamados")
+    .update({
+      aceito_por: perfil.id,
+      aceite_justificativa: justificativa,
+      aceito_em: new Date().toISOString(),
+      status: "em_andamento",
+    })
+    .eq("id", chamadoId);
+
+  await registrarHistorico(chamadoId, perfil.id, "aceite", null, "aceito pelo líder");
+
+  if (chamado) {
+    await notificarGerentes(
+      "chamado_aceite",
+      `Chamado #${chamado.numero} aceito por ${perfil.nome} — aguardando sua aprovação`,
+      `/chamados/${chamadoId}`,
+      perfil.id
+    );
+    if (chamado.solicitante_id && chamado.solicitante_id !== perfil.id) {
+      await notificar(
+        chamado.solicitante_id,
+        "chamado_aceite",
+        `Seu chamado #${chamado.numero} foi aceito e está em andamento`,
+        `/chamados/${chamadoId}`
+      );
+    }
+  }
+
+  revalidatePath(`/chamados/${chamadoId}`);
+  revalidatePath("/chamados");
+}
+
+/** Gerente decide a aprovação (justificativa OPCIONAL). */
+async function decidirAprovacao(
+  chamadoId: string,
+  formData: FormData,
+  decisao: "aprovado" | "reprovado"
+) {
+  const perfil = await perfilAtual();
+  if (!perfil) redirect("/login");
+  if (perfil.role !== "gerente") return; // só gerente aprova/reprova
+
+  const justificativa =
+    String(formData.get("justificativa") ?? "").trim() || null;
+
+  const supabase = await criarClienteServidor();
+  const { data: chamado } = await supabase
+    .from("chamados")
+    .select("numero, solicitante_id, responsavel_id")
+    .eq("id", chamadoId)
+    .single();
+
+  await supabase
+    .from("chamados")
+    .update({
+      aprovacao: decisao,
+      aprovacao_justificativa: justificativa,
+      aprovado_por: perfil.id,
+      aprovado_em: new Date().toISOString(),
+    })
+    .eq("id", chamadoId);
+
+  const rotulo = decisao === "aprovado" ? "aprovado" : "reprovado";
+  await registrarHistorico(chamadoId, perfil.id, "aprovacao", null, rotulo);
+
+  if (chamado) {
+    const alvos = new Set(
+      [chamado.solicitante_id, chamado.responsavel_id].filter(
+        (id): id is string => Boolean(id) && id !== perfil.id
+      )
+    );
+    for (const alvo of alvos) {
+      await notificar(
+        alvo,
+        "chamado_aprovacao",
+        `Chamado #${chamado.numero} foi ${rotulo} por ${perfil.nome}`,
+        `/chamados/${chamadoId}`
+      );
+    }
+  }
+
+  revalidatePath(`/chamados/${chamadoId}`);
+  revalidatePath("/chamados");
+}
+
+export async function aprovarChamado(chamadoId: string, formData: FormData) {
+  return decidirAprovacao(chamadoId, formData, "aprovado");
+}
+
+export async function reprovarChamado(chamadoId: string, formData: FormData) {
+  return decidirAprovacao(chamadoId, formData, "reprovado");
 }

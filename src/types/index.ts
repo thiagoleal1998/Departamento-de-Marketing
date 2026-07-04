@@ -26,6 +26,17 @@ export type ChamadoStatus =
 
 export type ChamadoPrioridade = "baixa" | "media" | "alta" | "urgente";
 
+export type AprovacaoStatus = "pendente" | "aprovado" | "reprovado";
+
+export const APROVACAO_META: Record<
+  AprovacaoStatus,
+  { label: string; variant: BadgeVariant }
+> = {
+  pendente: { label: "Aguardando aprovação", variant: "warning" },
+  aprovado: { label: "Aprovado", variant: "success" },
+  reprovado: { label: "Reprovado", variant: "danger" },
+};
+
 export type ChamadoTipo =
   | "criacao_peca"
   | "alteracao"
