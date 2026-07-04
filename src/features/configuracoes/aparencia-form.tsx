@@ -69,12 +69,14 @@ export function AparenciaForm({
   logo,
   departamentos,
   segmentos,
+  canais,
   textos,
 }: {
   cor: string;
   logo: string | null;
   departamentos: string[];
   segmentos: string[];
+  canais: string[];
   textos: TextosConfig;
 }) {
   const [corAtual, setCorAtual] = useState(cor);
@@ -292,6 +294,29 @@ export function AparenciaForm({
           />
           <p className="text-xs text-muted-foreground">
             Um segmento por linha. Essas opções aparecem no formulário de chamado
+            (interno e portal).
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Canais */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Canais</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Label htmlFor="canais">
+            Opções do campo &quot;Canal&quot; nos chamados
+          </Label>
+          <Textarea
+            id="canais"
+            name="canais"
+            rows={canais.length + 2}
+            defaultValue={canais.join("\n")}
+            placeholder={"Um canal por linha"}
+          />
+          <p className="text-xs text-muted-foreground">
+            Um canal por linha. Essas opções aparecem no formulário de chamado
             (interno e portal).
           </p>
         </CardContent>

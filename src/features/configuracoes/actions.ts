@@ -7,6 +7,7 @@ import {
   TEXTOS_PADRAO,
   DEPARTAMENTOS_PADRAO,
   SEGMENTOS_PADRAO,
+  CANAIS_PADRAO,
   type TextosConfig,
 } from "@/lib/config";
 import type { Papel } from "@/types";
@@ -133,6 +134,14 @@ export async function salvarAparencia(
     .filter(Boolean);
   const listaSegmentos = segmentos.length > 0 ? segmentos : SEGMENTOS_PADRAO;
 
+  // Canais: um por linha.
+  const canaisRaw = String(formData.get("canais") ?? "");
+  const canais = canaisRaw
+    .split("\n")
+    .map((c) => c.trim())
+    .filter(Boolean);
+  const listaCanais = canais.length > 0 ? canais : CANAIS_PADRAO;
+
   const { error } = await supabase.from("config_sistema").upsert({
     id: true,
     cor_primaria,
@@ -141,6 +150,7 @@ export async function salvarAparencia(
       logo_url,
       departamentos: listaDepartamentos,
       segmentos: listaSegmentos,
+      canais: listaCanais,
     },
     updated_at: new Date().toISOString(),
   });

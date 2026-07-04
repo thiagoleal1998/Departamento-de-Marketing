@@ -18,10 +18,12 @@ export function PortalForm({
   titulo,
   departamentos,
   segmentos,
+  canais,
 }: {
   titulo: string;
   departamentos: string[];
   segmentos: string[];
+  canais: string[];
 }) {
   const [estado, formAction, pendente] = useActionState(
     abrirChamadoPublico,
@@ -144,11 +146,12 @@ export function PortalForm({
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="categoria">Área / Canal</Label>
-              <Input
+              <Label htmlFor="categoria">Canal</Label>
+              <SelectMenu
                 id="categoria"
                 name="categoria"
-                placeholder="Ex.: Instagram, Loja X"
+                options={canais}
+                placeholder="Selecione o canal"
               />
             </div>
           </div>

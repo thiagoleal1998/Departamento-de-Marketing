@@ -17,8 +17,21 @@ export interface ConfigSistema {
   logo: string | null;
   departamentos: string[];
   segmentos: string[];
+  canais: string[];
   textos: TextosConfig;
 }
+
+/** Canais de divulgação (padrão). */
+export const CANAIS_PADRAO: string[] = [
+  "WhatsApp",
+  "E-mail",
+  "Infotera",
+  "Site Litoral",
+  "Landing Page",
+  "Facebook / Instagram",
+  "Youtube",
+  "TikTok",
+];
 
 /** Segmentos / público-alvo (padrão). */
 export const SEGMENTOS_PADRAO: string[] = [
@@ -83,6 +96,7 @@ export async function obterConfig(): Promise<ConfigSistema> {
       logo: null,
       departamentos: DEPARTAMENTOS_PADRAO,
       segmentos: SEGMENTOS_PADRAO,
+      canais: CANAIS_PADRAO,
       textos: TEXTOS_PADRAO,
     };
   }
@@ -100,8 +114,9 @@ export async function obterConfig(): Promise<ConfigSistema> {
       logo_url?: string | null;
       departamentos?: string[];
       segmentos?: string[];
+      canais?: string[];
     };
-    const { logo_url, departamentos, segmentos, ...textosDb } = raw;
+    const { logo_url, departamentos, segmentos, canais, ...textosDb } = raw;
     return {
       cor: data?.cor_primaria || COR_PADRAO,
       logo: logo_url ?? null,
@@ -113,6 +128,8 @@ export async function obterConfig(): Promise<ConfigSistema> {
         Array.isArray(segmentos) && segmentos.length > 0
           ? segmentos
           : SEGMENTOS_PADRAO,
+      canais:
+        Array.isArray(canais) && canais.length > 0 ? canais : CANAIS_PADRAO,
       textos: { ...TEXTOS_PADRAO, ...textosDb },
     };
   } catch {
@@ -121,6 +138,7 @@ export async function obterConfig(): Promise<ConfigSistema> {
       logo: null,
       departamentos: DEPARTAMENTOS_PADRAO,
       segmentos: SEGMENTOS_PADRAO,
+      canais: CANAIS_PADRAO,
       textos: TEXTOS_PADRAO,
     };
   }

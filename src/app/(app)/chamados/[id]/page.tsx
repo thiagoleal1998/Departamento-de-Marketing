@@ -95,11 +95,6 @@ export default async function ChamadoDetalhePage({
             <CardHeader className="flex-row flex-wrap items-center gap-2 space-y-0">
               <ChamadoStatusBadge status={chamado.status} />
               <ChamadoPrioridadeBadge prioridade={chamado.prioridade} />
-              {chamado.categoria ? (
-                <span className="text-xs text-muted-foreground">
-                  {chamado.categoria}
-                </span>
-              ) : null}
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="whitespace-pre-wrap text-sm text-foreground/90">
@@ -124,6 +119,10 @@ export default async function ChamadoDetalhePage({
                     Segmento / Público-alvo
                   </p>
                   <p className="font-medium">{chamado.segmento ?? "—"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Canal</p>
+                  <p className="font-medium">{chamado.categoria ?? "—"}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Responsável</p>

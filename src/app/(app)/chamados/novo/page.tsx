@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 export default async function NovoChamadoPage() {
   await exigirUsuario();
-  const { departamentos, segmentos } = await obterConfig();
+  const { departamentos, segmentos, canais } = await obterConfig();
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -99,11 +99,12 @@ export default async function NovoChamadoPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="categoria">Categoria</Label>
-                <Input
+                <Label htmlFor="categoria">Canal</Label>
+                <SelectMenu
                   id="categoria"
                   name="categoria"
-                  placeholder="Ex.: Redes sociais, Site, E-mail"
+                  options={canais}
+                  placeholder="Selecione o canal"
                 />
               </div>
               <div className="space-y-2">
