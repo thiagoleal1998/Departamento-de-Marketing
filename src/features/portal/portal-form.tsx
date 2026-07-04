@@ -17,9 +17,11 @@ const estadoInicial: EstadoPortal = {};
 export function PortalForm({
   titulo,
   departamentos,
+  segmentos,
 }: {
   titulo: string;
   departamentos: string[];
+  segmentos: string[];
 }) {
   const [estado, formAction, pendente] = useActionState(
     abrirChamadoPublico,
@@ -86,6 +88,17 @@ export function PortalForm({
               name="departamento"
               options={departamentos}
               placeholder="Selecione o seu departamento"
+              required
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="segmento">Segmento / Público-alvo *</Label>
+            <SelectMenu
+              id="segmento"
+              name="segmento"
+              options={segmentos}
+              placeholder="Selecione o segmento"
               required
             />
           </div>

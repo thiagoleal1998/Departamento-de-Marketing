@@ -1,6 +1,7 @@
 "use server";
 
 import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
+import { inserirChamado } from "@/features/chamados/inserir";
 import type { ChamadoTipo, ChamadoPrioridade } from "@/types";
 
 export type EstadoPortal = { numero?: number; erro?: string };
@@ -31,6 +32,7 @@ export async function abrirChamadoPublico(
   const descricao = String(formData.get("descricao") ?? "").trim() || null;
   const categoria = String(formData.get("categoria") ?? "").trim() || null;
   const departamento = String(formData.get("departamento") ?? "").trim() || null;
+  const segmento = String(formData.get("segmento") ?? "").trim() || null;
 
   const tipoRaw = String(formData.get("tipo") ?? "outro") as ChamadoTipo;
   const tipo = TIPOS.includes(tipoRaw) ? tipoRaw : "outro";
@@ -47,37 +49,27 @@ export async function abrirChamadoPublico(
   if (!departamento) {
     return { erro: "Selecione o departamento solicitante." };
   }
+  if (!segmento) {
+    return { erro: "Selecione o segmento / público-alvo." };
+  }
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return { erro: "Informe um e-mail válido." };
   }
 
   const supabase = criarClienteAdmin();
-  const payload = {
+  const { data, error } = await inserirChamado(supabase, {
     titulo,
     descricao,
     categoria,
     departamento,
+    segmento,
     tipo,
     prioridade,
     status: "aberto",
     origem: "portal",
     solicitante_nome: nome,
     solicitante_email: email,
-  };
-  let { data, error } = await supabase
-    .from("chamados")
-    .insert(payload)
-    .select("id, numero")
-    .single();
-  // Resiliência: se a coluna departamento ainda não existir, tenta sem ela.
-  if (error && /departamento/i.test(error.message ?? "")) {
-    const { departamento: _omit, ...semDep } = payload;
-    ({ data, error } = await supabase
-      .from("chamados")
-      .insert(semDep)
-      .select("id, numero")
-      .single());
-  }
+  });
 
   if (error || !data) {
     return {

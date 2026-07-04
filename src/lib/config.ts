@@ -16,8 +16,22 @@ export interface ConfigSistema {
   cor: string;
   logo: string | null;
   departamentos: string[];
+  segmentos: string[];
   textos: TextosConfig;
 }
+
+/** Segmentos / público-alvo (padrão). */
+export const SEGMENTOS_PADRAO: string[] = [
+  "B2C (Contempla todos os B2C)",
+  "B2C - Repeaters",
+  "B2B (Contempla os três segmentos repeaters)",
+  "B2B - Agências",
+  "B2B - Agentes",
+  "B2B - Promotores",
+  "Interno - Toda a empresa",
+  "Interno - Reservas",
+  "Interno - Back Office",
+];
 
 /** Departamentos/setores solicitantes (padrão, em ordem alfabética). */
 export const DEPARTAMENTOS_PADRAO: string[] = [
@@ -68,6 +82,7 @@ export async function obterConfig(): Promise<ConfigSistema> {
       cor: COR_PADRAO,
       logo: null,
       departamentos: DEPARTAMENTOS_PADRAO,
+      segmentos: SEGMENTOS_PADRAO,
       textos: TEXTOS_PADRAO,
     };
   }
@@ -79,13 +94,14 @@ export async function obterConfig(): Promise<ConfigSistema> {
       .eq("id", true)
       .single();
 
-    // Logo e lista de departamentos ficam dentro do jsonb `textos` (chaves
-    // logo_url e departamentos) para não exigir alteração de schema.
+    // Logo e listas (departamentos, segmentos) ficam dentro do jsonb `textos`
+    // para não exigir alteração de schema.
     const raw = (data?.textos ?? {}) as Partial<TextosConfig> & {
       logo_url?: string | null;
       departamentos?: string[];
+      segmentos?: string[];
     };
-    const { logo_url, departamentos, ...textosDb } = raw;
+    const { logo_url, departamentos, segmentos, ...textosDb } = raw;
     return {
       cor: data?.cor_primaria || COR_PADRAO,
       logo: logo_url ?? null,
@@ -93,6 +109,10 @@ export async function obterConfig(): Promise<ConfigSistema> {
         Array.isArray(departamentos) && departamentos.length > 0
           ? departamentos
           : DEPARTAMENTOS_PADRAO,
+      segmentos:
+        Array.isArray(segmentos) && segmentos.length > 0
+          ? segmentos
+          : SEGMENTOS_PADRAO,
       textos: { ...TEXTOS_PADRAO, ...textosDb },
     };
   } catch {
@@ -100,6 +120,7 @@ export async function obterConfig(): Promise<ConfigSistema> {
       cor: COR_PADRAO,
       logo: null,
       departamentos: DEPARTAMENTOS_PADRAO,
+      segmentos: SEGMENTOS_PADRAO,
       textos: TEXTOS_PADRAO,
     };
   }

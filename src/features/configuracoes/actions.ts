@@ -6,6 +6,7 @@ import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import {
   TEXTOS_PADRAO,
   DEPARTAMENTOS_PADRAO,
+  SEGMENTOS_PADRAO,
   type TextosConfig,
 } from "@/lib/config";
 import type { Papel } from "@/types";
@@ -124,10 +125,23 @@ export async function salvarAparencia(
   const listaDepartamentos =
     departamentos.length > 0 ? departamentos : DEPARTAMENTOS_PADRAO;
 
+  // Segmentos / público-alvo: um por linha.
+  const segmentosRaw = String(formData.get("segmentos") ?? "");
+  const segmentos = segmentosRaw
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const listaSegmentos = segmentos.length > 0 ? segmentos : SEGMENTOS_PADRAO;
+
   const { error } = await supabase.from("config_sistema").upsert({
     id: true,
     cor_primaria,
-    textos: { ...textos, logo_url, departamentos: listaDepartamentos },
+    textos: {
+      ...textos,
+      logo_url,
+      departamentos: listaDepartamentos,
+      segmentos: listaSegmentos,
+    },
     updated_at: new Date().toISOString(),
   });
 

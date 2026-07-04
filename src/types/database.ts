@@ -38,6 +38,7 @@ export interface Chamado {
   prioridade: ChamadoPrioridade;
   status: ChamadoStatus;
   departamento: string | null;
+  segmento: string | null;
   solicitante_id: string | null;
   solicitante_nome: string | null;
   solicitante_email: string | null;

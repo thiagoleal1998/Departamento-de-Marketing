@@ -30,6 +30,7 @@ export interface ChamadoView {
   prioridade: ChamadoPrioridade;
   status: ChamadoStatus;
   departamento: string | null;
+  segmento: string | null;
   solicitante_nome: string;
   responsavel_nome: string | null;
   prazo_sla: string | null;
@@ -61,6 +62,12 @@ function LinhaChamado({ c }: { c: ChamadoView }) {
           <>
             <span>•</span>
             <span>{c.departamento}</span>
+          </>
+        ) : null}
+        {c.segmento ? (
+          <>
+            <span>•</span>
+            <span>{c.segmento}</span>
           </>
         ) : null}
         <span>•</span>

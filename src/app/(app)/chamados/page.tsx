@@ -31,6 +31,7 @@ export default async function ChamadosPage({
     prioridade: c.prioridade,
     status: c.status,
     departamento: c.departamento,
+    segmento: c.segmento,
     solicitante_nome:
       (c.solicitante_id ? perfis.get(c.solicitante_id)?.nome : null) ??
       c.solicitante_nome ??

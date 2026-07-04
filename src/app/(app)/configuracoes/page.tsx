@@ -135,6 +135,7 @@ export default async function ConfiguracoesPage() {
             cor={config.cor}
             logo={config.logo}
             departamentos={config.departamentos}
+            segmentos={config.segmentos}
             textos={config.textos}
           />
         </TabsContent>

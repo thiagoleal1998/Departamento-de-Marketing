@@ -68,11 +68,13 @@ export function AparenciaForm({
   cor,
   logo,
   departamentos,
+  segmentos,
   textos,
 }: {
   cor: string;
   logo: string | null;
   departamentos: string[];
+  segmentos: string[];
   textos: TextosConfig;
 }) {
   const [corAtual, setCorAtual] = useState(cor);
@@ -268,6 +270,29 @@ export function AparenciaForm({
           <p className="text-xs text-muted-foreground">
             Um departamento por linha. Essas opções aparecem no formulário de
             chamado (interno e portal).
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Segmentos / público-alvo */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Segmentos / público-alvo</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Label htmlFor="segmentos">
+            Opções do campo &quot;Segmento / Público-alvo&quot; nos chamados
+          </Label>
+          <Textarea
+            id="segmentos"
+            name="segmentos"
+            rows={segmentos.length + 2}
+            defaultValue={segmentos.join("\n")}
+            placeholder={"Um segmento por linha"}
+          />
+          <p className="text-xs text-muted-foreground">
+            Um segmento por linha. Essas opções aparecem no formulário de chamado
+            (interno e portal).
           </p>
         </CardContent>
       </Card>

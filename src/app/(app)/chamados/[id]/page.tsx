@@ -120,6 +120,12 @@ export default async function ChamadoDetalhePage({
                   <p className="font-medium">{chamado.departamento ?? "—"}</p>
                 </div>
                 <div>
+                  <p className="text-xs text-muted-foreground">
+                    Segmento / Público-alvo
+                  </p>
+                  <p className="font-medium">{chamado.segmento ?? "—"}</p>
+                </div>
+                <div>
                   <p className="text-xs text-muted-foreground">Responsável</p>
                   <p className="font-medium">
                     {responsavel?.nome ?? "Não atribuído"}
