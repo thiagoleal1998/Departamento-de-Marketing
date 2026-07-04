@@ -7,6 +7,7 @@ import { obterConfig } from "@/lib/config";
 import { atualizarPerfilUsuario } from "@/features/configuracoes/actions";
 import { AparenciaForm } from "@/features/configuracoes/aparencia-form";
 import { ExcluirUsuarioButton } from "@/features/configuracoes/excluir-usuario-button";
+import { CriarUsuarioForm } from "@/features/configuracoes/criar-usuario-form";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,7 @@ export default async function ConfiguracoesPage() {
 
         <TabsContent value="usuarios">
           <div className="space-y-3">
+            <CriarUsuarioForm areas={areas} />
         {perfis.map((p) => (
           <Card key={p.id}>
             <CardContent className="pt-6">

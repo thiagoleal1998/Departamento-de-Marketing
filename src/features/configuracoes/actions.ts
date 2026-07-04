@@ -35,6 +35,78 @@ export async function atualizarPerfilUsuario(formData: FormData) {
   revalidatePath("/configuracoes");
 }
 
+export type EstadoCriarUsuario = { ok?: boolean; erro?: string };
+
+/** Cria um novo usuário (login + perfil). Apenas gerente. */
+export async function criarUsuario(
+  _prev: EstadoCriarUsuario,
+  formData: FormData
+): Promise<EstadoCriarUsuario> {
+  const supabase = await criarClienteServidor();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { erro: "Sessão expirada. Entre novamente." };
+
+  const { data: perfil } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (perfil?.role !== "gerente") {
+    return { erro: "Apenas gerentes podem criar usuários." };
+  }
+  if (!servicoDisponivel()) {
+    return { erro: "Falta configurar a chave de serviço (service role)." };
+  }
+
+  const nome = String(formData.get("nome") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const senha = String(formData.get("senha") ?? "");
+  const roleRaw = String(formData.get("role") ?? "colaborador") as Papel;
+  const role = PAPEIS.includes(roleRaw) ? roleRaw : "colaborador";
+  const cargo = String(formData.get("cargo") ?? "").trim() || null;
+  const area_id = String(formData.get("area_id") ?? "").trim() || null;
+
+  if (!nome || !email || !senha) {
+    return { erro: "Preencha nome, e-mail e senha." };
+  }
+  if (senha.length < 6) {
+    return { erro: "A senha deve ter ao menos 6 caracteres." };
+  }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    return { erro: "Informe um e-mail válido." };
+  }
+
+  const admin = criarClienteAdmin();
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    password: senha,
+    email_confirm: true,
+    user_metadata: { nome, role },
+  });
+
+  if (error || !data.user) {
+    const msg = (error?.message ?? "").toLowerCase();
+    if (
+      msg.includes("already") ||
+      msg.includes("registered") ||
+      msg.includes("exists")
+    ) {
+      return { erro: "Já existe um usuário com esse e-mail." };
+    }
+    return { erro: "Não foi possível criar o usuário. Tente novamente." };
+  }
+
+  // Garante o perfil completo (o trigger já cria com nome/role).
+  await admin
+    .from("profiles")
+    .upsert({ id: data.user.id, nome, email, role, cargo, area_id });
+
+  revalidatePath("/configuracoes");
+  return { ok: true };
+}
+
 export type EstadoExclusao = { erro?: string };
 
 /**
