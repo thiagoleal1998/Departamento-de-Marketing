@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LogIn, Clock, Palette, MessagesSquare } from "lucide-react";
+import { LogIn, Clock, Palette, MessagesSquare, Search } from "lucide-react";
 import { obterConfig } from "@/lib/config";
 import { PortalForm } from "@/features/portal/portal-form";
 import { Marca } from "@/components/shared/marca";
@@ -23,11 +23,18 @@ export default async function PortalPage() {
           />
           <span className="text-sm font-semibold">{textos.painel_nome}</span>
         </div>
-        <Button asChild variant="outline" size="sm">
-          <Link href="/login">
-            <LogIn className="size-4" /> Área do time
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/acompanhar">
+              <Search className="size-4" /> Acompanhar chamado
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/login">
+              <LogIn className="size-4" /> Área do time
+            </Link>
+          </Button>
+        </div>
       </header>
 
       <main className="mx-auto grid max-w-5xl gap-8 px-4 pb-16 pt-6 lg:grid-cols-2 lg:gap-12 lg:pt-12">
