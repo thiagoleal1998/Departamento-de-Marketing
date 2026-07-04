@@ -67,8 +67,13 @@ export async function excluirUsuario(id: string): Promise<EstadoExclusao> {
   return {};
 }
 
+export type EstadoAparencia = { ok?: boolean; erro?: string };
+
 /** Atualiza a marca: cor primária e textos (login, portal, painel). */
-export async function salvarAparencia(formData: FormData) {
+export async function salvarAparencia(
+  _prev: EstadoAparencia,
+  formData: FormData
+): Promise<EstadoAparencia> {
   const supabase = await criarClienteServidor();
 
   const corRaw = String(formData.get("cor_primaria") ?? "").trim();
@@ -78,14 +83,20 @@ export async function salvarAparencia(formData: FormData) {
 
   const textos = {} as TextosConfig;
   (Object.keys(TEXTOS_PADRAO) as (keyof TextosConfig)[]).forEach((chave) => {
-    const valor = String(formData.get(chave) ?? "").trim();
-    textos[chave] = valor || TEXTOS_PADRAO[chave];
+    // Preserva as quebras de linha digitadas (não usar trim que remove só bordas).
+    const valor = String(formData.get(chave) ?? "");
+    textos[chave] = valor.trim() ? valor : TEXTOS_PADRAO[chave];
   });
 
-  await supabase
+  const { error } = await supabase
     .from("config_sistema")
     .upsert({ id: true, cor_primaria, textos, updated_at: new Date().toISOString() });
 
+  if (error) {
+    return { erro: "Não foi possível salvar as alterações. Tente novamente." };
+  }
+
   // Revalida todo o app (a marca é aplicada no layout raiz).
   revalidatePath("/", "layout");
+  return { ok: true };
 }

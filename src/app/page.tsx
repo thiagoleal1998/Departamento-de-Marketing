@@ -36,7 +36,7 @@ export default async function PortalPage() {
             <p className="text-lg text-muted-foreground">
               {textos.portal_subtitulo}
             </p>
-            <p className="text-sm text-muted-foreground">
+            <p className="whitespace-pre-line text-sm text-muted-foreground">
               {textos.portal_descricao}
             </p>
           </div>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Save, Check } from "lucide-react";
-import { salvarAparencia } from "./actions";
+import { useState, useActionState } from "react";
+import { Save, Check, Loader2 } from "lucide-react";
+import { salvarAparencia, type EstadoAparencia } from "./actions";
 import {
   TEXTOS_LABELS,
   TEXTOS_PADRAO,
@@ -37,9 +37,13 @@ export function AparenciaForm({
   textos: TextosConfig;
 }) {
   const [corAtual, setCorAtual] = useState(cor);
+  const [estado, formAction, pendente] = useActionState<EstadoAparencia, FormData>(
+    salvarAparencia,
+    {}
+  );
 
   return (
-    <form action={salvarAparencia} className="space-y-6">
+    <form action={formAction} className="space-y-6">
       {/* Cor */}
       <Card>
         <CardHeader>
@@ -118,9 +122,22 @@ export function AparenciaForm({
         </CardContent>
       </Card>
 
-      <div className="flex justify-end">
-        <Button type="submit">
-          <Save className="size-4" /> Salvar aparência
+      <div className="flex items-center justify-end gap-3">
+        {estado.ok ? (
+          <span className="flex items-center gap-1 text-sm text-emerald-600">
+            <Check className="size-4" /> Alterações salvas
+          </span>
+        ) : null}
+        {estado.erro ? (
+          <span className="text-sm text-destructive">{estado.erro}</span>
+        ) : null}
+        <Button type="submit" disabled={pendente}>
+          {pendente ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Save className="size-4" />
+          )}
+          Salvar aparência
         </Button>
       </div>
     </form>
