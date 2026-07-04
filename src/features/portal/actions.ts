@@ -3,6 +3,7 @@
 import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { inserirChamado } from "@/features/chamados/inserir";
 import { uploadReferencia } from "@/features/chamados/upload";
+import { criarTarefaDoChamado } from "@/features/chamados/tarefa";
 import type { ChamadoTipo, ChamadoPrioridade } from "@/types";
 
 export type EstadoPortal = { numero?: number; erro?: string };
@@ -108,6 +109,14 @@ export async function abrirChamadoPublico(
     campo: "status",
     de: null,
     para: "aberto (via portal)",
+  });
+
+  // O chamado também é uma tarefa operacional.
+  await criarTarefaDoChamado(data.id, {
+    titulo,
+    descricao,
+    responsavel_id: null,
+    prazo: prazo_entrega,
   });
 
   return { numero: data.numero };

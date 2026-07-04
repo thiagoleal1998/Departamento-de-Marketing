@@ -30,6 +30,7 @@ import {
   reprovarChamado,
   adicionarMembro,
   removerMembro,
+  definirResponsavel,
 } from "@/features/chamados/actions";
 import { PainelStatus } from "@/features/chamados/painel-status";
 import { PageHeader } from "@/components/shared/page-header";
@@ -400,78 +401,112 @@ export default async function ChamadoDetalhePage({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <ul className="space-y-2">
-                {responsavel ? (
-                  <li className="flex items-center justify-between gap-2">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <Avatar
-                        nome={responsavel.nome}
-                        src={responsavel.avatar_url}
-                        className="size-7"
-                      />
-                      <span className="truncate text-sm">
-                        {responsavel.nome}
-                      </span>
-                    </div>
-                    <Badge variant="secondary">Responsável</Badge>
-                  </li>
-                ) : null}
-                {membros.map((m) => (
-                  <li
-                    key={m.id}
-                    className="flex items-center justify-between gap-2"
+              {/* Responsável (editável pela liderança) */}
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">
+                  Responsável
+                </Label>
+                {lideranca ? (
+                  <form
+                    action={definirResponsavel.bind(null, id)}
+                    className="flex gap-2"
                   >
-                    <div className="flex min-w-0 items-center gap-2">
-                      <Avatar
-                        nome={m.nome}
-                        src={m.avatar_url}
-                        className="size-7"
-                      />
-                      <span className="truncate text-sm">{m.nome}</span>
-                    </div>
-                    {lideranca ? (
-                      <form action={removerMembro.bind(null, id)}>
-                        <input type="hidden" name="profile_id" value={m.id} />
-                        <Button
-                          type="submit"
-                          variant="ghost"
-                          size="icon"
-                          className="size-7"
-                          title="Remover membro"
-                        >
-                          <X className="size-4" />
-                        </Button>
-                      </form>
-                    ) : null}
-                  </li>
-                ))}
-                {membros.length === 0 && !responsavel ? (
-                  <li className="text-sm text-muted-foreground">
-                    Ninguém adicionado ainda.
-                  </li>
-                ) : null}
-              </ul>
+                    <Select
+                      name="responsavel_id"
+                      defaultValue={chamado.responsavel_id ?? ""}
+                      className="h-9"
+                    >
+                      <option value="">Sem responsável</option>
+                      {colaboradores.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.nome}
+                        </option>
+                      ))}
+                    </Select>
+                    <Button type="submit" size="sm" variant="outline">
+                      Salvar
+                    </Button>
+                  </form>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Avatar
+                      nome={responsavel?.nome}
+                      src={responsavel?.avatar_url}
+                      className="size-7"
+                    />
+                    <span className="text-sm">
+                      {responsavel?.nome ?? "Não atribuído"}
+                    </span>
+                  </div>
+                )}
+              </div>
 
-              {lideranca && disponiveis.length > 0 ? (
-                <form
-                  action={adicionarMembro.bind(null, id)}
-                  className="flex gap-2 border-t pt-3"
-                >
-                  <Select name="profile_id" defaultValue="" className="h-9">
-                    <option value="" disabled>
-                      Adicionar membro...
-                    </option>
-                    {disponiveis.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.nome}
+              <div className="space-y-2 border-t pt-3">
+                <p className="text-xs text-muted-foreground">
+                  Membros adicionais
+                </p>
+                <ul className="space-y-2">
+                  {membros.map((m) => (
+                    <li
+                      key={m.id}
+                      className="flex items-center justify-between gap-2"
+                    >
+                      <div className="flex min-w-0 items-center gap-2">
+                        <Avatar
+                          nome={m.nome}
+                          src={m.avatar_url}
+                          className="size-7"
+                        />
+                        <span className="truncate text-sm">{m.nome}</span>
+                      </div>
+                      {lideranca ? (
+                        <form action={removerMembro.bind(null, id)}>
+                          <input
+                            type="hidden"
+                            name="profile_id"
+                            value={m.id}
+                          />
+                          <Button
+                            type="submit"
+                            variant="ghost"
+                            size="icon"
+                            className="size-7"
+                            title="Remover membro"
+                          >
+                            <X className="size-4" />
+                          </Button>
+                        </form>
+                      ) : null}
+                    </li>
+                  ))}
+                  {membros.length === 0 ? (
+                    <li className="text-sm text-muted-foreground">
+                      Nenhum membro adicional.
+                    </li>
+                  ) : null}
+                </ul>
+
+                {lideranca && disponiveis.length > 0 ? (
+                  <form
+                    action={adicionarMembro.bind(null, id)}
+                    className="flex gap-2"
+                  >
+                    <Select name="profile_id" defaultValue="" className="h-9">
+                      <option value="" disabled>
+                        Adicionar membro...
                       </option>
-                    ))}
-                  </Select>
-                  <Button type="submit" size="sm">
-                    Adicionar
-                  </Button>
-                </form>
-              ) : null}
+                      {disponiveis.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.nome}
+                        </option>
+                      ))}
+                    </Select>
+                    <Button type="submit" size="sm">
+                      Adicionar
+                    </Button>
+                  </form>
+                ) : null}
+              </div>
             </CardContent>
           </Card>
 
@@ -487,21 +522,6 @@ export default async function ChamadoDetalhePage({
                   action={triarChamado.bind(null, id)}
                   className="space-y-3"
                 >
-                  <div className="space-y-1.5">
-                    <Label htmlFor="responsavel_id">Responsável</Label>
-                    <Select
-                      id="responsavel_id"
-                      name="responsavel_id"
-                      defaultValue={chamado.responsavel_id ?? ""}
-                    >
-                      <option value="">Sem responsável</option>
-                      {colaboradores.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.nome}
-                        </option>
-                      ))}
-                    </Select>
-                  </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="prioridade">Prioridade</Label>
                     <Select

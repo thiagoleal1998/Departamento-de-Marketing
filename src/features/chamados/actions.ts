@@ -13,6 +13,7 @@ import {
 import type { Chamado } from "@/types/database";
 import { inserirChamado } from "./inserir";
 import { uploadReferencia } from "./upload";
+import { criarTarefaDoChamado } from "./tarefa";
 
 async function usuarioId() {
   const supabase = await criarClienteServidor();
@@ -157,8 +158,16 @@ export async function abrirChamado(formData: FormData) {
   if (error || !data) return;
 
   await registrarHistorico(data.id, uid, "status", null, "aberto");
+  // O chamado também é uma tarefa operacional.
+  await criarTarefaDoChamado(data.id, {
+    titulo,
+    descricao,
+    responsavel_id: null,
+    prazo: prazo_sla,
+  });
 
   revalidatePath("/chamados");
+  revalidatePath("/operacional");
   redirect(`/chamados/${data.id}`);
 }
 
@@ -249,13 +258,11 @@ export async function triarChamado(chamadoId: string, formData: FormData) {
   const supabase = await criarClienteServidor();
   const { data: atual } = await supabase
     .from("chamados")
-    .select("responsavel_id, prioridade, status, numero")
+    .select("prioridade, status, numero")
     .eq("id", chamadoId)
     .single();
   if (!atual) return;
 
-  const responsavel_id =
-    String(formData.get("responsavel_id") ?? "").trim() || null;
   const prioridade = String(
     formData.get("prioridade") ?? atual.prioridade
   ) as ChamadoPrioridade;
@@ -269,7 +276,6 @@ export async function triarChamado(chamadoId: string, formData: FormData) {
   const { error } = await supabase
     .from("chamados")
     .update({
-      responsavel_id,
       prioridade,
       prazo_sla,
       status: novoStatus,
@@ -277,17 +283,6 @@ export async function triarChamado(chamadoId: string, formData: FormData) {
     .eq("id", chamadoId);
   if (error) return;
 
-  if (responsavel_id && responsavel_id !== atual.responsavel_id) {
-    await registrarHistorico(chamadoId, uid, "responsavel", null, "atribuído");
-    if (responsavel_id !== uid) {
-      await notificar(
-        responsavel_id,
-        "chamado_atribuido",
-        `Você foi atribuído ao chamado #${atual.numero}`,
-        `/chamados/${chamadoId}`
-      );
-    }
-  }
   if (prioridade !== atual.prioridade) {
     await registrarHistorico(
       chamadoId,
@@ -489,6 +484,60 @@ export async function adicionarMembro(chamadoId: string, formData: FormData) {
   }
 
   revalidatePath(`/chamados/${chamadoId}`);
+}
+
+/** Define/altera o responsável pelo chamado (apenas liderança). */
+export async function definirResponsavel(
+  chamadoId: string,
+  formData: FormData
+) {
+  const perfil = await perfilAtual();
+  if (!perfil) redirect("/login");
+  if (perfil.role !== "gerente" && perfil.role !== "lider") return;
+
+  const responsavel_id =
+    String(formData.get("responsavel_id") ?? "").trim() || null;
+
+  const supabase = await criarClienteServidor();
+  const { data: atual } = await supabase
+    .from("chamados")
+    .select("numero, responsavel_id")
+    .eq("id", chamadoId)
+    .single();
+
+  await supabase
+    .from("chamados")
+    .update({ responsavel_id })
+    .eq("id", chamadoId);
+  // Mantém a tarefa operacional vinculada com o mesmo responsável.
+  await supabase
+    .from("tarefas")
+    .update({ responsavel_id })
+    .eq("chamado_id", chamadoId);
+
+  await registrarHistorico(
+    chamadoId,
+    perfil.id,
+    "responsavel",
+    null,
+    responsavel_id ? "responsável atualizado" : "responsável removido"
+  );
+
+  if (
+    responsavel_id &&
+    responsavel_id !== atual?.responsavel_id &&
+    responsavel_id !== perfil.id
+  ) {
+    await notificar(
+      responsavel_id,
+      "chamado_responsavel",
+      `Você é o responsável pelo chamado #${atual?.numero}`,
+      `/chamados/${chamadoId}`
+    );
+  }
+
+  revalidatePath(`/chamados/${chamadoId}`);
+  revalidatePath("/chamados");
 }
 
 /** Remove um membro do chamado (apenas liderança). */
