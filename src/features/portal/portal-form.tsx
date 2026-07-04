@@ -13,7 +13,13 @@ import { CHAMADO_TIPO_LABEL } from "@/types";
 
 const estadoInicial: EstadoPortal = {};
 
-export function PortalForm({ titulo }: { titulo: string }) {
+export function PortalForm({
+  titulo,
+  departamentos,
+}: {
+  titulo: string;
+  departamentos: string[];
+}) {
   const [estado, formAction, pendente] = useActionState(
     abrirChamadoPublico,
     estadoInicial
@@ -70,6 +76,20 @@ export function PortalForm({ titulo }: { titulo: string }) {
                 required
               />
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="departamento">Departamento solicitante *</Label>
+            <Select id="departamento" name="departamento" defaultValue="" required>
+              <option value="" disabled>
+                Selecione o seu departamento
+              </option>
+              {departamentos.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </Select>
           </div>
 
           <div className="space-y-1.5">

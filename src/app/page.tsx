@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 export const dynamic = "force-dynamic";
 
 export default async function PortalPage() {
-  const { textos, logo } = await obterConfig();
+  const { textos, logo, departamentos } = await obterConfig();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-accent/40 via-background to-background">
@@ -70,7 +70,10 @@ export default async function PortalPage() {
 
         {/* Formulário */}
         <div>
-          <PortalForm titulo={textos.portal_form_titulo} />
+          <PortalForm
+            titulo={textos.portal_form_titulo}
+            departamentos={departamentos}
+          />
         </div>
       </main>
 

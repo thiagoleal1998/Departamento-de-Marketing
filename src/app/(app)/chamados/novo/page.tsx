@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
+import { obterConfig } from "@/lib/config";
 import { abrirChamado } from "@/features/chamados/actions";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,6 +16,7 @@ export const dynamic = "force-dynamic";
 
 export default async function NovoChamadoPage() {
   await exigirUsuario();
+  const { departamentos } = await obterConfig();
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -41,6 +43,20 @@ export default async function NovoChamadoPage() {
                 placeholder="Ex.: Criar lâmina da campanha de julho"
                 required
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="departamento">Departamento solicitante *</Label>
+              <Select id="departamento" name="departamento" defaultValue="" required>
+                <option value="" disabled>
+                  Selecione o departamento
+                </option>
+                {departamentos.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </Select>
             </div>
 
             <div className="space-y-2">

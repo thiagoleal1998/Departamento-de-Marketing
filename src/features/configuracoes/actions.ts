@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
-import { TEXTOS_PADRAO, type TextosConfig } from "@/lib/config";
+import {
+  TEXTOS_PADRAO,
+  DEPARTAMENTOS_PADRAO,
+  type TextosConfig,
+} from "@/lib/config";
 import type { Papel } from "@/types";
 
 const PAPEIS: Papel[] = ["gerente", "lider", "colaborador"];
@@ -111,10 +115,19 @@ export async function salvarAparencia(
       ((atual?.textos ?? {}) as { logo_url?: string | null }).logo_url ?? null;
   }
 
+  // Departamentos solicitantes: um por linha no textarea.
+  const departamentosRaw = String(formData.get("departamentos") ?? "");
+  const departamentos = departamentosRaw
+    .split("\n")
+    .map((d) => d.trim())
+    .filter(Boolean);
+  const listaDepartamentos =
+    departamentos.length > 0 ? departamentos : DEPARTAMENTOS_PADRAO;
+
   const { error } = await supabase.from("config_sistema").upsert({
     id: true,
     cor_primaria,
-    textos: { ...textos, logo_url },
+    textos: { ...textos, logo_url, departamentos: listaDepartamentos },
     updated_at: new Date().toISOString(),
   });
 

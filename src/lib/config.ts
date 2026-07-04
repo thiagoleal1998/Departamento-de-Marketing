@@ -15,8 +15,26 @@ export interface TextosConfig {
 export interface ConfigSistema {
   cor: string;
   logo: string | null;
+  departamentos: string[];
   textos: TextosConfig;
 }
+
+/** Departamentos/setores solicitantes (padrão, em ordem alfabética). */
+export const DEPARTAMENTOS_PADRAO: string[] = [
+  "Administrativo",
+  "Business Intelligence (BI)",
+  "Comercial Internacional",
+  "Comercial Nacional",
+  "Financeiro",
+  "Grupos",
+  "Infraestrutura",
+  "Operações",
+  "Promotor",
+  "Recursos Humanos (RH)",
+  "Reservas",
+  "Sistemas",
+  "Transportes",
+];
 
 export const TEXTOS_PADRAO: TextosConfig = {
   painel_nome: "Painel de Marketing",
@@ -46,7 +64,12 @@ export const TEXTOS_LABELS: Record<keyof TextosConfig, string> = {
 /** Lê a configuração (marca) de forma tolerante — retorna defaults se faltar. */
 export async function obterConfig(): Promise<ConfigSistema> {
   if (!supabaseConfigurado()) {
-    return { cor: COR_PADRAO, logo: null, textos: TEXTOS_PADRAO };
+    return {
+      cor: COR_PADRAO,
+      logo: null,
+      departamentos: DEPARTAMENTOS_PADRAO,
+      textos: TEXTOS_PADRAO,
+    };
   }
   try {
     const supabase = criarClientePublico();
@@ -56,19 +79,29 @@ export async function obterConfig(): Promise<ConfigSistema> {
       .eq("id", true)
       .single();
 
-    // A logo é guardada dentro do jsonb `textos` (chave logo_url) para
-    // não exigir alteração de schema.
+    // Logo e lista de departamentos ficam dentro do jsonb `textos` (chaves
+    // logo_url e departamentos) para não exigir alteração de schema.
     const raw = (data?.textos ?? {}) as Partial<TextosConfig> & {
       logo_url?: string | null;
+      departamentos?: string[];
     };
-    const { logo_url, ...textosDb } = raw;
+    const { logo_url, departamentos, ...textosDb } = raw;
     return {
       cor: data?.cor_primaria || COR_PADRAO,
       logo: logo_url ?? null,
+      departamentos:
+        Array.isArray(departamentos) && departamentos.length > 0
+          ? departamentos
+          : DEPARTAMENTOS_PADRAO,
       textos: { ...TEXTOS_PADRAO, ...textosDb },
     };
   } catch {
-    return { cor: COR_PADRAO, logo: null, textos: TEXTOS_PADRAO };
+    return {
+      cor: COR_PADRAO,
+      logo: null,
+      departamentos: DEPARTAMENTOS_PADRAO,
+      textos: TEXTOS_PADRAO,
+    };
   }
 }
 

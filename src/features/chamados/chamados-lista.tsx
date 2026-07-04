@@ -29,6 +29,7 @@ export interface ChamadoView {
   tipo: ChamadoTipo;
   prioridade: ChamadoPrioridade;
   status: ChamadoStatus;
+  departamento: string | null;
   solicitante_nome: string;
   responsavel_nome: string | null;
   prazo_sla: string | null;
@@ -56,6 +57,12 @@ function LinhaChamado({ c }: { c: ChamadoView }) {
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <span>{CHAMADO_TIPO_LABEL[c.tipo]}</span>
+        {c.departamento ? (
+          <>
+            <span>•</span>
+            <span>{c.departamento}</span>
+          </>
+        ) : null}
         <span>•</span>
         <span>{c.responsavel_nome ?? "Sem responsável"}</span>
         {c.prazo_sla ? (

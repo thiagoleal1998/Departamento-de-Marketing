@@ -67,10 +67,12 @@ function processarLogo(file: File): Promise<string> {
 export function AparenciaForm({
   cor,
   logo,
+  departamentos,
   textos,
 }: {
   cor: string;
   logo: string | null;
+  departamentos: string[];
   textos: TextosConfig;
 }) {
   const [corAtual, setCorAtual] = useState(cor);
@@ -244,6 +246,29 @@ export function AparenciaForm({
               )}
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      {/* Departamentos solicitantes */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Departamentos solicitantes</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Label htmlFor="departamentos">
+            Opções do campo &quot;Departamento solicitante&quot; nos chamados
+          </Label>
+          <Textarea
+            id="departamentos"
+            name="departamentos"
+            rows={departamentos.length + 2}
+            defaultValue={departamentos.join("\n")}
+            placeholder={"Um departamento por linha"}
+          />
+          <p className="text-xs text-muted-foreground">
+            Um departamento por linha. Essas opções aparecem no formulário de
+            chamado (interno e portal).
+          </p>
         </CardContent>
       </Card>
 

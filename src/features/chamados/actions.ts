@@ -64,6 +64,8 @@ export async function abrirChamado(formData: FormData) {
   const descricao = String(formData.get("descricao") ?? "").trim() || null;
   const tipo = String(formData.get("tipo") ?? "outro") as ChamadoTipo;
   const categoria = String(formData.get("categoria") ?? "").trim() || null;
+  const departamento =
+    String(formData.get("departamento") ?? "").trim() || null;
   const prioridade = String(
     formData.get("prioridade") ?? "media"
   ) as ChamadoPrioridade;
@@ -79,20 +81,32 @@ export async function abrirChamado(formData: FormData) {
     .eq("id", uid)
     .single();
 
-  const { data, error } = await supabase
+  const payload = {
+    titulo,
+    descricao,
+    tipo,
+    categoria,
+    departamento,
+    prioridade,
+    solicitante_id: uid,
+    area_id: perfil?.area_id ?? null,
+    prazo_sla,
+  };
+  let { data, error } = await supabase
     .from("chamados")
-    .insert({
-      titulo,
-      descricao,
-      tipo,
-      categoria,
-      prioridade,
-      solicitante_id: uid,
-      area_id: perfil?.area_id ?? null,
-      prazo_sla,
-    })
+    .insert(payload)
     .select("id, numero")
     .single();
+  // Resiliência: se a coluna departamento ainda não existir (migration 0003
+  // não aplicada), tenta novamente sem ela.
+  if (error && /departamento/i.test(error.message ?? "")) {
+    const { departamento: _omit, ...semDep } = payload;
+    ({ data, error } = await supabase
+      .from("chamados")
+      .insert(semDep)
+      .select("id, numero")
+      .single());
+  }
 
   if (error || !data) return;
 

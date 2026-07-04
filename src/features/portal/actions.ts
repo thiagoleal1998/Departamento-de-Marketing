@@ -30,6 +30,7 @@ export async function abrirChamadoPublico(
   const titulo = String(formData.get("titulo") ?? "").trim();
   const descricao = String(formData.get("descricao") ?? "").trim() || null;
   const categoria = String(formData.get("categoria") ?? "").trim() || null;
+  const departamento = String(formData.get("departamento") ?? "").trim() || null;
 
   const tipoRaw = String(formData.get("tipo") ?? "outro") as ChamadoTipo;
   const tipo = TIPOS.includes(tipoRaw) ? tipoRaw : "outro";
@@ -43,26 +44,40 @@ export async function abrirChamadoPublico(
   if (!nome || !email || !titulo) {
     return { erro: "Preencha nome, e-mail e o que você precisa." };
   }
+  if (!departamento) {
+    return { erro: "Selecione o departamento solicitante." };
+  }
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return { erro: "Informe um e-mail válido." };
   }
 
   const supabase = criarClienteAdmin();
-  const { data, error } = await supabase
+  const payload = {
+    titulo,
+    descricao,
+    categoria,
+    departamento,
+    tipo,
+    prioridade,
+    status: "aberto",
+    origem: "portal",
+    solicitante_nome: nome,
+    solicitante_email: email,
+  };
+  let { data, error } = await supabase
     .from("chamados")
-    .insert({
-      titulo,
-      descricao,
-      categoria,
-      tipo,
-      prioridade,
-      status: "aberto",
-      origem: "portal",
-      solicitante_nome: nome,
-      solicitante_email: email,
-    })
+    .insert(payload)
     .select("id, numero")
     .single();
+  // Resiliência: se a coluna departamento ainda não existir, tenta sem ela.
+  if (error && /departamento/i.test(error.message ?? "")) {
+    const { departamento: _omit, ...semDep } = payload;
+    ({ data, error } = await supabase
+      .from("chamados")
+      .insert(semDep)
+      .select("id, numero")
+      .single());
+  }
 
   if (error || !data) {
     return {
