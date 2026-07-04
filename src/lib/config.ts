@@ -14,6 +14,7 @@ export interface TextosConfig {
 
 export interface ConfigSistema {
   cor: string;
+  logo: string | null;
   textos: TextosConfig;
 }
 
@@ -45,7 +46,7 @@ export const TEXTOS_LABELS: Record<keyof TextosConfig, string> = {
 /** Lê a configuração (marca) de forma tolerante — retorna defaults se faltar. */
 export async function obterConfig(): Promise<ConfigSistema> {
   if (!supabaseConfigurado()) {
-    return { cor: COR_PADRAO, textos: TEXTOS_PADRAO };
+    return { cor: COR_PADRAO, logo: null, textos: TEXTOS_PADRAO };
   }
   try {
     const supabase = criarClientePublico();
@@ -55,13 +56,19 @@ export async function obterConfig(): Promise<ConfigSistema> {
       .eq("id", true)
       .single();
 
-    const textosDb = (data?.textos ?? {}) as Partial<TextosConfig>;
+    // A logo é guardada dentro do jsonb `textos` (chave logo_url) para
+    // não exigir alteração de schema.
+    const raw = (data?.textos ?? {}) as Partial<TextosConfig> & {
+      logo_url?: string | null;
+    };
+    const { logo_url, ...textosDb } = raw;
     return {
       cor: data?.cor_primaria || COR_PADRAO,
+      logo: logo_url ?? null,
       textos: { ...TEXTOS_PADRAO, ...textosDb },
     };
   } catch {
-    return { cor: COR_PADRAO, textos: TEXTOS_PADRAO };
+    return { cor: COR_PADRAO, logo: null, textos: TEXTOS_PADRAO };
   }
 }
 

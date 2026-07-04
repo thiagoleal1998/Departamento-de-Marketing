@@ -1,23 +1,27 @@
 import Link from "next/link";
-import { Megaphone, AlertTriangle, ArrowLeft } from "lucide-react";
+import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { LoginForm } from "@/features/auth/login-form";
 import { supabaseConfigurado } from "@/lib/supabase/env";
 import { obterConfig } from "@/lib/config";
+import { Marca } from "@/components/shared/marca";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage() {
   const configurado = supabaseConfigurado();
-  const { textos } = await obterConfig();
+  const { textos, logo } = await obterConfig();
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-accent/40 p-4">
       <div className="w-full max-w-md">
         <div className="mb-8 flex flex-col items-center text-center">
-          <div className="mb-3 flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <Megaphone className="size-6" />
-          </div>
+          <Marca
+            logoUrl={logo}
+            boxClassName="mb-3 size-12 rounded-xl"
+            iconClassName="size-6"
+            imgClassName="mb-3 h-14 max-w-[220px]"
+          />
           <h1 className="text-xl font-semibold tracking-tight">
             {textos.login_titulo}
           </h1>

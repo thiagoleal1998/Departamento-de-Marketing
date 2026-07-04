@@ -88,9 +88,35 @@ export async function salvarAparencia(
     textos[chave] = valor.trim() ? valor : TEXTOS_PADRAO[chave];
   });
 
-  const { error } = await supabase
-    .from("config_sistema")
-    .upsert({ id: true, cor_primaria, textos, updated_at: new Date().toISOString() });
+  // Logo: "" = manter atual | data URL = nova | "__remover__" = remover.
+  const logoRaw = String(formData.get("logo_url") ?? "");
+  let logo_url: string | null;
+  if (logoRaw === "__remover__") {
+    logo_url = null;
+  } else if (logoRaw) {
+    const valido =
+      logoRaw.startsWith("data:image/") || logoRaw.startsWith("http");
+    if (!valido) return { erro: "Logo inválida." };
+    if (logoRaw.length > 900_000) {
+      return { erro: "A logo é muito grande. Use uma imagem menor." };
+    }
+    logo_url = logoRaw;
+  } else {
+    const { data: atual } = await supabase
+      .from("config_sistema")
+      .select("textos")
+      .eq("id", true)
+      .single();
+    logo_url =
+      ((atual?.textos ?? {}) as { logo_url?: string | null }).logo_url ?? null;
+  }
+
+  const { error } = await supabase.from("config_sistema").upsert({
+    id: true,
+    cor_primaria,
+    textos: { ...textos, logo_url },
+    updated_at: new Date().toISOString(),
+  });
 
   if (error) {
     return { erro: "Não foi possível salvar as alterações. Tente novamente." };

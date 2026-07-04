@@ -131,7 +131,11 @@ export default async function ConfiguracoesPage() {
         </TabsContent>
 
         <TabsContent value="aparencia">
-          <AparenciaForm cor={config.cor} textos={config.textos} />
+          <AparenciaForm
+            cor={config.cor}
+            logo={config.logo}
+            textos={config.textos}
+          />
         </TabsContent>
       </Tabs>
     </div>

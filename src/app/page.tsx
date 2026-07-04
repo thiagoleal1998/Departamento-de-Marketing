@@ -1,23 +1,29 @@
 import Link from "next/link";
-import { Megaphone, LogIn, Clock, Palette, MessagesSquare } from "lucide-react";
+import { LogIn, Clock, Palette, MessagesSquare } from "lucide-react";
 import { obterConfig } from "@/lib/config";
 import { PortalForm } from "@/features/portal/portal-form";
+import { Marca } from "@/components/shared/marca";
 import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
 export default async function PortalPage() {
-  const { textos } = await obterConfig();
+  const { textos, logo } = await obterConfig();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-accent/40 via-background to-background">
       {/* Topo */}
       <header className="mx-auto flex max-w-5xl items-center justify-between px-4 py-5">
         <div className="flex items-center gap-2">
-          <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <Megaphone className="size-5" />
-          </div>
-          <span className="text-sm font-semibold">{textos.painel_nome}</span>
+          <Marca
+            logoUrl={logo}
+            boxClassName="size-9 rounded-xl"
+            iconClassName="size-5"
+            imgClassName="h-10 max-w-[180px]"
+          />
+          {logo ? null : (
+            <span className="text-sm font-semibold">{textos.painel_nome}</span>
+          )}
         </div>
         <Button asChild variant="outline" size="sm">
           <Link href="/login">

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useActionState } from "react";
-import { Save, Check, Loader2 } from "lucide-react";
+/* eslint-disable @next/next/no-img-element */
+import { useState, useActionState, useRef } from "react";
+import { Save, Check, Loader2, Upload, Trash2, Megaphone } from "lucide-react";
 import { salvarAparencia, type EstadoAparencia } from "./actions";
 import {
   TEXTOS_LABELS,
@@ -29,11 +30,47 @@ const PRESETS = [
 // Campos que usam textarea (textos mais longos)
 const LONGOS: (keyof TextosConfig)[] = ["portal_descricao"];
 
+/** Redimensiona a logo (máx. 320px, mantém proporção, PNG p/ preservar transparência). */
+function processarLogo(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const max = 320;
+        let { width, height } = img;
+        if (width > max || height > max) {
+          if (width >= height) {
+            height = Math.round((height * max) / width);
+            width = max;
+          } else {
+            width = Math.round((width * max) / height);
+            height = max;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("canvas"));
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/png"));
+      };
+      img.onerror = reject;
+      img.src = reader.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 export function AparenciaForm({
   cor,
+  logo,
   textos,
 }: {
   cor: string;
+  logo: string | null;
   textos: TextosConfig;
 }) {
   const [corAtual, setCorAtual] = useState(cor);
@@ -42,8 +79,96 @@ export function AparenciaForm({
     {}
   );
 
+  // Logo: "" = manter | data URL = nova | "__remover__" = remover
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const [logoValor, setLogoValor] = useState("");
+  const [processandoLogo, setProcessandoLogo] = useState(false);
+  const logoRemovida = logoValor === "__remover__";
+  const logoPreview = logoRemovida
+    ? null
+    : logoValor && logoValor !== "__remover__"
+      ? logoValor
+      : logo;
+
+  async function aoEscolherLogo(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setProcessandoLogo(true);
+    try {
+      setLogoValor(await processarLogo(file));
+    } catch {
+      // ignora
+    } finally {
+      setProcessandoLogo(false);
+      if (logoInputRef.current) logoInputRef.current.value = "";
+    }
+  }
+
   return (
     <form action={formAction} className="space-y-6">
+      <input type="hidden" name="logo_url" value={logoValor} />
+
+      {/* Logo */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Logo</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center gap-4 sm:flex-row">
+          <div className="flex h-20 w-40 items-center justify-center rounded-lg border bg-muted/40 p-2">
+            {logoPreview ? (
+              <img
+                src={logoPreview}
+                alt="Logo atual"
+                className="max-h-full max-w-full object-contain"
+              />
+            ) : (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Megaphone className="size-5" /> Ícone padrão
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col items-center gap-2 sm:items-start">
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/*"
+              onChange={aoEscolherLogo}
+              className="hidden"
+            />
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => logoInputRef.current?.click()}
+                disabled={processandoLogo}
+              >
+                {processandoLogo ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Upload className="size-4" />
+                )}
+                Enviar logo
+              </Button>
+              {logoPreview ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setLogoValor("__remover__")}
+                >
+                  <Trash2 className="size-4" /> Remover
+                </Button>
+              ) : null}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              PNG (com transparência) ou JPG. Aparece no login, no portal e no
+              menu. Sem logo, usamos o ícone padrão.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Cor */}
       <Card>
         <CardHeader>

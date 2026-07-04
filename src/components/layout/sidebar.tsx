@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Megaphone } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Marca } from "@/components/shared/marca";
 import { NAVEGACAO } from "@/lib/navigation";
 import { pode } from "@/lib/permissions";
 import type { Papel } from "@/types";
@@ -11,9 +11,11 @@ import type { Papel } from "@/types";
 export function Sidebar({
   papel,
   nomePainel,
+  logoUrl,
 }: {
   papel: Papel;
   nomePainel: string;
+  logoUrl: string | null;
 }) {
   const pathname = usePathname();
   const itens = NAVEGACAO.filter((i) => !i.requer || pode(papel, i.requer));
@@ -21,10 +23,17 @@ export function Sidebar({
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r bg-card lg:flex">
       <div className="flex h-16 items-center gap-2 border-b px-5">
-        <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <Megaphone className="size-4" />
-        </div>
-        <span className="text-sm font-semibold leading-tight">{nomePainel}</span>
+        <Marca
+          logoUrl={logoUrl}
+          boxClassName="size-8"
+          iconClassName="size-4"
+          imgClassName="h-9 max-w-[150px]"
+        />
+        {logoUrl ? null : (
+          <span className="text-sm font-semibold leading-tight">
+            {nomePainel}
+          </span>
+        )}
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
