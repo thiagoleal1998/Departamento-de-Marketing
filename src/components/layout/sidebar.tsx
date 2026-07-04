@@ -49,6 +49,10 @@ export function Sidebar({
           );
         })}
       </nav>
+
+      <div className="border-t p-3 text-center text-xs text-muted-foreground">
+        Versão {process.env.NEXT_PUBLIC_APP_VERSION}
+      </div>
     </aside>
   );
 }
