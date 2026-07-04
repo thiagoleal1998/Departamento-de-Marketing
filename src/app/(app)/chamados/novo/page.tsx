@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { SelectMenu } from "@/components/ui/select-menu";
 import { CHAMADO_TIPO_LABEL } from "@/types";
 
 export const dynamic = "force-dynamic";
@@ -47,16 +48,13 @@ export default async function NovoChamadoPage() {
 
             <div className="space-y-2">
               <Label htmlFor="departamento">Departamento solicitante *</Label>
-              <Select id="departamento" name="departamento" defaultValue="" required>
-                <option value="" disabled>
-                  Selecione o departamento
-                </option>
-                {departamentos.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </Select>
+              <SelectMenu
+                id="departamento"
+                name="departamento"
+                options={departamentos}
+                placeholder="Selecione o departamento"
+                required
+              />
             </div>
 
             <div className="space-y-2">

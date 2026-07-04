@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { SelectMenu } from "@/components/ui/select-menu";
 import { CHAMADO_TIPO_LABEL } from "@/types";
 
 const estadoInicial: EstadoPortal = {};
@@ -80,16 +81,13 @@ export function PortalForm({
 
           <div className="space-y-1.5">
             <Label htmlFor="departamento">Departamento solicitante *</Label>
-            <Select id="departamento" name="departamento" defaultValue="" required>
-              <option value="" disabled>
-                Selecione o seu departamento
-              </option>
-              {departamentos.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </Select>
+            <SelectMenu
+              id="departamento"
+              name="departamento"
+              options={departamentos}
+              placeholder="Selecione o seu departamento"
+              required
+            />
           </div>
 
           <div className="space-y-1.5">
