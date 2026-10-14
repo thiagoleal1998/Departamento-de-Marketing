@@ -1,4 +1,5 @@
 import { exigirUsuario } from "@/lib/auth";
+import { SenhaForm } from "@/features/perfil/senha-form";
 import { PerfilForm } from "@/features/perfil/perfil-form";
 import { PageHeader } from "@/components/shared/page-header";
 
@@ -20,6 +21,7 @@ export default async function PerfilPage() {
         papel={usuario.role}
         avatarUrl={usuario.avatar_url}
       />
+      <SenhaForm />
     </div>
   );
 }

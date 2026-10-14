@@ -7,6 +7,7 @@ import {
   type EstadoEdicaoUsuario,
 } from "./actions";
 import { ExcluirUsuarioButton } from "./excluir-usuario-button";
+import { RedefinirSenhaButton } from "./redefinir-senha-button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -169,6 +170,10 @@ export function UsuarioRow({
             </div>
           </div>
         </form>
+
+        <div className="mt-3 border-t pt-3">
+          <RedefinirSenhaButton id={p.id} nome={nome} />
+        </div>
       </CardContent>
     </Card>
   );

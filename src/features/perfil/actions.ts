@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
 import { criarClienteServidor } from "@/lib/supabase/server";
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/supabase/env";
 
 export type EstadoPerfil = { ok?: boolean; erro?: string };
 
@@ -56,5 +58,55 @@ export async function atualizarMeuPerfil(
 
   revalidatePath("/perfil");
   revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export type EstadoSenha = { ok?: boolean; erro?: string };
+
+/** Troca a própria senha, exigindo a senha atual. */
+export async function alterarMinhaSenha(
+  _prev: EstadoSenha,
+  formData: FormData
+): Promise<EstadoSenha> {
+  const supabase = await criarClienteServidor();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user || !user.email) redirect("/login");
+
+  const atual = String(formData.get("senha_atual") ?? "");
+  const nova = String(formData.get("senha_nova") ?? "");
+  const confirma = String(formData.get("senha_confirma") ?? "");
+
+  if (!atual || !nova || !confirma) {
+    return { erro: "Preencha todos os campos." };
+  }
+  if (nova.length < 6) {
+    return { erro: "A nova senha deve ter ao menos 6 caracteres." };
+  }
+  if (nova !== confirma) {
+    return { erro: "A confirmação não confere com a nova senha." };
+  }
+  if (nova === atual) {
+    return { erro: "A nova senha deve ser diferente da atual." };
+  }
+
+  // Confere a senha atual com um client isolado (não altera a sessão).
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    return { erro: "Sistema não configurado." };
+  }
+  const verificador = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { error: erroAtual } = await verificador.auth.signInWithPassword({
+    email: user.email,
+    password: atual,
+  });
+  if (erroAtual) return { erro: "A senha atual está incorreta." };
+
+  const { error } = await supabase.auth.updateUser({ password: nova });
+  if (error) {
+    return { erro: "Não foi possível alterar a senha. Tente novamente." };
+  }
   return { ok: true };
 }

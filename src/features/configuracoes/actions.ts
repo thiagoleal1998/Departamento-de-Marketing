@@ -183,6 +183,45 @@ export async function excluirUsuario(id: string): Promise<EstadoExclusao> {
   return {};
 }
 
+export type EstadoSenhaUsuario = { ok?: boolean; erro?: string };
+
+/** Define uma nova senha para um usuário. Apenas gerente. */
+export async function redefinirSenhaUsuario(
+  id: string,
+  senha: string
+): Promise<EstadoSenhaUsuario> {
+  const supabase = await criarClienteServidor();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { erro: "Sessão expirada. Entre novamente." };
+
+  const { data: perfil } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (perfil?.role !== "gerente") {
+    return { erro: "Apenas gerentes podem trocar a senha de usuários." };
+  }
+  if (!servicoDisponivel()) {
+    return { erro: "Falta configurar a chave de serviço (service role)." };
+  }
+  if (!id) return { erro: "Usuário inválido." };
+  if (senha.length < 6) {
+    return { erro: "A senha deve ter ao menos 6 caracteres." };
+  }
+
+  const admin = criarClienteAdmin();
+  const { error } = await admin.auth.admin.updateUserById(id, {
+    password: senha,
+  });
+  if (error) {
+    return { erro: "Não foi possível alterar a senha. Tente novamente." };
+  }
+  return { ok: true };
+}
+
 export type EstadoAparencia = { ok?: boolean; erro?: string };
 
 /** Atualiza a marca: cor primária e textos (login, portal, painel). */
