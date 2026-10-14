@@ -21,6 +21,8 @@ export interface CampoDef {
   /** Aparece como coluna na lista. */
   lista?: boolean;
   placeholder?: string;
+  /** Valor inicial ao criar um registro (selects). */
+  padrao?: string;
 }
 
 export interface CadastroDef {
@@ -38,22 +40,107 @@ export const CADASTROS: Record<CadastroChave, CadastroDef> = {
     tabela: "landing_pages",
     rota: "/operacional/landing-pages",
     campos: [
-      { name: "nome", label: "Nome", tipo: "texto", obrigatorio: true, lista: true },
-      { name: "url", label: "URL", tipo: "url", lista: true, placeholder: "https://" },
-      { name: "objetivo", label: "Objetivo / campanha", tipo: "texto", lista: true },
-      { name: "responsavel_id", label: "Responsável", tipo: "pessoa", lista: true },
+      { name: "nome", label: "Produto", tipo: "texto", obrigatorio: true, lista: true },
       {
-        name: "status",
-        label: "Status",
+        name: "grupo",
+        label: "Grupo",
+        tipo: "select",
+        lista: true,
+        obrigatorio: true,
+        padrao: "novas",
+        opcoes: [
+          { value: "novas", label: "Novas LPs" },
+          { value: "b2c", label: "B2C" },
+          { value: "v4", label: "LPs V4" },
+          { value: "antigas", label: "LPs antigas" },
+          { value: "epic", label: "Epic Pages (descontinuado)" },
+          { value: "feriados", label: "Feriados" },
+        ],
+      },
+      {
+        name: "tipo_pagina",
+        label: "Tipo de página",
+        tipo: "select",
+        obrigatorio: true,
+        padrao: "produto",
+        opcoes: [
+          { value: "produto", label: "Produto" },
+          { value: "destino", label: "Destino" },
+          { value: "tematica", label: "Temática" },
+        ],
+      },
+      {
+        name: "status_patrocinio",
+        label: "Status de patrocínio",
+        tipo: "select",
+        lista: true,
+        padrao: "ativo",
+        opcoes: [
+          { value: "ativo", label: "Ativo" },
+          { value: "inativo", label: "Inativo" },
+          { value: "cancelado", label: "Cancelado" },
+          { value: "desativado", label: "Desativado" },
+        ],
+      },
+      {
+        name: "destino",
+        label: "Destino",
         tipo: "select",
         lista: true,
         opcoes: [
-          { value: "rascunho", label: "Rascunho" },
-          { value: "no_ar", label: "No ar" },
-          { value: "pausada", label: "Pausada" },
-          { value: "encerrada", label: "Encerrada" },
+          { value: "Nacional", label: "Nacional" },
+          { value: "Internacional", label: "Internacional" },
         ],
       },
+      { name: "continente", label: "Continente", tipo: "texto" },
+      { name: "pais", label: "País", tipo: "texto" },
+      { name: "regiao", label: "Região", tipo: "texto" },
+      { name: "estado", label: "Estado", tipo: "texto", lista: true },
+      { name: "cidade", label: "Cidade", tipo: "texto" },
+      { name: "dominio", label: "Domínio da URL", tipo: "texto" },
+      { name: "url", label: "URL", tipo: "url", lista: true, placeholder: "https://" },
+      { name: "codigo_reduzido", label: "Código reduzido", tipo: "texto" },
+      { name: "codigo_feriado", label: "Código feriado", tipo: "texto" },
+      {
+        name: "banner_obrigatorio",
+        label: "Banner obrigatório?",
+        tipo: "select",
+        opcoes: [
+          { value: "Sim", label: "Sim" },
+          { value: "Não", label: "Não" },
+        ],
+      },
+      {
+        name: "tem_link_casamento",
+        label: "Tem link de casamento?",
+        tipo: "select",
+        opcoes: [
+          { value: "Sim", label: "Sim" },
+          { value: "Não", label: "Não" },
+        ],
+      },
+      { name: "link_casamento", label: "Link casamento", tipo: "url", placeholder: "https://" },
+      { name: "canal", label: "Canal", tipo: "texto", lista: true, placeholder: "Ex.: Google, Youtube" },
+      {
+        name: "tag_adm_mkt",
+        label: "TAG no ADM MKT",
+        tipo: "select",
+        opcoes: [
+          { value: "Sim", label: "Sim" },
+          { value: "Não", label: "Não" },
+        ],
+      },
+      {
+        name: "banner_no_ar",
+        label: "Banner no ar (Comercial)",
+        tipo: "select",
+        opcoes: [
+          { value: "Sim", label: "Sim" },
+          { value: "Não", label: "Não" },
+        ],
+      },
+      { name: "objetivo", label: "Objetivo / campanha", tipo: "texto" },
+      { name: "responsavel_id", label: "Responsável", tipo: "pessoa" },
       { name: "observacoes", label: "Observações", tipo: "textarea" },
     ],
   },

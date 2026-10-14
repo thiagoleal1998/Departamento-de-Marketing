@@ -22,7 +22,7 @@ export default async function LandingPagesPage() {
     <div className="space-y-6">
       <PageHeader
         titulo="Landing Pages"
-        descricao="Cadastro das landing pages: URL, objetivo, responsável e status."
+        descricao="Todas as landing pages: grupo, status de patrocínio, destino, URL, códigos, banner e canal."
       />
       <CadastroCrud
         chave="landing_pages"
@@ -32,6 +32,7 @@ export default async function LandingPagesPage() {
         podeExcluir={ehLideranca(usuario.role)}
         rotuloNovo="Nova landing page"
         vazio="Nenhuma landing page cadastrada ainda."
+        filtros={["grupo", "status_patrocinio", "destino"]}
       />
     </div>
   );

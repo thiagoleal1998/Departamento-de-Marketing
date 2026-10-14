@@ -39,6 +39,7 @@ export function CadastroCrud({
   podeExcluir,
   rotuloNovo,
   vazio,
+  filtros = [],
 }: {
   chave: CadastroChave;
   linhas: Linha[];
@@ -47,12 +48,16 @@ export function CadastroCrud({
   podeExcluir: boolean;
   rotuloNovo: string;
   vazio: string;
+  /** Nomes de campos (select) oferecidos como filtro, além da busca. */
+  filtros?: string[];
 }) {
   const def = CADASTROS[chave];
   const [editando, setEditando] = useState<string | "novo" | null>(null);
   const [valores, setValores] = useState<Record<string, string>>({});
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, startTransition] = useTransition();
+  const [busca, setBusca] = useState("");
+  const [filtroVal, setFiltroVal] = useState<Record<string, string>>({});
 
   const nomePessoa = new Map(pessoas.map((p) => [p.id, p.nome]));
   const nomeLp = new Map(lps.map((l) => [l.id, l.nome]));
@@ -60,7 +65,7 @@ export function CadastroCrud({
   function abrirNovo() {
     const base: Record<string, string> = {};
     for (const c of def.campos) {
-      base[c.name] = c.tipo === "select" ? c.opcoes?.[0]?.value ?? "" : "";
+      base[c.name] = c.padrao ?? "";
     }
     setValores(base);
     setErro(null);
@@ -136,6 +141,7 @@ export function CadastroCrud({
     } else if (c.tipo === "select") {
       controle = (
         <Select id={id} value={valor} onChange={(e) => set(e.target.value)}>
+          {c.obrigatorio ? null : <option value="">—</option>}
           {c.opcoes?.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
@@ -181,6 +187,18 @@ export function CadastroCrud({
   }
 
   const colunas = def.campos.filter((c) => c.lista);
+  const camposFiltro = def.campos.filter((c) => filtros.includes(c.name));
+
+  const termo = busca.trim().toLowerCase();
+  const visiveis = linhas.filter((l) => {
+    for (const [campo, valor] of Object.entries(filtroVal)) {
+      if (valor && (l[campo] ?? "") !== valor) return false;
+    }
+    if (!termo) return true;
+    return def.campos.some((c) =>
+      String(l[c.name] ?? "").toLowerCase().includes(termo)
+    );
+  });
 
   return (
     <div className="space-y-4">
@@ -223,6 +241,40 @@ export function CadastroCrud({
         </Card>
       )}
 
+      {linhas.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar…"
+            className="h-9 w-56"
+            aria-label="Buscar"
+          />
+          {camposFiltro.map((c) => (
+            <div key={c.name} className="w-44">
+              <Select
+                value={filtroVal[c.name] ?? ""}
+                onChange={(e) =>
+                  setFiltroVal((p) => ({ ...p, [c.name]: e.target.value }))
+                }
+                aria-label={c.label}
+                className="h-9"
+              >
+                <option value="">{c.label}: todos</option>
+                {c.opcoes?.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          ))}
+          <span className="text-xs text-muted-foreground">
+            {visiveis.length} de {linhas.length}
+          </span>
+        </div>
+      ) : null}
+
       {linhas.length === 0 ? (
         <p className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
           {vazio}
@@ -245,7 +297,7 @@ export function CadastroCrud({
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {linhas.map((l) => (
+                {visiveis.map((l) => (
                   <tr key={l.id} className="align-top">
                     {colunas.map((c) => (
                       <td key={c.name} className="px-4 py-3">
