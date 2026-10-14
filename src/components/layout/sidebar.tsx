@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Marca } from "@/components/shared/marca";
-import { NAVEGACAO } from "@/lib/navigation";
+import { NAVEGACAO, type ItemNav } from "@/lib/navigation";
 import { pode } from "@/lib/permissions";
 import type { Papel } from "@/types";
 
@@ -19,6 +19,29 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const itens = NAVEGACAO.filter((i) => !i.requer || pode(papel, i.requer));
+  const principais = itens.filter((i) => !i.separado);
+  const separados = itens.filter((i) => i.separado);
+
+  function renderItem(item: ItemNav) {
+    const ativo =
+      pathname === item.href || pathname.startsWith(item.href + "/");
+    const Icone = item.icone;
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        className={cn(
+          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+          ativo
+            ? cn("bg-gradient-to-r text-white shadow-sm", item.gradiente)
+            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+        )}
+      >
+        <Icone className="size-4 shrink-0" />
+        <span className="truncate">{item.label}</span>
+      </Link>
+    );
+  }
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r bg-card lg:flex">
@@ -34,27 +57,13 @@ export function Sidebar({
         </span>
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-        {itens.map((item) => {
-          const ativo =
-            pathname === item.href || pathname.startsWith(item.href + "/");
-          const Icone = item.icone;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                ativo
-                  ? cn("bg-gradient-to-r text-white shadow-sm", item.gradiente)
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              )}
-            >
-              <Icone className="size-4 shrink-0" />
-              <span className="truncate">{item.label}</span>
-            </Link>
-          );
-        })}
+      <nav className="flex flex-1 flex-col overflow-y-auto p-3">
+        <div className="space-y-1">{principais.map(renderItem)}</div>
+        {separados.length > 0 ? (
+          <div className="mt-auto space-y-1 border-t pt-3">
+            {separados.map(renderItem)}
+          </div>
+        ) : null}
       </nav>
 
       <div className="border-t p-3 text-center text-xs text-muted-foreground">

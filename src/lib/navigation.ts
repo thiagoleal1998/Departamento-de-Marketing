@@ -22,6 +22,8 @@ export interface ItemNav {
   /** Se definido, só aparece para quem tem a permissão. */
   requer?: Permissao;
   descricao?: string;
+  /** Aparece separado dos demais (rodapé do menu). */
+  separado?: boolean;
 }
 
 export const NAVEGACAO: ItemNav[] = [
@@ -83,18 +85,19 @@ export const NAVEGACAO: ItemNav[] = [
     descricao: "Brindes, flyers e banners",
   },
   {
-    href: "/sugestoes",
-    label: "Sugestões e Ideias",
-    icone: Lightbulb,
-    gradiente: "from-yellow-400 to-amber-500",
-    descricao: "Relatos, ideias e elogios",
-  },
-  {
     href: "/configuracoes",
     label: "Configurações",
     icone: Settings,
     gradiente: "from-slate-500 to-gray-600",
     requer: "gerir_usuarios",
     descricao: "Usuários e permissões",
+  },
+  {
+    href: "/sugestoes",
+    label: "Feedback",
+    icone: Lightbulb,
+    gradiente: "from-yellow-400 to-amber-500",
+    descricao: "Relatos, ideias e elogios",
+    separado: true,
   },
 ];

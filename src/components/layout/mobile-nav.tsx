@@ -13,25 +13,30 @@ export function MobileNav({ papel }: { papel: Papel }) {
   const itens = NAVEGACAO.filter((i) => !i.requer || pode(papel, i.requer));
 
   return (
-    <nav className="flex gap-1 overflow-x-auto border-b bg-card px-2 py-2 lg:hidden">
-      {itens.map((item) => {
+    <nav className="flex items-center gap-1 overflow-x-auto border-b bg-card px-2 py-2 lg:hidden">
+      {itens.map((item, idx) => {
+        const abreSeparados = item.separado && !itens[idx - 1]?.separado;
         const ativo =
           pathname === item.href || pathname.startsWith(item.href + "/");
         const Icone = item.icone;
         return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              "flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
-              ativo
-                ? cn("bg-gradient-to-r text-white shadow-sm", item.gradiente)
-                : "text-muted-foreground hover:bg-accent"
-            )}
-          >
-            <Icone className="size-3.5" />
-            {item.label}
-          </Link>
+          <div key={item.href} className="flex shrink-0 items-center gap-1">
+            {abreSeparados ? (
+              <span className="mx-1 h-5 w-px bg-border" aria-hidden />
+            ) : null}
+            <Link
+              href={item.href}
+              className={cn(
+                "flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
+                ativo
+                  ? cn("bg-gradient-to-r text-white shadow-sm", item.gradiente)
+                  : "text-muted-foreground hover:bg-accent"
+              )}
+            >
+              <Icone className="size-3.5" />
+              {item.label}
+            </Link>
+          </div>
         );
       })}
     </nav>
