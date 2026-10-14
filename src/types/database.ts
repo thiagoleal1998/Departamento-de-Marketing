@@ -258,3 +258,28 @@ export interface EstoqueMovimento {
   usuario_id: string | null;
   created_at: string;
 }
+
+/* ------------------------------------------------------------------ */
+/* Sugestões e ideias                                                  */
+/* ------------------------------------------------------------------ */
+
+export type SugestaoTipo = "ideia" | "problema" | "elogio";
+export type SugestaoStatus =
+  | "nova"
+  | "em_analise"
+  | "planejada"
+  | "concluida"
+  | "descartada";
+
+export interface Sugestao {
+  id: string;
+  tipo: SugestaoTipo;
+  titulo: string;
+  descricao: string;
+  status: SugestaoStatus;
+  resposta: string | null;
+  respondido_por: string | null;
+  autor_id: string;
+  created_at: string;
+  updated_at: string;
+}

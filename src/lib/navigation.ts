@@ -7,6 +7,7 @@ import {
   KanbanSquare,
   FolderKanban,
   Boxes,
+  Lightbulb,
   Settings,
   type LucideIcon,
 } from "lucide-react";
@@ -80,6 +81,13 @@ export const NAVEGACAO: ItemNav[] = [
     icone: Boxes,
     gradiente: "from-lime-500 to-green-600",
     descricao: "Brindes, flyers e banners",
+  },
+  {
+    href: "/sugestoes",
+    label: "Sugestões e Ideias",
+    icone: Lightbulb,
+    gradiente: "from-yellow-400 to-amber-500",
+    descricao: "Relatos, ideias e elogios",
   },
   {
     href: "/configuracoes",
