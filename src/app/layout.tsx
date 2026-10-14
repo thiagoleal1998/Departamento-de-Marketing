@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   title: "Painel do Departamento de Marketing",
   description:
     "Sistema centralizado de gestão, criação, operação e desenvolvimento do time de marketing.",
+  // A logo (estrela) configurada na marca é servida como favicon.
+  icons: { icon: "/marca-icone.png", apple: "/marca-icone.png" },
 };
 
 export default async function RootLayout({
