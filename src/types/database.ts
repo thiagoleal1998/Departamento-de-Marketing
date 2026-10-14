@@ -226,3 +226,35 @@ export interface AnotacoesUmAUm {
   visao_area_diferente: string;
   observacoes: string;
 }
+
+/* ------------------------------------------------------------------ */
+/* Estoque                                                             */
+/* ------------------------------------------------------------------ */
+
+export type EstoqueCategoria = "brinde" | "flyer" | "banner" | "outro";
+
+export interface EstoqueItem {
+  id: string;
+  nome: string;
+  categoria: EstoqueCategoria;
+  local: string | null;
+  quantidade: number;
+  estoque_minimo: number;
+  foto_url: string | null;
+  ativo: boolean;
+  criado_por: string | null;
+  created_at: string;
+}
+
+export interface EstoqueMovimento {
+  id: string;
+  item_id: string;
+  tipo: "entrada" | "saida";
+  quantidade: number;
+  saldo_apos: number;
+  motivo: string | null;
+  chamado_id: string | null;
+  projeto_id: string | null;
+  usuario_id: string | null;
+  created_at: string;
+}
