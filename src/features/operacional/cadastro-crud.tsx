@@ -40,6 +40,7 @@ export function CadastroCrud({
   rotuloNovo,
   vazio,
   filtros = [],
+  linkExterno,
 }: {
   chave: CadastroChave;
   linhas: Linha[];
@@ -50,6 +51,8 @@ export function CadastroCrud({
   vazio: string;
   /** Nomes de campos (select) oferecidos como filtro, além da busca. */
   filtros?: string[];
+  /** Botão extra ao lado de "Novo", abrindo um link em nova aba. */
+  linkExterno?: { label: string; href: string };
 }) {
   const def = CADASTROS[chave];
   const [editando, setEditando] = useState<string | "novo" | null>(null);
@@ -203,7 +206,14 @@ export function CadastroCrud({
   return (
     <div className="space-y-4">
       {editando === null ? (
-        <div className="flex justify-end">
+        <div className="flex flex-wrap justify-end gap-2">
+          {linkExterno ? (
+            <Button asChild variant="outline">
+              <a href={linkExterno.href} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="size-4" /> {linkExterno.label}
+              </a>
+            </Button>
+          ) : null}
           <Button onClick={abrirNovo}>
             <Plus className="size-4" /> {rotuloNovo}
           </Button>

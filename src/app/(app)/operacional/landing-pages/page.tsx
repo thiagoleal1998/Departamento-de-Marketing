@@ -33,6 +33,10 @@ export default async function LandingPagesPage() {
         rotuloNovo="Nova landing page"
         vazio="Nenhuma landing page cadastrada ainda."
         filtros={["grupo", "status_patrocinio", "destino"]}
+        linkExterno={{
+          label: "Editar LP",
+          href: "https://admin.resortsallinclusive.com.br/login#tabConteudo",
+        }}
       />
     </div>
   );
