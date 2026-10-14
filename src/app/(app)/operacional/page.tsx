@@ -63,7 +63,7 @@ export default async function OperacionalPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        titulo="Operacional"
+        titulo="Operacional · Tarefas"
         descricao="Kanban de tarefas — arraste os cards para mudar o status."
       />
       <KanbanTarefas tarefas={view} />

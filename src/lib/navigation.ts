@@ -8,6 +8,11 @@ import {
   FolderKanban,
   Boxes,
   Lightbulb,
+  ListChecks,
+  LayoutTemplate,
+  FileText,
+  ClipboardList,
+  KeyRound,
   Settings,
   type LucideIcon,
 } from "lucide-react";
@@ -24,6 +29,16 @@ export interface ItemNav {
   descricao?: string;
   /** Aparece separado dos demais (rodapé do menu). */
   separado?: boolean;
+  /** Submenu expansível. */
+  filhos?: SubItemNav[];
+}
+
+export interface SubItemNav {
+  href: string;
+  label: string;
+  icone: LucideIcon;
+  /** Ativo apenas quando o caminho é exatamente o href. */
+  exato?: boolean;
 }
 
 export const NAVEGACAO: ItemNav[] = [
@@ -68,7 +83,26 @@ export const NAVEGACAO: ItemNav[] = [
     label: "Operacional",
     icone: KanbanSquare,
     gradiente: "from-amber-500 to-orange-600",
-    descricao: "Tarefas e kanban",
+    descricao: "Tarefas, LPs, conteúdos e senhas",
+    filhos: [
+      { href: "/operacional", label: "Tarefas", icone: ListChecks, exato: true },
+      {
+        href: "/operacional/landing-pages",
+        label: "Landing Pages",
+        icone: LayoutTemplate,
+      },
+      {
+        href: "/operacional/conteudos-site",
+        label: "Conteúdos do site",
+        icone: FileText,
+      },
+      {
+        href: "/operacional/controle-lps",
+        label: "Controle de conteúdo das LPs",
+        icone: ClipboardList,
+      },
+      { href: "/operacional/senhas", label: "Senhas", icone: KeyRound },
+    ],
   },
   {
     href: "/projetos",

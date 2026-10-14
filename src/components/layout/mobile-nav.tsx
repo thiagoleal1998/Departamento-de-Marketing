@@ -2,22 +2,54 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NAVEGACAO } from "@/lib/navigation";
 import { pode } from "@/lib/permissions";
 import type { Papel } from "@/types";
+
+interface ItemPlano {
+  href: string;
+  label: string;
+  icone: LucideIcon;
+  gradiente: string;
+  exato?: boolean;
+  separado?: boolean;
+}
 
 /** Navegação horizontal para telas pequenas (abaixo da topbar). */
 export function MobileNav({ papel }: { papel: Papel }) {
   const pathname = usePathname();
   const itens = NAVEGACAO.filter((i) => !i.requer || pode(papel, i.requer));
 
+  // Submenus ficam "achatados" na barra horizontal.
+  const planos: ItemPlano[] = itens.flatMap((i): ItemPlano[] =>
+    i.filhos && i.filhos.length > 0
+      ? i.filhos.map((f) => ({
+          href: f.href,
+          label: f.label,
+          icone: f.icone,
+          gradiente: i.gradiente,
+          exato: f.exato,
+        }))
+      : [
+          {
+            href: i.href,
+            label: i.label,
+            icone: i.icone,
+            gradiente: i.gradiente,
+            separado: i.separado,
+          },
+        ]
+  );
+
   return (
     <nav className="flex items-center gap-1 overflow-x-auto border-b bg-card px-2 py-2 lg:hidden">
-      {itens.map((item, idx) => {
-        const abreSeparados = item.separado && !itens[idx - 1]?.separado;
-        const ativo =
-          pathname === item.href || pathname.startsWith(item.href + "/");
+      {planos.map((item, idx) => {
+        const abreSeparados = item.separado && !planos[idx - 1]?.separado;
+        const ativo = item.exato
+          ? pathname === item.href
+          : pathname === item.href || pathname.startsWith(item.href + "/");
         const Icone = item.icone;
         return (
           <div key={item.href} className="flex shrink-0 items-center gap-1">
