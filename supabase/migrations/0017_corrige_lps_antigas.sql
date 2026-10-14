@@ -2,7 +2,7 @@
 -- 0017 — CORREÇÃO: reimporta as LPs antigas (nome estava com a URL)
 -- (origem: 0016 — Importa as landing pages da planilha "Lista de Lp´s"
 -- Rode DEPOIS da 0015. Pode rodar mais de uma vez (não duplica).
--- Total: 47 registros (abas: Novas, B2C, V4, Antigas, Epic Pages, Controle Feriados).
+-- Total: 44 registros (abas: Novas, B2C, V4, Antigas, Epic Pages, Controle Feriados).
 -- =====================================================================
 
 -- Remove as linhas antigas importadas com erro (nome = URL) e reimporta corretas.
@@ -54,10 +54,7 @@ from (values
   ('Vila Galé Eco Resort do Cabo'::text, 'antigas'::text, 'produto'::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, 'https://destaques.litoralverde.com.br/vila-gale-do-cabo'::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text),
   ('Vila Galé Marés'::text, 'antigas'::text, 'produto'::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, 'https://destaques.litoralverde.com.br/vila-gale-mares'::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text),
   ('Vila Galé Touros'::text, 'antigas'::text, 'produto'::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, 'https://destaques.litoralverde.com.br/vila-gale-touros'::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text),
-  ('Villages Club Med de Neve'::text, 'antigas'::text, 'produto'::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, 'https://destaques.litoralverde.com.br/club-med-neve'::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text),
-  ('Ativas'::text, 'antigas'::text, 'produto'::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text),
-  ('Inativas'::text, 'antigas'::text, 'produto'::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text),
-  ('Já em nova versão de LP'::text, 'antigas'::text, 'produto'::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text)
+  ('Villages Club Med de Neve'::text, 'antigas'::text, 'produto'::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, 'https://destaques.litoralverde.com.br/club-med-neve'::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text)
 ) as v(nome, grupo, tipo_pagina, status_patrocinio, destino, continente, pais, regiao, estado, cidade, dominio, url, codigo_reduzido, codigo_feriado, banner_obrigatorio, tem_link_casamento, link_casamento, canal, tag_adm_mkt, banner_no_ar, observacoes)
 where not exists (
   select 1 from landing_pages l

@@ -1,7 +1,7 @@
 -- =====================================================================
 -- 0016 — Importa as landing pages da planilha "Lista de Lp´s"
 -- Rode DEPOIS da 0015. Pode rodar mais de uma vez (não duplica).
--- Total: 235 registros (abas: Novas, B2C, V4, Antigas, Epic Pages, Controle Feriados).
+-- Total: 232 registros (abas: Novas, B2C, V4, Antigas, Epic Pages, Controle Feriados).
 -- =====================================================================
 
 insert into landing_pages (nome, grupo, tipo_pagina, status_patrocinio, destino, continente, pais, regiao, estado, cidade, dominio, url, codigo_reduzido, codigo_feriado, banner_obrigatorio, tem_link_casamento, link_casamento, canal, tag_adm_mkt, banner_no_ar, observacoes)
@@ -200,9 +200,6 @@ from (values
   ('Vila Galé Marés'::text, 'antigas'::text, 'produto'::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, 'https://destaques.litoralverde.com.br/vila-gale-mares'::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text),
   ('Vila Galé Touros'::text, 'antigas'::text, 'produto'::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, 'https://destaques.litoralverde.com.br/vila-gale-touros'::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text),
   ('Villages Club Med de Neve'::text, 'antigas'::text, 'produto'::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, 'https://destaques.litoralverde.com.br/club-med-neve'::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text),
-  ('Ativas'::text, 'antigas'::text, 'produto'::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text),
-  ('Inativas'::text, 'antigas'::text, 'produto'::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text),
-  ('Já em nova versão de LP'::text, 'antigas'::text, 'produto'::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text),
   ('Beach Park'::text, 'epic'::text, 'produto'::text, 'desativado'::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, 'resortbeachpark.com.br'::text, null::text, null::text, null::text, null::text, null::text, 'RD Station e Google'::text, null::text, null::text, 'Indexação solicitada'::text),
   ('Búzios Beach Resort'::text, 'epic'::text, 'produto'::text, 'desativado'::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, 'buziosresort.com.br'::text, null::text, null::text, null::text, null::text, null::text, 'RD Station e Google'::text, null::text, null::text, null::text),
   ('Cruzeiro Grand Amazon'::text, 'epic'::text, 'produto'::text, 'desativado'::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, 'https://cruzeirograndamazon.com.br/'::text, null::text, null::text, null::text, null::text, null::text, 'RD Station e Google'::text, null::text, null::text, null::text),

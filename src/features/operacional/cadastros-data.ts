@@ -8,7 +8,19 @@ export async function listarCadastro(chave: CadastroChave) {
     .from(CADASTROS[chave].tabela)
     .select("*")
     .order("created_at", { ascending: false });
-  return (data ?? []) as ({ id: string } & Record<string, string | null>)[];
+  const linhas = (data ?? []) as ({ id: string } & Record<string, string | null>)[];
+
+  // Landing pages e conteúdos do site: ordem alfabética (pt-BR, ignora acento/caixa).
+  const campoOrdem =
+    chave === "landing_pages" ? "nome" : chave === "conteudos_site" ? "titulo" : null;
+  if (campoOrdem) {
+    linhas.sort((a, b) =>
+      String(a[campoOrdem] ?? "").localeCompare(String(b[campoOrdem] ?? ""), "pt-BR", {
+        sensitivity: "base",
+      })
+    );
+  }
+  return linhas;
 }
 
 export async function listarPessoasOpcoes() {
