@@ -11,6 +11,7 @@ import { exigirUsuario } from "@/lib/auth";
 import { pode } from "@/lib/permissions";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { mapaDePerfis } from "@/features/chamados/data";
+import { GestaoAbas } from "@/features/perfis/gestao-abas";
 import { PageHeader } from "@/components/shared/page-header";
 import { DataCard } from "@/components/shared/data-card";
 import { BarChartH, type BarraDado } from "@/components/shared/bar-chart";
@@ -121,6 +122,7 @@ export default async function GestaoPage() {
         titulo="Gestão"
         descricao="Indicadores e performance dos chamados de marketing."
       />
+      <GestaoAbas ativa="indicadores" />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <DataCard titulo="Total de chamados" valor={chamados.length} icone={Ticket} />
