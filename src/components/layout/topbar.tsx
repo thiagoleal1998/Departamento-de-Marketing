@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { sair } from "@/features/auth/actions";
 import { NotificacoesBell } from "@/features/notificacoes/bell";
+import { AtivarPush } from "@/features/notificacoes/ativar-push";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { obterNotificacoes } from "@/features/notificacoes/data";
 import { PAPEL_LABEL } from "@/types";
@@ -27,6 +28,7 @@ export async function Topbar({
       <div className="hidden lg:block" />
 
       <div className="flex items-center gap-2 sm:gap-3">
+        <AtivarPush />
         <ThemeToggle />
         <NotificacoesBell itens={itens} naoLidas={naoLidas} />
         <Badge variant="secondary" className="hidden sm:inline-flex">

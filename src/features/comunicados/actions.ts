@@ -54,6 +54,7 @@ export async function publicarComunicado(
   await notificar(todos, {
     tipo: "comunicado",
     titulo: `Novo comunicado: ${titulo}`,
+    corpo: corpo.length > 140 ? `${corpo.slice(0, 137)}…` : corpo,
     link: "/comunicados",
   });
 
