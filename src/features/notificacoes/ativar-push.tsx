@@ -108,7 +108,10 @@ export function AtivarPush() {
     }
   }
 
-  if (estado === "carregando" || estado === "indisponivel") return null;
+  // Depois de ativado, o botão some (nada mais a fazer aqui).
+  if (estado === "carregando" || estado === "indisponivel" || estado === "ativo") {
+    return null;
+  }
 
   if (estado === "bloqueado") {
     return (
