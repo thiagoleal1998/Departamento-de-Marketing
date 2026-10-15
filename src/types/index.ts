@@ -92,16 +92,28 @@ export const CHAMADO_TIPO_LABEL: Record<ChamadoTipo, string> = {
 /* ------------------------------------------------------------------ */
 /* Tarefas (kanban)                                                    */
 /* ------------------------------------------------------------------ */
-export type TarefaStatus = "a_fazer" | "em_andamento" | "revisao" | "concluida";
+export type TarefaStatus =
+  | "a_fazer"
+  | "em_andamento"
+  | "alteracoes"
+  | "aprovacao_gustavo"
+  | "aprovacao_thiago"
+  | "aprovacao_marco"
+  | "revisao"
+  | "concluida";
 
 export const TAREFA_STATUS_META: Record<
   TarefaStatus,
   { label: string; variant: BadgeVariant }
 > = {
-  a_fazer: { label: "A fazer", variant: "muted" },
+  a_fazer: { label: "Não iniciado", variant: "muted" },
   em_andamento: { label: "Em andamento", variant: "warning" },
+  alteracoes: { label: "Alterações", variant: "warning" },
+  aprovacao_gustavo: { label: "Em aprovação - Gustavo", variant: "info" },
+  aprovacao_thiago: { label: "Em aprovação - Thiago", variant: "info" },
+  aprovacao_marco: { label: "Em aprovação - Marco", variant: "info" },
   revisao: { label: "Em revisão", variant: "info" },
-  concluida: { label: "Concluída", variant: "success" },
+  concluida: { label: "Concluído", variant: "success" },
 };
 
 /* ------------------------------------------------------------------ */

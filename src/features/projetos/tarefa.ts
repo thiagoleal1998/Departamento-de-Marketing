@@ -10,7 +10,7 @@ export function etapaParaTarefaStatus(status: EtapaStatus): TarefaStatus {
 export function tarefaParaEtapaStatus(status: TarefaStatus): EtapaStatus {
   if (status === "concluida") return "concluida";
   if (status === "a_fazer") return "a_fazer";
-  return "em_andamento"; // em_andamento e revisao
+  return "em_andamento"; // em_andamento, alterações, aprovações e revisão
 }
 
 /** Cria o card de kanban vinculado a uma etapa de projeto (via service role). */

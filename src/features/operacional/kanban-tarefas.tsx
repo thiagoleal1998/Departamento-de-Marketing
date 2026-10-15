@@ -21,10 +21,14 @@ export interface TarefaView {
   prazo: string | null;
 }
 
+/** Colunas do quadro (iguais às do Notion). "Em revisão" só aparece se houver cards. */
 const COLUNAS: TarefaStatus[] = [
   "a_fazer",
   "em_andamento",
-  "revisao",
+  "alteracoes",
+  "aprovacao_gustavo",
+  "aprovacao_thiago",
+  "aprovacao_marco",
   "concluida",
 ];
 
@@ -60,9 +64,13 @@ export function KanbanTarefas({ tarefas }: { tarefas: TarefaView[] }) {
     });
   }
 
+  const colunas: TarefaStatus[] = lista.some((t) => t.status === "revisao")
+    ? [...COLUNAS.slice(0, -1), "revisao", "concluida"]
+    : COLUNAS;
+
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      {COLUNAS.map((coluna) => {
+    <div className="flex gap-4 overflow-x-auto pb-3">
+      {colunas.map((coluna) => {
         const daColuna = lista.filter((t) => t.status === coluna);
         return (
           <div
@@ -73,7 +81,7 @@ export function KanbanTarefas({ tarefas }: { tarefas: TarefaView[] }) {
             }}
             onDragLeave={() => setSobre((s) => (s === coluna ? null : s))}
             onDrop={() => soltar(coluna)}
-            className="space-y-3"
+            className="w-72 shrink-0 space-y-3"
           >
             <div className="flex items-center justify-between px-1">
               <Badge variant={TAREFA_STATUS_META[coluna].variant}>
