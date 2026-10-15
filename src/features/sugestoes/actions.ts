@@ -38,7 +38,24 @@ export async function enviarSugestao(
   const { error } = await supabase
     .from("sugestoes")
     .insert({ tipo, titulo, descricao, autor_id: user.id });
-  if (error) return { erro: "Não foi possível enviar. Tente novamente." };
+  if (error) {
+    console.error("[sugestoes] erro ao enviar:", error.code, error.message);
+    // 42P01 / PGRST205: tabela inexistente (migration 0013 não aplicada).
+    if (error.code === "42P01" || error.code === "PGRST205") {
+      return {
+        erro: "A área de feedback ainda não foi ativada no banco (migration 0013). Avise um gerente.",
+      };
+    }
+    // 42501: bloqueado pela RLS (permissão).
+    if (error.code === "42501") {
+      return {
+        erro: "Seu usuário não tem permissão para enviar. Avise um gerente.",
+      };
+    }
+    return {
+      erro: `Não foi possível enviar. Tente novamente. (código ${error.code ?? "?"})`,
+    };
+  }
 
   revalidatePath("/sugestoes");
   return { ok: true };
