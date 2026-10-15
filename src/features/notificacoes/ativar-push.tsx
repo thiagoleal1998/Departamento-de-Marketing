@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BellRing, BellOff, Loader2, Check } from "lucide-react";
-import { salvarAssinaturaPush, removerAssinaturaPush } from "./push-actions";
-import { cn } from "@/lib/utils";
+import { BellRing, BellOff, Loader2 } from "lucide-react";
+import { salvarAssinaturaPush } from "./push-actions";
 
 const CHAVE_PUBLICA = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
 
@@ -93,21 +92,6 @@ export function AtivarPush() {
     }
   }
 
-  async function desativar() {
-    setTrabalhando(true);
-    try {
-      const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.getSubscription();
-      if (sub) {
-        await removerAssinaturaPush(sub.endpoint);
-        await sub.unsubscribe();
-      }
-      setEstado("inativo");
-    } finally {
-      setTrabalhando(false);
-    }
-  }
-
   // Depois de ativado, o botão some (nada mais a fazer aqui).
   if (estado === "carregando" || estado === "indisponivel" || estado === "ativo") {
     return null;
@@ -124,35 +108,21 @@ export function AtivarPush() {
     );
   }
 
-  const ativo = estado === "ativo";
   return (
     <div className="relative">
       <button
         type="button"
-        onClick={ativo ? desativar : ativar}
+        onClick={ativar}
         disabled={trabalhando}
-        title={
-          ativo
-            ? "Avisos do navegador ativados. Clique para desativar."
-            : "Receber avisos de mensagens e comunicados no navegador"
-        }
-        className={cn(
-          "flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors",
-          ativo
-            ? "text-emerald-600 hover:bg-accent"
-            : "bg-primary/10 text-primary hover:bg-primary/20"
-        )}
+        title="Receber avisos de mensagens e comunicados no navegador"
+        className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
       >
         {trabalhando ? (
           <Loader2 className="size-4 animate-spin" />
-        ) : ativo ? (
-          <Check className="size-4" />
         ) : (
           <BellRing className="size-4" />
         )}
-        <span className="hidden sm:inline">
-          {ativo ? "Avisos ativados" : "Ativar avisos"}
-        </span>
+        <span className="hidden sm:inline">Ativar avisos</span>
       </button>
       {erro ? (
         <p className="absolute right-0 top-full z-50 mt-1 w-64 rounded-md border bg-popover p-2 text-xs text-destructive shadow">
