@@ -20,7 +20,7 @@ export default async function ConteudosSitePage() {
     <div className="space-y-6">
       <PageHeader
         titulo="Conteúdos do site"
-        descricao="Textos, banners e posts do site: responsável, status e prazo."
+        descricao="Tudo o que está no site: destinos, resorts, hotéis, circuitos, casamentos e LV Magazine."
       />
       <CadastroCrud
         chave="conteudos_site"
@@ -30,6 +30,7 @@ export default async function ConteudosSitePage() {
         podeExcluir={ehLideranca(usuario.role)}
         rotuloNovo="Novo conteúdo"
         vazio="Nenhum conteúdo cadastrado ainda."
+        filtros={["categoria", "abrangencia", "estrelas", "status"]}
       />
     </div>
   );
