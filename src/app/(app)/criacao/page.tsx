@@ -1,5 +1,6 @@
 import { Palette, FolderOpen, CheckCircle2, Library } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
+import { CanvaPainel } from "@/features/criacao/canva-painel";
 import { GeradorPeca } from "@/features/criacao/gerador-peca";
 import { TEMPLATES } from "@/features/criacao/templates";
 import { PageHeader } from "@/components/shared/page-header";
@@ -11,8 +12,13 @@ import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export default async function CriacaoPage() {
-  await exigirUsuario();
+export default async function CriacaoPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ canva?: string }>;
+}) {
+  const usuario = await exigirUsuario();
+  const { canva } = await searchParams;
 
   return (
     <div className="space-y-6">
@@ -21,9 +27,10 @@ export default async function CriacaoPage() {
         descricao="Crie materiais de marketing a partir de modelos pré-definidos."
       />
 
-      <Tabs defaultValue="gerar">
+      <Tabs defaultValue={canva ? "canva" : "gerar"}>
         <TabsList>
           <TabsTrigger value="gerar">Gerar peça</TabsTrigger>
+          <TabsTrigger value="canva">Canva</TabsTrigger>
           <TabsTrigger value="templates">Modelos</TabsTrigger>
           <TabsTrigger value="minhas">Minhas peças</TabsTrigger>
           <TabsTrigger value="aprovacoes">Aprovações</TabsTrigger>
@@ -32,6 +39,10 @@ export default async function CriacaoPage() {
 
         <TabsContent value="gerar">
           <GeradorPeca />
+        </TabsContent>
+
+        <TabsContent value="canva">
+          <CanvaPainel userId={usuario.id} aviso={canva} />
         </TabsContent>
 
         <TabsContent value="templates">
