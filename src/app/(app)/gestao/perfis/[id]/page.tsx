@@ -13,6 +13,7 @@ import {
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar } from "@/components/ui/avatar";
 import {
   Card,
   CardContent,
@@ -84,6 +85,16 @@ export default async function PerfilDetalhePage({
   const p = data as PerfilComportamental | null;
   if (!p) notFound();
 
+  let foto: string | null = null;
+  if (p.profile_id) {
+    const { data: u } = await supabase
+      .from("profiles")
+      .select("avatar_url")
+      .eq("id", p.profile_id)
+      .maybeSingle();
+    foto = (u as { avatar_url: string | null } | null)?.avatar_url ?? null;
+  }
+
   const d = p.dados;
   const primario = FATOR_META[p.perfil_primario];
   const secundario = p.perfil_secundario
@@ -92,6 +103,9 @@ export default async function PerfilDetalhePage({
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Avatar nome={p.nome} src={foto} className="size-20 text-xl" />
+        <div className="min-w-0 flex-1">
       <PageHeader
         titulo={p.nome}
         descricao={`${p.pesquisa ?? "Perfil comportamental"}${
@@ -105,6 +119,8 @@ export default async function PerfilDetalhePage({
           </Button>
         }
       />
+        </div>
+      </div>
 
       {/* Perfil e pontuações */}
       <div className="grid gap-4 lg:grid-cols-2">

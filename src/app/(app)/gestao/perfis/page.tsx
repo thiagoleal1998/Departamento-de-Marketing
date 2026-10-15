@@ -14,6 +14,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +33,23 @@ export default async function PerfisPage() {
     .select("*")
     .order("nome", { ascending: true });
   const perfis = (data as PerfilComportamental[] | null) ?? [];
+
+  // Fotos dos membros (perfil vinculado ao usuário do sistema).
+  const idsUsuarios = perfis
+    .map((p) => p.profile_id)
+    .filter((v): v is string => Boolean(v));
+  const fotos = new Map<string, string | null>();
+  if (idsUsuarios.length > 0) {
+    const { data: usuarios } = await supabase
+      .from("profiles")
+      .select("id, avatar_url")
+      .in("id", idsUsuarios);
+    for (const u of (usuarios as
+      | { id: string; avatar_url: string | null }[]
+      | null) ?? []) {
+      fotos.set(u.id, u.avatar_url);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -63,14 +81,21 @@ export default async function PerfisPage() {
               <Link key={p.id} href={`/gestao/perfis/${p.id}`}>
                 <Card className="h-full transition-colors hover:border-primary/40 hover:bg-accent/30">
                   <CardContent className="space-y-4 p-5">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <h3 className="truncate font-semibold leading-tight">
-                          {p.nome}
-                        </h3>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {p.pesquisa ?? "—"}
-                        </p>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <Avatar
+                          nome={p.nome}
+                          src={p.profile_id ? fotos.get(p.profile_id) : null}
+                          className="size-12 text-sm"
+                        />
+                        <div className="min-w-0">
+                          <h3 className="truncate font-semibold leading-tight">
+                            {p.nome}
+                          </h3>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {p.pesquisa ?? "—"}
+                          </p>
+                        </div>
                       </div>
                       <Badge
                         className={cn("shrink-0 text-white", meta.cor)}
