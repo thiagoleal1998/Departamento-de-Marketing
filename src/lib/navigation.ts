@@ -9,6 +9,7 @@ import {
   Boxes,
   Megaphone,
   MessagesSquare,
+  CalendarClock,
   Lightbulb,
   ListChecks,
   LayoutTemplate,
@@ -133,6 +134,13 @@ export const NAVEGACAO: ItemNav[] = [
     icone: MessagesSquare,
     gradiente: "from-teal-500 to-cyan-600",
     descricao: "Conversas ao vivo com o time",
+  },
+  {
+    href: "/solicitacoes",
+    label: "Solicitações",
+    icone: CalendarClock,
+    gradiente: "from-violet-500 to-purple-600",
+    descricao: "Folga, férias e ajustes de horário",
   },
   {
     href: "/configuracoes",

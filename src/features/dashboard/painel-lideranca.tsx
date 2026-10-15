@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   AlertTriangle,
+  CalendarClock,
   Boxes,
   CheckCircle2,
   FileText,
@@ -77,6 +78,7 @@ async function carregar(supabase: Supabase) {
     lpsTotal,
     conteudosPendentes,
     projetosAndamento,
+    solicitacoesPendentes,
   ] = await Promise.all([
     contar(
       supabase
@@ -129,6 +131,12 @@ async function carregar(supabase: Supabase) {
         .select("id", head)
         .in("status", ["planejamento", "em_andamento"])
     ),
+    contar(
+      supabase
+        .from("solicitacoes")
+        .select("id", head)
+        .eq("status", "pendente")
+    ),
   ]);
 
   // Estoque: compara quantidade x mínimo no servidor (pequeno volume).
@@ -170,6 +178,7 @@ async function carregar(supabase: Supabase) {
     lpsTotal,
     conteudosPendentes,
     projetosAndamento,
+    solicitacoesPendentes,
     estoqueBaixo,
     atrasadas,
   };
@@ -201,6 +210,13 @@ export async function PainelLideranca() {
       href: "/operacional",
       icone: ListChecks,
       descricao: "Prazo vencido e não concluídas",
+    },
+    {
+      titulo: "Solicitações pendentes",
+      qtd: d.solicitacoesPendentes,
+      href: "/solicitacoes",
+      icone: CalendarClock,
+      descricao: "Folga, férias e ajustes aguardando decisão",
     },
     {
       titulo: "Feedbacks novos",
