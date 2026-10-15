@@ -1,5 +1,6 @@
 import { conexaoDoUsuario, canvaConfigurado, canvaFetch } from "@/lib/canva";
-import { CriarNoCanva, BotaoDesconectar } from "./canva-cliente";
+import { BotaoDesconectar } from "./canva-cliente";
+import { BriefingCanva } from "./canva-briefing";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatarData } from "@/lib/utils";
@@ -76,7 +77,7 @@ export async function CanvaPainel({
             </p>
             <BotaoDesconectar />
           </div>
-          <CriarNoCanva />
+          <BriefingCanva />
         </CardContent>
       </Card>
 

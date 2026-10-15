@@ -11,6 +11,11 @@ export const CANVA_ESCOPOS = [
   "asset:read",
   "asset:write",
   "profile:read",
+  "folder:read",
+  "folder:write",
+  "brandtemplate:meta:read",
+  "brandtemplate:content:read",
+  "brandtemplate:content:write",
 ].join(" ");
 
 export function canvaConfigurado(): boolean {
