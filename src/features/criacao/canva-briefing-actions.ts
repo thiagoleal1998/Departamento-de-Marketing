@@ -164,6 +164,7 @@ export interface ModeloMarca {
   id: string;
   titulo: string;
   campos: { nome: string; tipo: string }[];
+  erro?: string;
 }
 
 /** Modelos de marca da pessoa e seus campos preenchíveis. */
@@ -188,7 +189,7 @@ export async function listarModelos(): Promise<{
       nome,
       tipo: c.type,
     }));
-    modelos.push({ id: t.id, titulo: t.title, campos });
+    modelos.push({ id: t.id, titulo: t.title, campos, erro: ds.erro });
   }
   return { modelos };
 }

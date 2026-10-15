@@ -281,7 +281,11 @@ export function BriefingCanva() {
             </Select>
             {modelo && camposTexto.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                Este modelo não tem campos de texto preenchíveis.
+                {modelo.erro
+                  ? `Não foi possível ler os campos do modelo: ${modelo.erro}`
+                  : modelo.campos.length > 0
+                    ? `O modelo só tem campos de outros tipos (${modelo.campos.map((c) => c.nome + ": " + c.tipo).join(", ")}).`
+                    : "O Canva não encontrou campos de dados neste modelo. No Canva, marque os textos com Data autofill e publique de novo como modelo da marca."}
               </p>
             ) : null}
             {camposTexto.map((c) => (
