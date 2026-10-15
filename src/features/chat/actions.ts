@@ -84,14 +84,26 @@ export async function marcarConversaLida(conversaId: string) {
   } = await supabase.auth.getUser();
   if (!user) return;
 
-  await supabase.from("chat_membros").upsert(
-    {
+  const agora = new Date().toISOString();
+
+  // Conversa direta: a linha de membro já existe -> só atualiza.
+  // (Um upsert passaria pela regra de INSERT, que só vale para a sala geral.)
+  const { data: atualizadas } = await supabase
+    .from("chat_membros")
+    .update({ ultima_leitura: agora })
+    .eq("conversa_id", conversaId)
+    .eq("usuario_id", user.id)
+    .select("conversa_id");
+
+  // Sala geral: na primeira vez ainda não há linha -> cria.
+  if (!atualizadas || atualizadas.length === 0) {
+    await supabase.from("chat_membros").insert({
       conversa_id: conversaId,
       usuario_id: user.id,
-      ultima_leitura: new Date().toISOString(),
-    },
-    { onConflict: "conversa_id,usuario_id" }
-  );
+      ultima_leitura: agora,
+    });
+  }
+
   revalidatePath("/", "layout");
 }
 
