@@ -94,6 +94,11 @@ export interface Tarefa {
   prazo: string | null;
   ordem: number;
   created_at: string;
+  /** Campos vindos da importação do Notion (podem não existir ainda). */
+  link?: string | null;
+  responsaveis_notion?: string | null;
+  prioridade?: number | null;
+  status_notion?: string | null;
 }
 
 export interface Projeto {
