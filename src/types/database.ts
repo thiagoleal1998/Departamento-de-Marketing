@@ -241,6 +241,10 @@ export interface EstoqueItem {
   quantidade: number;
   estoque_minimo: number;
   foto_url: string | null;
+  descricao: string | null;
+  cor: string | null;
+  danificados: number;
+  observacoes: string | null;
   ativo: boolean;
   criado_por: string | null;
   created_at: string;

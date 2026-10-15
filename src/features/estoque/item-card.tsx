@@ -100,6 +100,11 @@ export function ItemCard({
               <h3 className="truncate font-semibold leading-tight">{item.nome}</h3>
               <Badge variant="secondary">{CATEGORIA_LABEL[item.categoria]}</Badge>
             </div>
+            {item.cor || item.descricao ? (
+              <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                {[item.cor, item.descricao].filter(Boolean).join(" · ")}
+              </p>
+            ) : null}
             {item.local ? (
               <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                 <MapPin className="size-3" /> {item.local}
@@ -107,7 +112,17 @@ export function ItemCard({
             ) : null}
             <p className="mt-1 text-xs text-muted-foreground">
               Mínimo: {item.estoque_minimo}
+              {item.danificados > 0 ? (
+                <span className="ml-2 text-amber-600">
+                  · {item.danificados} danificado(s)
+                </span>
+              ) : null}
             </p>
+            {item.observacoes ? (
+              <p className="mt-0.5 line-clamp-2 text-xs italic text-muted-foreground">
+                {item.observacoes}
+              </p>
+            ) : null}
           </div>
         </div>
 

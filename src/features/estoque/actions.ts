@@ -35,6 +35,10 @@ export async function criarItemEstoque(
   const local = String(formData.get("local") ?? "").trim() || null;
   const quantidade = Math.max(0, parseInt(String(formData.get("quantidade") ?? "0"), 10) || 0);
   const estoque_minimo = Math.max(0, parseInt(String(formData.get("estoque_minimo") ?? "0"), 10) || 0);
+  const descricao = String(formData.get("descricao") ?? "").trim() || null;
+  const cor = String(formData.get("cor") ?? "").trim() || null;
+  const danificados = Math.max(0, parseInt(String(formData.get("danificados") ?? "0"), 10) || 0);
+  const observacoes = String(formData.get("observacoes") ?? "").trim() || null;
   const fotoRaw = String(formData.get("foto_url") ?? "");
 
   if (!nome) return { erro: "Informe o nome do item." };
@@ -53,6 +57,10 @@ export async function criarItemEstoque(
     local,
     quantidade,
     estoque_minimo,
+    descricao,
+    cor,
+    danificados,
+    observacoes,
     foto_url,
     criado_por: user.id,
   });

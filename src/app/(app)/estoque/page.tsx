@@ -36,7 +36,9 @@ export default async function EstoquePage() {
     mapaDePerfis(),
   ]);
 
-  const nomeItem = new Map(itens.map((i) => [i.id, i.nome]));
+  const nomeItem = new Map(
+    itens.map((i) => [i.id, i.cor ? `${i.nome} (${i.cor})` : i.nome])
+  );
   const rotuloChamado = new Map(vinculos.chamados.map((c) => [c.id, c.rotulo]));
   const rotuloProjeto = new Map(vinculos.projetos.map((p) => [p.id, p.rotulo]));
   const abaixoMinimo = itens.filter((i) => i.quantidade <= i.estoque_minimo);

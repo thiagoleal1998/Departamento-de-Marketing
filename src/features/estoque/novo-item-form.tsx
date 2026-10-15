@@ -116,6 +116,22 @@ export function NovoItemForm() {
               <Label htmlFor="est-local">Local</Label>
               <Input id="est-local" name="local" placeholder="Ex.: Armário 2, prateleira B" />
             </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="est-cor">Cor</Label>
+              <Input id="est-cor" name="cor" placeholder="Ex.: Verde" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="est-desc">Descrição</Label>
+              <Input id="est-desc" name="descricao" placeholder="Ex.: Logo, tampa e danos conferidos" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="est-dan">Danificados</Label>
+              <Input id="est-dan" name="danificados" type="number" min={0} defaultValue={0} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="est-obs">Observações</Label>
+              <Input id="est-obs" name="observacoes" placeholder="Ex.: 2 amassadas" />
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="est-qtd">Quantidade inicial</Label>
