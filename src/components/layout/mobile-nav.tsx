@@ -6,6 +6,7 @@ import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NAVEGACAO } from "@/lib/navigation";
 import { pode } from "@/lib/permissions";
+import { somarContagens, type Contagens } from "@/lib/contagens";
 import type { Papel } from "@/types";
 
 interface ItemPlano {
@@ -18,7 +19,13 @@ interface ItemPlano {
 }
 
 /** Navegação horizontal para telas pequenas (abaixo da topbar). */
-export function MobileNav({ papel }: { papel: Papel }) {
+export function MobileNav({
+  papel,
+  contagens,
+}: {
+  papel: Papel;
+  contagens: Contagens;
+}) {
   const pathname = usePathname();
   const itens = NAVEGACAO.filter((i) => !i.requer || pode(papel, i.requer));
 
@@ -67,6 +74,11 @@ export function MobileNav({ papel }: { papel: Papel }) {
             >
               <Icone className="size-3.5" />
               {item.label}
+              {somarContagens(contagens, item.href, item.exato) > 0 ? (
+                <span className="rounded-full bg-destructive px-1.5 text-[10px] font-bold leading-4 text-destructive-foreground">
+                  {somarContagens(contagens, item.href, item.exato)}
+                </span>
+              ) : null}
             </Link>
           </div>
         );

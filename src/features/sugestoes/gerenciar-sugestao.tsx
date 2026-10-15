@@ -20,10 +20,12 @@ export function GerenciarSugestao({
   id,
   statusInicial,
   respostaInicial,
+  rotulos = STATUS_LABEL,
 }: {
   id: string;
   statusInicial: SugestaoStatus;
   respostaInicial: string | null;
+  rotulos?: Record<SugestaoStatus, string>;
 }) {
   const [status, setStatus] = useState<SugestaoStatus>(statusInicial);
   const [resposta, setResposta] = useState(respostaInicial ?? "");
@@ -60,9 +62,9 @@ export function GerenciarSugestao({
           onChange={(e) => setStatus(e.target.value as SugestaoStatus)}
           aria-label="Status"
         >
-          {(Object.keys(STATUS_LABEL) as SugestaoStatus[]).map((s) => (
+          {(Object.keys(rotulos) as SugestaoStatus[]).map((s) => (
             <option key={s} value={s}>
-              {STATUS_LABEL[s]}
+              {rotulos[s]}
             </option>
           ))}
         </Select>

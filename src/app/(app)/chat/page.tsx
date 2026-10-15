@@ -1,0 +1,169 @@
+import Link from "next/link";
+import { Users, User } from "lucide-react";
+import { exigirUsuario } from "@/lib/auth";
+import { criarClienteServidor } from "@/lib/supabase/server";
+import { abrirConversaDireta } from "@/features/chat/actions";
+import { CONVERSA_GERAL } from "@/features/chat/constantes";
+import { ChatJanela, type MensagemView } from "@/features/chat/chat-janela";
+import { PageHeader } from "@/components/shared/page-header";
+import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+
+export const dynamic = "force-dynamic";
+
+interface PessoaLite {
+  id: string;
+  nome: string;
+}
+
+export default async function ChatPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ c?: string }>;
+}) {
+  const { c } = await searchParams;
+  const usuario = await exigirUsuario();
+  const supabase = await criarClienteServidor();
+
+  const [{ data: pessoasData }, { data: membrosData }, { data: naoLidasData }] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select("id, nome")
+        .eq("ativo", true)
+        .order("nome", { ascending: true }),
+      supabase
+        .from("chat_membros")
+        .select("conversa_id, usuario_id, chat_conversas!inner(tipo)")
+        .eq("chat_conversas.tipo", "direta"),
+      supabase.rpc("chat_nao_lidas"),
+    ]);
+
+  const pessoas = (pessoasData as PessoaLite[] | null) ?? [];
+  const nomes: Record<string, string> = Object.fromEntries(
+    pessoas.map((p) => [p.id, p.nome])
+  );
+  const naoLidas = new Map<string, number>(
+    ((naoLidasData as { conversa_id: string; qtd: number }[] | null) ?? []).map(
+      (r) => [r.conversa_id, Number(r.qtd)]
+    )
+  );
+
+  // Conversa direta -> a outra pessoa.
+  const diretas = new Map<string, string>(); // conversa_id -> outro usuario
+  for (const m of (membrosData as
+    | { conversa_id: string; usuario_id: string }[]
+    | null) ?? []) {
+    if (m.usuario_id !== usuario.id) diretas.set(m.conversa_id, m.usuario_id);
+  }
+  const outraPessoaConversa = new Map<string, string>(
+    Array.from(diretas.entries()).map(([conv, outro]) => [outro, conv])
+  );
+
+  const conversaId =
+    c && (c === CONVERSA_GERAL || diretas.has(c)) ? c : CONVERSA_GERAL;
+  const ehGeral = conversaId === CONVERSA_GERAL;
+  const tituloConversa = ehGeral
+    ? "Sala geral do time"
+    : nomes[diretas.get(conversaId) ?? ""] ?? "Conversa";
+
+  const { data: msgData } = await supabase
+    .from("chat_mensagens")
+    .select("id, autor_id, texto, created_at")
+    .eq("conversa_id", conversaId)
+    .order("created_at", { ascending: false })
+    .limit(100);
+  const mensagens = ((msgData as MensagemView[] | null) ?? []).reverse();
+
+  const outras = pessoas.filter((p) => p.id !== usuario.id);
+
+  return (
+    <div className="space-y-4">
+      <PageHeader
+        titulo="Chat"
+        descricao="Converse ao vivo com a equipe: sala geral ou conversas diretas."
+      />
+
+      <Card className="grid h-[calc(100vh-15rem)] min-h-[420px] grid-cols-1 overflow-hidden md:grid-cols-[260px_1fr]">
+        {/* Lista de conversas */}
+        <aside className="overflow-y-auto border-b md:border-b-0 md:border-r">
+          <Link
+            href="/chat"
+            className={cn(
+              "flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors hover:bg-accent/50",
+              ehGeral && "bg-accent"
+            )}
+          >
+            <Users className="size-4" />
+            <span className="flex-1">Sala geral</span>
+            {naoLidas.get(CONVERSA_GERAL) ? (
+              <Selo valor={naoLidas.get(CONVERSA_GERAL) ?? 0} />
+            ) : null}
+          </Link>
+
+          <p className="px-4 pb-1 pt-3 text-xs font-semibold uppercase text-muted-foreground">
+            Pessoas
+          </p>
+          {outras.map((p) => {
+            const conv = outraPessoaConversa.get(p.id);
+            const ativa = conv && conv === conversaId;
+            const n = conv ? naoLidas.get(conv) ?? 0 : 0;
+            const conteudo = (
+              <>
+                <User className="size-4" />
+                <span className="flex-1 truncate">{p.nome}</span>
+                {n > 0 ? <Selo valor={n} /> : null}
+              </>
+            );
+            return conv ? (
+              <Link
+                key={p.id}
+                href={`/chat?c=${conv}`}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2.5 text-sm transition-colors hover:bg-accent/50",
+                  ativa && "bg-accent font-medium"
+                )}
+              >
+                {conteudo}
+              </Link>
+            ) : (
+              <form key={p.id} action={abrirConversaDireta}>
+                <input type="hidden" name="usuario_id" value={p.id} />
+                <button
+                  type="submit"
+                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+                >
+                  {conteudo}
+                </button>
+              </form>
+            );
+          })}
+        </aside>
+
+        {/* Conversa */}
+        <section className="flex min-h-0 flex-col">
+          <header className="border-b px-4 py-3 text-sm font-semibold">
+            {tituloConversa}
+          </header>
+          <div className="min-h-0 flex-1">
+            <ChatJanela
+              key={conversaId}
+              conversaId={conversaId}
+              meuId={usuario.id}
+              mensagensIniciais={mensagens}
+              nomes={nomes}
+            />
+          </div>
+        </section>
+      </Card>
+    </div>
+  );
+}
+
+function Selo({ valor }: { valor: number }) {
+  return (
+    <span className="flex min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[11px] font-bold leading-5 text-destructive-foreground">
+      {valor > 99 ? "99+" : valor}
+    </span>
+  );
+}

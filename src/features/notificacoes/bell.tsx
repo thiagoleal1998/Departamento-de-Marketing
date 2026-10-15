@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { Bell } from "lucide-react";
-import { marcarTodasLidas } from "./actions";
+import { marcarTodasLidas, marcarLida } from "./actions";
 import { formatarDataHora } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import type { Notificacao } from "@/types/database";
@@ -30,11 +30,21 @@ export function NotificacoesBell({
   }, []);
 
   function abrir() {
-    const abrindo = !open;
-    setOpen(abrindo);
-    if (abrindo && naoLidas > 0 && !pendente) {
+    setOpen(!open);
+  }
+
+  function marcarTodas() {
+    if (pendente) return;
+    startTransition(async () => {
+      await marcarTodasLidas();
+    });
+  }
+
+  function aoClicar(id: string, lida: boolean) {
+    setOpen(false);
+    if (!lida) {
       startTransition(async () => {
-        await marcarTodasLidas();
+        await marcarLida(id);
       });
     }
   }
@@ -57,8 +67,17 @@ export function NotificacoesBell({
 
       {open ? (
         <div className="absolute right-0 z-50 mt-2 w-80 origin-top-right overflow-hidden rounded-xl border bg-popover text-popover-foreground shadow-lg animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 duration-150">
-          <div className="border-b px-4 py-3 text-sm font-semibold">
-            Notificações
+          <div className="flex items-center justify-between border-b px-4 py-3">
+            <span className="text-sm font-semibold">Notificações</span>
+            {naoLidas > 0 ? (
+              <button
+                type="button"
+                onClick={marcarTodas}
+                className="text-xs font-medium text-primary hover:underline"
+              >
+                Marcar todas como lidas
+              </button>
+            ) : null}
           </div>
           {itens.length === 0 ? (
             <p className="px-4 py-8 text-center text-sm text-muted-foreground">
@@ -85,7 +104,7 @@ export function NotificacoesBell({
                 return (
                   <li key={n.id}>
                     {n.link ? (
-                      <Link href={n.link} onClick={() => setOpen(false)}>
+                      <Link href={n.link} onClick={() => aoClicar(n.id, n.lida)}>
                         {conteudo}
                       </Link>
                     ) : (

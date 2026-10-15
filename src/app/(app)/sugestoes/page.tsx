@@ -2,7 +2,9 @@ import Link from "next/link";
 import { Lightbulb, List, Columns3 } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import { ehLideranca } from "@/lib/permissions";
-import { listarSugestoes } from "@/features/sugestoes/data";
+import { listarSugestoes, obterNomesEtapas } from "@/features/sugestoes/data";
+import { NomeEtapa } from "@/features/sugestoes/nome-etapa";
+import { MarcarVisto } from "@/features/notificacoes/marcar-visto";
 import { mapaDePerfis } from "@/features/chamados/data";
 import { SugestaoForm } from "@/features/sugestoes/sugestao-form";
 import {
@@ -53,9 +55,10 @@ export default async function SugestoesPage({
   const verTodas = ehLideranca(usuario.role);
   const visao = verTodas && visaoRaw === "kanban" ? "kanban" : "lista";
 
-  const [sugestoes, perfis] = await Promise.all([
+  const [sugestoes, perfis, etapas] = await Promise.all([
     listarSugestoes(),
     mapaDePerfis(),
+    obterNomesEtapas(),
   ]);
 
   const autor = (s: Sugestao) =>
@@ -63,6 +66,7 @@ export default async function SugestoesPage({
 
   return (
     <div className="space-y-6">
+      <MarcarVisto prefixo="/sugestoes" />
       <PageHeader
         titulo="Feedback"
         descricao="Relate um problema, sugira uma melhoria ou deixe um elogio. A liderança acompanha e responde por aqui."
@@ -115,9 +119,11 @@ export default async function SugestoesPage({
                   className="w-72 shrink-0 space-y-3 rounded-lg bg-muted/40 p-3"
                 >
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold">
-                      {STATUS_LABEL[status]}
-                    </h3>
+                    <NomeEtapa
+                      status={status}
+                      nome={etapas[status]}
+                      editavel={ehGerente}
+                    />
                     <Badge variant="secondary">{doStatus.length}</Badge>
                   </div>
                   {doStatus.length === 0 ? (
@@ -153,6 +159,7 @@ export default async function SugestoesPage({
                                   id={s.id}
                                   statusInicial={s.status}
                                   respostaInicial={s.resposta}
+                                  rotulos={etapas}
                                 />
                               </div>
                             </details>
@@ -183,7 +190,7 @@ export default async function SugestoesPage({
                         {formatarDataHora(s.created_at)}
                       </p>
                     </div>
-                    <Badge variant="outline">{STATUS_LABEL[s.status]}</Badge>
+                    <Badge variant="outline">{etapas[s.status]}</Badge>
                   </div>
 
                   <p className="whitespace-pre-line text-sm text-muted-foreground">
@@ -204,6 +211,7 @@ export default async function SugestoesPage({
                       id={s.id}
                       statusInicial={s.status}
                       respostaInicial={s.resposta}
+                      rotulos={etapas}
                     />
                   ) : null}
                 </CardContent>

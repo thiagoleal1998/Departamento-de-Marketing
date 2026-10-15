@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { criarClienteServidor } from "@/lib/supabase/server";
+import { idsPorPapel, notificar } from "@/features/notificacoes/enviar";
 import type { SugestaoStatus, SugestaoTipo } from "@/types/database";
 
 const TIPOS: SugestaoTipo[] = ["ideia", "problema", "elogio"];
@@ -57,7 +58,16 @@ export async function enviarSugestao(
     };
   }
 
+  // Avisa a liderança (contador no menu + sino).
+  const lideranca = await idsPorPapel(["gerente", "lider"], user.id);
+  await notificar(lideranca, {
+    tipo: "sugestao",
+    titulo: `Novo feedback: ${titulo}`,
+    link: "/sugestoes",
+  });
+
   revalidatePath("/sugestoes");
+  revalidatePath("/", "layout");
   return { ok: true };
 }
 
@@ -84,6 +94,12 @@ export async function atualizarSugestao(
   }
 
   const texto = resposta.trim();
+  const { data: anterior } = await supabase
+    .from("sugestoes")
+    .select("autor_id, titulo, status, resposta")
+    .eq("id", id)
+    .single();
+
   const { error } = await supabase
     .from("sugestoes")
     .update({
@@ -94,6 +110,69 @@ export async function atualizarSugestao(
     })
     .eq("id", id);
   if (error) return { erro: "Não foi possível salvar." };
+
+  // Avisa quem enviou quando houver resposta nova ou mudança de etapa.
+  const ant = anterior as {
+    autor_id: string;
+    titulo: string;
+    status: string;
+    resposta: string | null;
+  } | null;
+  if (ant && ant.autor_id !== user.id) {
+    const mudouStatus = ant.status !== status;
+    const novaResposta = Boolean(texto) && texto !== (ant.resposta ?? "");
+    if (mudouStatus || novaResposta) {
+      await notificar([ant.autor_id], {
+        tipo: "sugestao_resposta",
+        titulo: novaResposta
+          ? `Seu feedback "${ant.titulo}" foi respondido`
+          : `Seu feedback "${ant.titulo}" mudou de etapa`,
+        link: "/sugestoes",
+      });
+    }
+  }
+
+  revalidatePath("/sugestoes");
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/** Gerente renomeia uma etapa do kanban do Feedback. */
+export async function renomearEtapaSugestao(
+  status: SugestaoStatus,
+  nome: string
+): Promise<EstadoSugestao> {
+  const supabase = await criarClienteServidor();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { erro: "Sessão expirada." };
+  if (!STATUS.includes(status)) return { erro: "Etapa inválida." };
+
+  const limpo = nome.trim();
+  if (!limpo) return { erro: "Informe um nome para a etapa." };
+  if (limpo.length > 40) return { erro: "O nome está muito longo (máx. 40)." };
+
+  const { data: perfil } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (perfil?.role !== "gerente") {
+    return { erro: "Apenas gerentes podem renomear etapas." };
+  }
+
+  const { error } = await supabase
+    .from("sugestoes_etapas")
+    .upsert({ status, nome: limpo }, { onConflict: "status" });
+  if (error) {
+    return {
+      erro:
+        error.code === "42P01" || error.code === "PGRST205"
+          ? "Rode a migration 0020 para editar os nomes das etapas."
+          : "Não foi possível salvar o nome.",
+    };
+  }
 
   revalidatePath("/sugestoes");
   return { ok: true };

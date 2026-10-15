@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { Marca } from "@/components/shared/marca";
 import { NAVEGACAO, type ItemNav, type SubItemNav } from "@/lib/navigation";
 import { pode } from "@/lib/permissions";
+import { somarContagens, type Contagens } from "@/lib/contagens";
 import type { Papel } from "@/types";
 
 function estaAtivo(pathname: string, href: string, exato?: boolean) {
@@ -16,14 +17,31 @@ function estaAtivo(pathname: string, href: string, exato?: boolean) {
     : pathname === href || pathname.startsWith(href + "/");
 }
 
+function Selo({ valor, claro = false }: { valor: number; claro?: boolean }) {
+  if (valor <= 0) return null;
+  return (
+    <span
+      className={cn(
+        "ml-auto flex min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-[11px] font-bold leading-5",
+        claro ? "bg-white text-foreground" : "bg-destructive text-destructive-foreground"
+      )}
+      aria-label={`${valor} novidades`}
+    >
+      {valor > 99 ? "99+" : valor}
+    </span>
+  );
+}
+
 function ItemComFilhos({
   item,
   filhos,
   pathname,
+  contagens,
 }: {
   item: ItemNav;
   filhos: SubItemNav[];
   pathname: string;
+  contagens: Contagens;
 }) {
   const ativo = estaAtivo(pathname, item.href);
   const [aberto, setAberto] = useState(ativo);
@@ -46,6 +64,7 @@ function ItemComFilhos({
         >
           <Icone className="size-4 shrink-0" />
           <span className="truncate">{item.label}</span>
+          <Selo valor={somarContagens(contagens, item.href)} claro={ativo} />
         </Link>
         <button
           type="button"
@@ -77,6 +96,7 @@ function ItemComFilhos({
               >
                 <FIcone className="size-3.5 shrink-0" />
                 <span className="truncate">{f.label}</span>
+                <Selo valor={somarContagens(contagens, f.href, f.exato)} />
               </Link>
             );
           })}
@@ -90,10 +110,12 @@ export function Sidebar({
   papel,
   nomePainel,
   logoUrl,
+  contagens,
 }: {
   papel: Papel;
   nomePainel: string;
   logoUrl: string | null;
+  contagens: Contagens;
 }) {
   const pathname = usePathname();
   const itens = NAVEGACAO.filter((i) => !i.requer || pode(papel, i.requer));
@@ -108,6 +130,7 @@ export function Sidebar({
           item={item}
           filhos={item.filhos}
           pathname={pathname}
+          contagens={contagens}
         />
       );
     }
@@ -126,6 +149,7 @@ export function Sidebar({
       >
         <Icone className="size-4 shrink-0" />
         <span className="truncate">{item.label}</span>
+        <Selo valor={somarContagens(contagens, item.href)} claro={ativo} />
       </Link>
     );
   }
