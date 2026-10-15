@@ -17,7 +17,7 @@ export function GestaoAbas({ ativa }: { ativa: "indicadores" | "perfis" }) {
   return (
     <nav
       aria-label="Seções de Gestão"
-      className="flex gap-1 overflow-x-auto border-b"
+      className="flex flex-wrap gap-1 border-b"
     >
       {abas.map((a) => {
         const Icone = a.icone;
