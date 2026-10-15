@@ -99,6 +99,8 @@ export interface Tarefa {
   responsaveis_notion?: string | null;
   prioridade?: number | null;
   status_notion?: string | null;
+  tag?: string | null;
+  conteudo?: string | null;
 }
 
 export interface Projeto {

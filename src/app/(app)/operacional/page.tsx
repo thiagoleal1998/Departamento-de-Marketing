@@ -1,6 +1,6 @@
 import { exigirUsuario } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
-import { mapaDePerfis } from "@/features/chamados/data";
+import { obterDiretorio } from "@/features/equipe/diretorio";
 import {
   KanbanTarefas,
   type TarefaView,
@@ -16,7 +16,7 @@ export default async function OperacionalPage() {
 
   const [{ data: tarefasData }, perfis] = await Promise.all([
     supabase.from("tarefas").select("*").order("ordem", { ascending: true }),
-    mapaDePerfis(),
+    obterDiretorio(),
   ]);
   const todas = (tarefasData as Tarefa[] | null) ?? [];
 
@@ -50,28 +50,31 @@ export default async function OperacionalPage() {
   }
 
   const view: TarefaView[] = tarefas.map((t) => {
-    let href: string | null = null;
+    let origemHref: string | null = null;
     let origemLabel: string | null = null;
     if (t.chamado_id) {
-      href = `/chamados/${t.chamado_id}`;
+      origemHref = `/chamados/${t.chamado_id}`;
       origemLabel = "Abrir chamado";
     } else if (t.etapa_id && etapaProjeto.get(t.etapa_id)) {
-      href = `/projetos/${etapaProjeto.get(t.etapa_id)}`;
+      origemHref = `/projetos/${etapaProjeto.get(t.etapa_id)}`;
       origemLabel = "Abrir projeto";
-    } else if (t.link && t.link.toLowerCase().startsWith("http")) {
-      href = t.link;
-      origemLabel = "Abrir link";
     }
     return {
       id: t.id,
       titulo: t.titulo,
       descricao: t.descricao,
       status: t.status,
+      responsavel_id: t.responsavel_id,
       responsavel_nome: t.responsavel_id
         ? perfis.get(t.responsavel_id)?.nome ?? t.responsaveis_notion ?? null
         : t.responsaveis_notion ?? null,
+      responsaveis_notion: t.responsaveis_notion ?? null,
       prazo: t.prazo,
-      href,
+      prioridade: t.prioridade ?? null,
+      tag: t.tag ?? null,
+      link: t.link ?? null,
+      conteudo: t.conteudo ?? null,
+      origemHref,
       origemLabel,
     };
   });
@@ -80,7 +83,7 @@ export default async function OperacionalPage() {
     <div className="space-y-6">
       <PageHeader
         titulo="Operacional · Tarefas"
-        descricao="Kanban de tarefas — arraste os cards para mudar o status."
+        descricao="Quadro de tarefas — arraste para mudar de coluna e clique no card para editar."
       />
       {concluidasOcultas > 0 ? (
         <p className="text-sm text-muted-foreground">
@@ -88,7 +91,13 @@ export default async function OperacionalPage() {
           {concluidasOcultas} mais antigas ficam guardadas no histórico.
         </p>
       ) : null}
-      <KanbanTarefas tarefas={view} />
+      <KanbanTarefas
+        tarefas={view}
+        pessoas={Array.from(perfis.values()).map((p) => ({
+          id: p.id,
+          nome: p.nome,
+        }))}
+      />
     </div>
   );
 }
