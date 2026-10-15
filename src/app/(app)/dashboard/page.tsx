@@ -10,6 +10,7 @@ import {
 import { exigirUsuario } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { ehLideranca } from "@/lib/permissions";
+import { PainelLideranca } from "@/features/dashboard/painel-lideranca";
 import { PageHeader } from "@/components/shared/page-header";
 import { DataCard } from "@/components/shared/data-card";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -65,6 +66,8 @@ export default async function DashboardPage() {
             : "Aqui está o resumo do seu dia."
         }
       />
+
+      {lideranca ? <PainelLideranca /> : null}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <DataCard
