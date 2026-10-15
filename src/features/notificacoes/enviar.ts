@@ -1,5 +1,6 @@
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { enviarPush } from "@/lib/push";
+import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 
 /**
  * Cria notificações (sino + contador do menu) e dispara o aviso push do
@@ -37,7 +38,11 @@ export async function idsPorPapel(
   papeis: ("gerente" | "lider" | "colaborador")[],
   excetoId?: string
 ): Promise<string[]> {
-  const supabase = await criarClienteServidor();
+  // Service role: quem envia pode ser colaborador, que não enxerga os
+  // perfis de outras pessoas pela RLS.
+  const supabase = servicoDisponivel()
+    ? criarClienteAdmin()
+    : await criarClienteServidor();
   const { data } = await supabase
     .from("profiles")
     .select("id")

@@ -2,7 +2,7 @@ import { Megaphone, Pin } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import { ehLideranca } from "@/lib/permissions";
 import { criarClienteServidor } from "@/lib/supabase/server";
-import { mapaDePerfis } from "@/features/chamados/data";
+import { obterDiretorio } from "@/features/equipe/diretorio";
 import { ComunicadoForm } from "@/features/comunicados/comunicado-form";
 import { AcoesComunicado } from "@/features/comunicados/acoes-comunicado";
 import { MarcarVisto } from "@/features/notificacoes/marcar-visto";
@@ -43,7 +43,7 @@ export default async function ComunicadosPage() {
       .select("*")
       .order("fixado", { ascending: false })
       .order("created_at", { ascending: false }),
-    mapaDePerfis(),
+    obterDiretorio(),
   ]);
   const comunicados = (data as Comunicado[] | null) ?? [];
 

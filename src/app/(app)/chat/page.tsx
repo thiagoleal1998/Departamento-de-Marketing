@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Users, User } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
+import { obterDiretorio } from "@/features/equipe/diretorio";
 import { abrirConversaDireta } from "@/features/chat/actions";
 import { CONVERSA_GERAL } from "@/features/chat/constantes";
 import { ChatJanela, type MensagemView } from "@/features/chat/chat-janela";
@@ -25,13 +26,9 @@ export default async function ChatPage({
   const usuario = await exigirUsuario();
   const supabase = await criarClienteServidor();
 
-  const [{ data: pessoasData }, { data: membrosData }, { data: naoLidasData }] =
+  const [diretorio, { data: membrosData }, { data: naoLidasData }] =
     await Promise.all([
-      supabase
-        .from("profiles")
-        .select("id, nome")
-        .eq("ativo", true)
-        .order("nome", { ascending: true }),
+      obterDiretorio(),
       supabase
         .from("chat_membros")
         .select("conversa_id, usuario_id, chat_conversas!inner(tipo)")
@@ -39,7 +36,10 @@ export default async function ChatPage({
       supabase.rpc("chat_nao_lidas"),
     ]);
 
-  const pessoas = (pessoasData as PessoaLite[] | null) ?? [];
+  const pessoas: PessoaLite[] = Array.from(diretorio.values()).map((p) => ({
+    id: p.id,
+    nome: p.nome,
+  }));
   const nomes: Record<string, string> = Object.fromEntries(
     pessoas.map((p) => [p.id, p.nome])
   );

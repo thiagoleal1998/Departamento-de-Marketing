@@ -5,7 +5,7 @@ import {
   listarMovimentosRecentes,
   listarOpcoesVinculo,
 } from "@/features/estoque/data";
-import { mapaDePerfis } from "@/features/chamados/data";
+import { obterDiretorio } from "@/features/equipe/diretorio";
 import { NovoItemForm } from "@/features/estoque/novo-item-form";
 import { ItemCard } from "@/features/estoque/item-card";
 import { PageHeader } from "@/components/shared/page-header";
@@ -33,7 +33,7 @@ export default async function EstoquePage() {
     listarItensEstoque(),
     listarMovimentosRecentes(),
     listarOpcoesVinculo(),
-    mapaDePerfis(),
+    obterDiretorio(),
   ]);
 
   const nomeItem = new Map(

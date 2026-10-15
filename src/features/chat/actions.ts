@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { enviarPush } from "@/lib/push";
+import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { CONVERSA_GERAL } from "./constantes";
 
 /** Envia uma mensagem (a entrega em tempo real vem do Supabase Realtime). */
@@ -43,7 +44,9 @@ export async function enviarMensagem(
 
     let destinatarios: string[] = [];
     if (conversaId === CONVERSA_GERAL) {
-      const { data } = await supabase
+      // Service role: o colaborador não lê os perfis dos colegas pela RLS.
+      const lista = servicoDisponivel() ? criarClienteAdmin() : supabase;
+      const { data } = await lista
         .from("profiles")
         .select("id")
         .eq("ativo", true)
