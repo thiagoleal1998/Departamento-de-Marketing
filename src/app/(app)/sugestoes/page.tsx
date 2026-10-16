@@ -6,6 +6,7 @@ import { listarSugestoes, obterNomesEtapas } from "@/features/sugestoes/data";
 import { NomeEtapa } from "@/features/sugestoes/nome-etapa";
 import { MarcarVisto } from "@/features/notificacoes/marcar-visto";
 import { mapaDePerfis } from "@/features/chamados/data";
+import { CartaoKanban } from "@/features/sugestoes/cartao-kanban";
 import { SugestaoForm } from "@/features/sugestoes/sugestao-form";
 import {
   GerenciarSugestao,
@@ -132,40 +133,20 @@ export default async function SugestoesPage({
                     </p>
                   ) : (
                     doStatus.map((s) => (
-                      <Card key={s.id}>
-                        <CardContent className="space-y-2 p-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <h4 className="text-sm font-semibold leading-tight">
-                              {s.titulo}
-                            </h4>
-                            <Badge variant="secondary">
-                              {TIPO_LABEL[s.tipo]}
-                            </Badge>
-                          </div>
-                          <p className="line-clamp-3 text-xs text-muted-foreground">
-                            {s.descricao}
-                          </p>
-                          <p className="text-[11px] text-muted-foreground">
-                            {autor(s)}
-                            {formatarDataHora(s.created_at)}
-                          </p>
-                          {ehGerente ? (
-                            <details className="text-sm">
-                              <summary className="cursor-pointer text-xs font-medium text-primary">
-                                Responder / mover
-                              </summary>
-                              <div className="mt-2">
-                                <GerenciarSugestao
-                                  id={s.id}
-                                  statusInicial={s.status}
-                                  respostaInicial={s.resposta}
-                                  rotulos={etapas}
-                                />
-                              </div>
-                            </details>
-                          ) : null}
-                        </CardContent>
-                      </Card>
+                      <CartaoKanban
+                        key={s.id}
+                        ehGerente={ehGerente}
+                        rotulos={etapas}
+                        s={{
+                          id: s.id,
+                          titulo: s.titulo,
+                          descricao: s.descricao,
+                          tipoRotulo: TIPO_LABEL[s.tipo],
+                          status: s.status,
+                          resposta: s.resposta,
+                          quando: `${autor(s)}${formatarDataHora(s.created_at)}`,
+                        }}
+                      />
                     ))
                   )}
                 </div>
