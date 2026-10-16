@@ -1,10 +1,6 @@
 import { cn } from "@/lib/utils";
 
-interface LinhaConteudo {
-  categoria?: string | null;
-  abrangencia?: string | null;
-  estrelas?: string | null;
-}
+type LinhaConteudo = Record<string, string | null>;
 
 /** Cartões por tipo de produto (a chave é a categoria gravada no cadastro). */
 const PRODUTOS: {
