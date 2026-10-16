@@ -110,12 +110,18 @@ export default async function ControleLpsPage({
           0037) ou cadastre pela aba Lista de registros.
         </p>
       ) : (
-        <ControleLpsMatriz
-          key={abaAtual.chave}
-          versao={abaAtual.chave}
-          colunas={colunas}
-          linhas={linhas}
-        />
+        <>
+          <p className="text-xs text-muted-foreground">
+            {doVersao.length} itens preenchidos em {linhas.length} produtos (
+            {registros.length} registros no total).
+          </p>
+          <ControleLpsMatriz
+            key={abaAtual.chave}
+            versao={abaAtual.chave}
+            colunas={colunas}
+            linhas={linhas}
+          />
+        </>
       )}
     </div>
   );

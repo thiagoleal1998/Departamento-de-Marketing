@@ -4,11 +4,21 @@ import { CADASTROS } from "./cadastros";
 
 export async function listarCadastro(chave: CadastroChave) {
   const supabase = await criarClienteServidor();
-  const { data } = await supabase
-    .from(CADASTROS[chave].tabela)
-    .select("*")
-    .order("created_at", { ascending: false });
-  const linhas = (data ?? []) as ({ id: string } & Record<string, string | null>)[];
+  // O banco devolve no máximo 1.000 linhas por consulta: busca em páginas.
+  const TAMANHO = 1000;
+  const linhas: ({ id: string } & Record<string, string | null>)[] = [];
+  for (let inicio = 0; inicio < 50000; inicio += TAMANHO) {
+    const { data, error } = await supabase
+      .from(CADASTROS[chave].tabela)
+      .select("*")
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true })
+      .range(inicio, inicio + TAMANHO - 1);
+    if (error) break;
+    const pagina = (data ?? []) as ({ id: string } & Record<string, string | null>)[];
+    linhas.push(...pagina);
+    if (pagina.length < TAMANHO) break;
+  }
 
   // Landing pages e conteúdos do site: ordem alfabética (pt-BR, ignora acento/caixa).
   const campoOrdem =
