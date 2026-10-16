@@ -31,6 +31,7 @@ export default async function ControleLpsPage() {
         lps={lps}
         podeExcluir={ehLideranca(usuario.role)}
         rotuloNovo="Novo controle"
+        filtros={["landing_page_id", "versao"]}
         vazio="Nenhum controle registrado. Cadastre antes uma landing page em Landing Pages."
       />
     </div>

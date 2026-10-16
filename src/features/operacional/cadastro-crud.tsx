@@ -63,6 +63,7 @@ export function CadastroCrud({
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, startTransition] = useTransition();
   const [busca, setBusca] = useState("");
+  const [limite, setLimite] = useState(200);
   const [filtroVal, setFiltroVal] = useState<Record<string, string>>(
     filtrosIniciais ?? {}
   );
@@ -197,6 +198,16 @@ export function CadastroCrud({
   const colunas = def.campos.filter((c) => c.lista);
   const camposFiltro = def.campos.filter((c) => filtros.includes(c.name));
 
+  /** Opções do filtro: as do campo; landing pages; ou os valores existentes. */
+  function opcoesDoFiltro(c: (typeof def.campos)[number]) {
+    if (c.opcoes) return c.opcoes;
+    if (c.tipo === "lp") return lps.map((l) => ({ value: l.id, label: l.nome }));
+    const unicos = Array.from(
+      new Set(linhas.map((l) => (l[c.name] ?? "").trim()).filter(Boolean))
+    ).sort((a, b) => a.localeCompare(b, "pt-BR"));
+    return unicos.map((v) => ({ value: v, label: v }));
+  }
+
   const termo = busca.trim().toLowerCase();
   const visiveis = linhas.filter((l) => {
     for (const [campo, valor] of Object.entries(filtroVal)) {
@@ -276,7 +287,7 @@ export function CadastroCrud({
                 className="h-9"
               >
                 <option value="">{c.label}: todos</option>
-                {c.opcoes?.map((o) => (
+                {opcoesDoFiltro(c).map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
                   </option>
@@ -312,7 +323,7 @@ export function CadastroCrud({
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {visiveis.map((l) => (
+                {visiveis.slice(0, limite).map((l) => (
                   <tr key={l.id} className="align-top">
                     {colunas.map((c) => (
                       <td key={c.name} className="px-4 py-3">
@@ -355,6 +366,18 @@ export function CadastroCrud({
                 ))}
               </tbody>
             </table>
+            {visiveis.length > limite ? (
+              <div className="flex items-center justify-center gap-3 border-t p-3 text-sm text-muted-foreground">
+                Mostrando {limite} de {visiveis.length}.
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setLimite((n) => n + 200)}
+                >
+                  Mostrar mais
+                </Button>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
       )}
