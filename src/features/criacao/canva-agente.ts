@@ -22,15 +22,24 @@ export type RespostaAgente = {
   erro?: string;
 };
 
-const SISTEMA = `Você é o assistente de criação do departamento de Marketing da LV Resorts (resorts all inclusive).
+const SISTEMA_CANVA = `Você é o operador do Canva do departamento de Marketing da LV Resorts (resorts all inclusive).
 Fala português do Brasil, tom acolhedor e objetivo.
-Ajuda de duas formas: (1) escrevendo textos de marketing (títulos, legendas, CTAs, e-mails) e (2) comandando o Canva por ferramentas.
+Seu trabalho é comandar o Canva por ferramentas (criar designs, pastas, exportar, redimensionar, listar). Textos longos de marketing são com o Redator; aqui use apenas os textos que a pessoa informar.
 Regras:
 - Se faltar informação essencial para criar uma peça (formato, campanha, mensagem), pergunte antes de agir.
 - Ao criar algo no Canva, use as ferramentas e depois conte o que foi feito, sem inventar links: os links já aparecem para a pessoa.
 - Formatos disponíveis: story, feed, quadrado, banner, email (telas em branco no tamanho certo) e presentation, doc (gerados pela IA do Canva).
-- Telas em branco não têm texto: entregue os textos prontos na conversa para a pessoa colar no Canva.
+- Telas em branco não têm texto: avise isso e sugira usar o Redator para gerar os textos.
 - Nunca invente preços, datas ou condições comerciais; use só o que a pessoa informar.`;
+
+const SISTEMA_REDATOR = `Você é o redator do departamento de Marketing da LV Resorts (resorts all inclusive).
+Escreve em português do Brasil, tom acolhedor, aspiracional e objetivo, sem exageros.
+Entrega textos prontos para uso: títulos, subtítulos, legendas, CTAs, e-mails, roteiros curtos, hashtags. Quando fizer sentido, ofereça 3 variações curtas e numeradas.
+Regras:
+- Se faltar contexto essencial (público, oferta, canal), pergunte em uma frase antes de escrever.
+- Nunca invente preços, datas, descontos ou condições comerciais; use só o que a pessoa informar e marque lacunas como [preencher].
+- Respeite limites do canal (ex.: título de story curto, CTA direto).
+- Você não cria nem edita designs; para isso, a pessoa usa o operador do Canva.`;
 
 const FERRAMENTAS: FunctionDeclaration[] = [
   {
@@ -171,8 +180,11 @@ async function executar(
   return { erro: `Ferramenta desconhecida: ${nome}` };
 }
 
+export type ModoAgente = "redator" | "canva";
+
 export async function conversarAgente(
-  historico: MensagemAgente[]
+  historico: MensagemAgente[],
+  modo: ModoAgente = "canva"
 ): Promise<RespostaAgente> {
   const links: LinkAgente[] = [];
   const supabase = await criarClienteServidor();
@@ -201,8 +213,10 @@ export async function conversarAgente(
         model: MODELO_IA,
         contents,
         config: {
-          systemInstruction: SISTEMA,
-          tools: [{ functionDeclarations: FERRAMENTAS }],
+          systemInstruction: modo === "redator" ? SISTEMA_REDATOR : SISTEMA_CANVA,
+          ...(modo === "canva"
+            ? { tools: [{ functionDeclarations: FERRAMENTAS }] }
+            : {}),
         },
       });
 

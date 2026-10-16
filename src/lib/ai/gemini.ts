@@ -10,7 +10,7 @@ import { GoogleGenAI } from "@google/genai";
 export const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 /** Modelo padrão usado no assistente de feedback (tier gratuito). */
-export const MODELO_IA = "gemini-2.5-flash";
+export const MODELO_IA = "gemini-3.5-flash";
 
 export function iaDisponivel(): boolean {
   return Boolean(GEMINI_API_KEY);

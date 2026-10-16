@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { ExternalLink, Loader2, Send, Sparkles } from "lucide-react";
 import {
   conversarAgente,
+  type ModoAgente,
   type LinkAgente,
   type MensagemAgente,
 } from "./canva-agente";
@@ -12,14 +13,28 @@ import { Input } from "@/components/ui/input";
 
 type Item = MensagemAgente & { links?: LinkAgente[] };
 
-const SUGESTOES = [
-  "Escreva 3 opções de título e CTA para um story de oferta de fim de ano",
-  "Crie um story chamado Teste na campanha Black Friday",
-  "Liste meus designs recentes",
-];
+const SUGESTOES: Record<ModoAgente, string[]> = {
+  redator: [
+    "Escreva 3 opções de título e CTA para um story de oferta de fim de ano",
+    "Crie uma legenda de Instagram para a promoção de feriado",
+    "Escreva um e-mail curto de reengajamento para hóspedes",
+  ],
+  canva: [
+    "Crie um story chamado Teste na campanha Black Friday",
+    "Liste meus designs recentes",
+    "Redimensione o último design para feed",
+  ],
+};
 
 export function AgenteCanva() {
-  const [itens, setItens] = useState<Item[]>([]);
+  const [modo, setModo] = useState<ModoAgente>("redator");
+  const [conversas, setConversas] = useState<Record<ModoAgente, Item[]>>({
+    redator: [],
+    canva: [],
+  });
+  const itens = conversas[modo];
+  const setItens = (v: Item[], m: ModoAgente = modo) =>
+    setConversas((c) => ({ ...c, [m]: v }));
   const [texto, setTexto] = useState("");
   const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -28,17 +43,23 @@ export function AgenteCanva() {
   async function enviar(conteudo: string) {
     const msg = conteudo.trim();
     if (!msg || ocupado) return;
+    const modoEnvio = modo;
     const novo: Item[] = [...itens, { papel: "usuario", texto: msg }];
-    setItens(novo);
+    setItens(novo, modoEnvio);
     setTexto("");
     setErro(null);
     setOcupado(true);
     try {
       const r = await conversarAgente(
-        novo.map(({ papel, texto }) => ({ papel, texto }))
+        novo.map(({ papel, texto }) => ({ papel, texto })),
+        modoEnvio
       );
       if (r.erro) setErro(r.erro);
-      else setItens([...novo, { papel: "agente", texto: r.texto, links: r.links }]);
+      else
+        setItens(
+          [...novo, { papel: "agente", texto: r.texto, links: r.links }],
+          modoEnvio
+        );
     } catch {
       setErro("Não foi possível falar com o assistente. Tente de novo.");
     } finally {
@@ -49,18 +70,28 @@ export function AgenteCanva() {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Sparkles className="size-5 text-primary" />
-        <h3 className="font-semibold">Assistente de criação</h3>
+        <h3 className="font-semibold">Assistentes de criação</h3>
+        <div className="ml-auto flex gap-1">
+          <Button type="button" size="sm" variant={modo === "redator" ? "default" : "outline"} onClick={() => setModo("redator")}>
+            Redator
+          </Button>
+          <Button type="button" size="sm" variant={modo === "canva" ? "default" : "outline"} onClick={() => setModo("canva")}>
+            Operador do Canva
+          </Button>
+        </div>
       </div>
       <p className="text-sm text-muted-foreground">
-        Peça textos ou diga o que quer criar. Ele escreve e comanda o Canva por você.
+        {modo === "redator"
+          ? "Escreve títulos, legendas, CTAs e e-mails. Não mexe no Canva."
+          : "Cria designs, pastas, exporta e redimensiona no Canva. Diga o que quer fazer."}
       </p>
 
       <div className="max-h-[420px] space-y-3 overflow-y-auto rounded-lg border p-3">
         {itens.length === 0 ? (
           <div className="flex flex-wrap gap-2">
-            {SUGESTOES.map((s) => (
+            {SUGESTOES[modo].map((s) => (
               <button
                 key={s}
                 type="button"
