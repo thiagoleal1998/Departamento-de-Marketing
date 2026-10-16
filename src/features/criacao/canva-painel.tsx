@@ -1,6 +1,7 @@
 import { conexaoDoUsuario, canvaConfigurado, canvaFetch } from "@/lib/canva";
 import { BotaoDesconectar } from "./canva-cliente";
 import { BriefingCanva } from "./canva-briefing";
+import { AgenteCanva } from "./canva-agente-chat";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatarData } from "@/lib/utils";
@@ -77,7 +78,11 @@ export async function CanvaPainel({
             </p>
             <BotaoDesconectar />
           </div>
-          <BriefingCanva />
+          <AgenteCanva />
+          <div className="border-t pt-4">
+            <h3 className="mb-3 font-semibold">Ou preencha o briefing</h3>
+            <BriefingCanva />
+          </div>
         </CardContent>
       </Card>
 

@@ -11,6 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export default async function CriacaoPage({
   searchParams,
