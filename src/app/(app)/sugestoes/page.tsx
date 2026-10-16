@@ -2,10 +2,15 @@ import Link from "next/link";
 import { Lightbulb, List, Columns3 } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import { ehLideranca } from "@/lib/permissions";
-import { listarSugestoes, obterNomesEtapas } from "@/features/sugestoes/data";
+import {
+  assinarAnexos,
+  listarSugestoes,
+  obterNomesEtapas,
+} from "@/features/sugestoes/data";
 import { NomeEtapa } from "@/features/sugestoes/nome-etapa";
 import { MarcarVisto } from "@/features/notificacoes/marcar-visto";
 import { mapaDePerfis } from "@/features/chamados/data";
+import { AnexosLista } from "@/features/sugestoes/anexos-lista";
 import { CartaoKanban } from "@/features/sugestoes/cartao-kanban";
 import { SugestaoForm } from "@/features/sugestoes/sugestao-form";
 import {
@@ -61,6 +66,8 @@ export default async function SugestoesPage({
     mapaDePerfis(),
     obterNomesEtapas(),
   ]);
+
+  const anexosDe = await assinarAnexos(sugestoes);
 
   const autor = (s: Sugestao) =>
     verTodas ? `${perfis.get(s.autor_id)?.nome ?? "—"} · ` : "";
@@ -145,6 +152,7 @@ export default async function SugestoesPage({
                           status: s.status,
                           resposta: s.resposta,
                           quando: `${autor(s)}${formatarDataHora(s.created_at)}`,
+                          anexos: anexosDe[s.id] ?? [],
                         }}
                       />
                     ))
@@ -177,6 +185,8 @@ export default async function SugestoesPage({
                   <p className="whitespace-pre-line text-sm text-muted-foreground">
                     {s.descricao}
                   </p>
+
+                  <AnexosLista anexos={anexosDe[s.id] ?? []} />
 
                   {s.resposta && !ehGerente ? (
                     <div className="rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-sm">

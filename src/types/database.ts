@@ -292,6 +292,7 @@ export interface Sugestao {
   resposta: string | null;
   respondido_por: string | null;
   autor_id: string;
+  anexos: import("@/features/sugestoes/anexos").AnexoSugestao[];
   created_at: string;
   updated_at: string;
 }

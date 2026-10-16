@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import { AnexosLista } from "./anexos-lista";
+import type { AnexoVisivel } from "./anexos";
 import { GerenciarSugestao } from "./gerenciar-sugestao";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +19,7 @@ export interface CartaoSugestao {
   resposta: string | null;
   /** Texto "Autor · data" (autor só para a liderança). */
   quando: string;
+  anexos: AnexoVisivel[];
 }
 
 /** Card do kanban de feedback: clique abre o texto completo. */
@@ -62,7 +65,10 @@ export function CartaoKanban({
           <p className="line-clamp-3 text-xs text-muted-foreground">
             {s.descricao}
           </p>
-          <p className="text-[11px] text-muted-foreground">{s.quando}</p>
+          <p className="text-[11px] text-muted-foreground">
+            {s.quando}
+            {s.anexos.length > 0 ? ` · ${s.anexos.length} anexo(s)` : ""}
+          </p>
         </CardContent>
       </Card>
 
@@ -101,6 +107,8 @@ export function CartaoKanban({
             </div>
 
             <p className="whitespace-pre-line text-sm">{s.descricao}</p>
+
+            <AnexosLista anexos={s.anexos} />
 
             {s.resposta && !ehGerente ? (
               <div className="rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-sm">

@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Send, Loader2, CheckCircle2 } from "lucide-react";
 import { enviarSugestao, type EstadoSugestao } from "./actions";
+import { AnexosCampo } from "./anexos-campo";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,9 +19,14 @@ export function SugestaoForm() {
     inicial
   );
   const formRef = useRef<HTMLFormElement>(null);
+  const [enviandoArquivo, setEnviandoArquivo] = useState(false);
+  const [limpeza, setLimpeza] = useState(0);
 
   useEffect(() => {
-    if (estado.ok) formRef.current?.reset();
+    if (estado.ok) {
+      formRef.current?.reset();
+      setLimpeza((n) => n + 1);
+    }
   }, [estado]);
 
   return (
@@ -56,6 +62,7 @@ export function SugestaoForm() {
               placeholder="Conte o que aconteceu ou como a ideia funcionaria. Quanto mais contexto, melhor."
             />
           </div>
+          <AnexosCampo aoMudarEnvio={setEnviandoArquivo} resetKey={limpeza} />
           <div className="flex items-center justify-end gap-3">
             {estado.ok ? (
               <span className="flex items-center gap-1 text-sm text-emerald-600">
@@ -66,7 +73,7 @@ export function SugestaoForm() {
             {estado.erro ? (
               <span className="text-sm text-destructive">{estado.erro}</span>
             ) : null}
-            <Button type="submit" disabled={pendente}>
+            <Button type="submit" disabled={pendente || enviandoArquivo}>
               {pendente ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : (

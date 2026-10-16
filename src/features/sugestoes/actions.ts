@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { idsPorPapel, notificar } from "@/features/notificacoes/enviar";
+import { MAX_ANEXOS, TIPOS_ANEXO, type AnexoSugestao } from "./anexos";
 import type { SugestaoStatus, SugestaoTipo } from "@/types/database";
 
 const TIPOS: SugestaoTipo[] = ["ideia", "problema", "elogio"];
@@ -36,9 +37,40 @@ export async function enviarSugestao(
   if (!descricao) return { erro: "Conte um pouco mais nos detalhes." };
   if (titulo.length > 140) return { erro: "O título está muito longo." };
 
+  // Anexos já enviados ao armazenamento; só aceita arquivos da própria pessoa.
+  let anexos: AnexoSugestao[] = [];
+  try {
+    const bruto = JSON.parse(String(formData.get("anexos") ?? "[]"));
+    if (Array.isArray(bruto)) {
+      anexos = bruto
+        .filter(
+          (x): x is AnexoSugestao =>
+            typeof x?.caminho === "string" &&
+            x.caminho.startsWith(`${user.id}/`) &&
+            typeof x?.nome === "string" &&
+            TIPOS_ANEXO.includes(x?.tipo)
+        )
+        .slice(0, MAX_ANEXOS)
+        .map((x) => ({
+          caminho: x.caminho,
+          nome: x.nome.slice(0, 120),
+          tipo: x.tipo,
+          tamanho: Number(x.tamanho) || 0,
+        }));
+    }
+  } catch {
+    anexos = [];
+  }
+
   const { error } = await supabase
     .from("sugestoes")
-    .insert({ tipo, titulo, descricao, autor_id: user.id });
+    .insert({
+      tipo,
+      titulo,
+      descricao,
+      autor_id: user.id,
+      ...(anexos.length > 0 ? { anexos } : {}),
+    });
   if (error) {
     console.error("[sugestoes] erro ao enviar:", error.code, error.message);
     // 42P01 / PGRST205: tabela inexistente (migration 0013 não aplicada).
