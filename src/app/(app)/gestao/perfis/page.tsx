@@ -5,6 +5,7 @@ import { exigirUsuario } from "@/lib/auth";
 import { ehLideranca } from "@/lib/permissions";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { GestaoAbas } from "@/features/perfis/gestao-abas";
+import { SincronizarDisc } from "@/features/perfis/sincronizar-disc";
 import {
   FATOR_META,
   type FatorDisc,
@@ -66,6 +67,8 @@ export default async function PerfisPage() {
         Informações confidenciais: use para apoiar o desenvolvimento das
         pessoas.
       </p>
+
+      {usuario.role === "gerente" ? <SincronizarDisc /> : null}
 
       {perfis.length === 0 ? (
         <EmptyState
