@@ -109,6 +109,7 @@ export interface Projeto {
   descricao: string | null;
   responsavel_id: string | null;
   status: import("@/types").ProjetoStatus;
+  categoria: import("@/features/projetos/categorias").CategoriaProjeto;
   data_inicio: string | null;
   data_fim: string | null;
   criado_por: string | null;

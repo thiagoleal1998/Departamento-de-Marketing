@@ -8,6 +8,7 @@ import {
   criarTarefaDaEtapa,
   etapaParaTarefaStatus,
 } from "./tarefa";
+import { categoriaPorValor } from "./categorias";
 import type { ProjetoStatus, EtapaStatus } from "@/types";
 
 async function usuarioId() {
@@ -28,6 +29,9 @@ export async function criarProjeto(formData: FormData) {
   const descricao = String(formData.get("descricao") ?? "").trim() || null;
   const responsavel_id =
     String(formData.get("responsavel_id") ?? "").trim() || null;
+  const categoria =
+    categoriaPorValor(String(formData.get("categoria") ?? ""))?.valor ??
+    "projetos_marketing";
   const data_inicio = String(formData.get("data_inicio") ?? "").trim() || null;
   const data_fim = String(formData.get("data_fim") ?? "").trim() || null;
 
@@ -37,6 +41,7 @@ export async function criarProjeto(formData: FormData) {
       nome,
       descricao,
       responsavel_id,
+      categoria,
       data_inicio,
       data_fim,
       criado_por: uid,
@@ -46,6 +51,7 @@ export async function criarProjeto(formData: FormData) {
   if (error || !data) return;
 
   revalidatePath("/projetos");
+  revalidatePath("/projetos/categoria/[slug]", "page");
   redirect(`/projetos/${data.id}`);
 }
 

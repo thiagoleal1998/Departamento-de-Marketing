@@ -15,6 +15,10 @@ import {
   LayoutTemplate,
   FileText,
   ClipboardList,
+  CalendarDays,
+  Plane,
+  Target,
+  Clapperboard,
   KeyRound,
   Settings,
   type LucideIcon,
@@ -112,7 +116,29 @@ export const NAVEGACAO: ItemNav[] = [
     label: "Projetos",
     icone: FolderKanban,
     gradiente: "from-indigo-500 to-violet-600",
-    descricao: "Projetos maiores e eventos",
+    descricao: "Eventos, famtours, projetos e VT's",
+    filhos: [
+      {
+        href: "/projetos/categoria/eventos",
+        label: "Eventos",
+        icone: CalendarDays,
+      },
+      {
+        href: "/projetos/categoria/famtour",
+        label: "Famtour",
+        icone: Plane,
+      },
+      {
+        href: "/projetos/categoria/projetos-de-marketing",
+        label: "Projetos de Marketing",
+        icone: Target,
+      },
+      {
+        href: "/projetos/categoria/vts",
+        label: "VT's",
+        icone: Clapperboard,
+      },
+    ],
   },
   {
     href: "/estoque",

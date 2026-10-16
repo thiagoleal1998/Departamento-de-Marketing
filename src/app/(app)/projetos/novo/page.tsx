@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import { ehLideranca } from "@/lib/permissions";
 import { criarProjeto } from "@/features/projetos/actions";
+import { CATEGORIAS } from "@/features/projetos/categorias";
 import { listarColaboradores } from "@/features/desenvolvimento/data";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,7 +17,12 @@ import { DateInputBR } from "@/components/ui/date-input-br";
 
 export const dynamic = "force-dynamic";
 
-export default async function NovoProjetoPage() {
+export default async function NovoProjetoPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ categoria?: string }>;
+}) {
+  const { categoria } = await searchParams;
   const usuario = await exigirUsuario();
   if (!ehLideranca(usuario.role)) redirect("/projetos");
   const pessoas = await listarColaboradores();
@@ -46,6 +52,24 @@ export default async function NovoProjetoPage() {
                 placeholder="Ex.: Feira de Turismo 2026"
                 required
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="categoria">Categoria</Label>
+              <Select
+                id="categoria"
+                name="categoria"
+                defaultValue={
+                  CATEGORIAS.some((c) => c.valor === categoria)
+                    ? categoria
+                    : "projetos_marketing"
+                }
+              >
+                {CATEGORIAS.map((c) => (
+                  <option key={c.valor} value={c.valor}>
+                    {c.label}
+                  </option>
+                ))}
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="descricao">Descrição</Label>

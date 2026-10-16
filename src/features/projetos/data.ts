@@ -6,12 +6,11 @@ import type {
   ProjetoComparativo,
 } from "@/types/database";
 
-export async function listarProjetos(): Promise<Projeto[]> {
+export async function listarProjetos(categoria?: string): Promise<Projeto[]> {
   const supabase = await criarClienteServidor();
-  const { data } = await supabase
-    .from("projetos")
-    .select("*")
-    .order("created_at", { ascending: false });
+  let consulta = supabase.from("projetos").select("*");
+  if (categoria) consulta = consulta.eq("categoria", categoria);
+  const { data } = await consulta.order("created_at", { ascending: false });
   return (data as Projeto[] | null) ?? [];
 }
 
