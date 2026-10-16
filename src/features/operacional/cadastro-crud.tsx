@@ -40,6 +40,7 @@ export function CadastroCrud({
   rotuloNovo,
   vazio,
   filtros = [],
+  filtrosIniciais,
   linkExterno,
 }: {
   chave: CadastroChave;
@@ -51,6 +52,8 @@ export function CadastroCrud({
   vazio: string;
   /** Nomes de campos (select) oferecidos como filtro, além da busca. */
   filtros?: string[];
+  /** Valores iniciais dos filtros (ex.: vindos de um clique no resumo). */
+  filtrosIniciais?: Record<string, string>;
   /** Botão extra ao lado de "Novo", abrindo um link em nova aba. */
   linkExterno?: { label: string; href: string };
 }) {
@@ -60,7 +63,9 @@ export function CadastroCrud({
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, startTransition] = useTransition();
   const [busca, setBusca] = useState("");
-  const [filtroVal, setFiltroVal] = useState<Record<string, string>>({});
+  const [filtroVal, setFiltroVal] = useState<Record<string, string>>(
+    filtrosIniciais ?? {}
+  );
 
   const nomePessoa = new Map(pessoas.map((p) => [p.id, p.nome]));
   const nomeLp = new Map(lps.map((l) => [l.id, l.nome]));

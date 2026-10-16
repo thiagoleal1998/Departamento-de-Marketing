@@ -1,4 +1,16 @@
+import Link from "next/link";
 import { cn } from "@/lib/utils";
+
+/** Abre a aba Páginas já filtrada. */
+function hrefPaginas(f: {
+  categoria?: string;
+  abrangencia?: string;
+  estrelas?: string;
+}) {
+  const q = new URLSearchParams({ aba: "paginas" });
+  for (const [k, v] of Object.entries(f)) if (v) q.set(k, v);
+  return `/operacional/conteudos-site?${q.toString()}`;
+}
 
 type LinhaConteudo = Record<string, string | null>;
 
@@ -73,21 +85,24 @@ function Cabecalho({
   rotulo,
   total,
   cor,
+  href,
 }: {
   rotulo: string;
   total: number;
   cor: string;
+  href: string;
 }) {
   return (
-    <div
+    <Link
+      href={href}
       className={cn(
-        "flex items-center justify-between rounded-t-md px-3 py-1.5 text-sm font-semibold text-white",
+        "flex items-center justify-between rounded-t-md px-3 py-1.5 text-sm font-semibold text-white transition-opacity hover:opacity-90",
         cor
       )}
     >
       <span>{rotulo}</span>
       <span>{total}</span>
-    </div>
+    </Link>
   );
 }
 
@@ -95,10 +110,12 @@ function Par({
   rotulos,
   valores,
   total,
+  hrefs,
 }: {
   rotulos: string[];
   valores: number[];
   total: number;
+  hrefs: string[];
 }) {
   return (
     <div
@@ -106,11 +123,15 @@ function Par({
       style={{ gridTemplateColumns: `repeat(${rotulos.length}, 1fr)` }}
     >
       {rotulos.map((r, i) => (
-        <div key={r} className="space-y-0.5 py-1.5">
+        <Link
+          key={r}
+          href={hrefs[i]}
+          className="space-y-0.5 py-1.5 transition-colors hover:bg-accent/50"
+        >
           <p className="text-muted-foreground">{r}</p>
           <p className="text-base font-semibold">{valores[i]}</p>
           <p className="text-muted-foreground">{pct(valores[i], total)}</p>
-        </div>
+        </Link>
       ))}
     </div>
   );
@@ -122,7 +143,7 @@ function TabelaGeral({
   total,
 }: {
   titulo: string;
-  itens: { rotulo: string; qtd: number }[];
+  itens: { rotulo: string; qtd: number; href: string }[];
   total: number;
 }) {
   return (
@@ -133,11 +154,21 @@ function TabelaGeral({
       <table className="w-full text-sm">
         <tbody className="divide-y">
           {itens.map((i) => (
-            <tr key={i.rotulo}>
-              <td className="px-3 py-1">{i.rotulo}</td>
-              <td className="px-3 py-1 text-right tabular-nums">{i.qtd}</td>
-              <td className="w-20 px-3 py-1 text-right tabular-nums text-muted-foreground">
-                {pct(i.qtd, total)}
+            <tr key={i.rotulo} className="hover:bg-accent/50">
+              <td className="p-0">
+                <Link href={i.href} className="block px-3 py-1">
+                  {i.rotulo}
+                </Link>
+              </td>
+              <td className="p-0 text-right tabular-nums">
+                <Link href={i.href} className="block px-3 py-1">
+                  {i.qtd}
+                </Link>
+              </td>
+              <td className="w-20 p-0 text-right tabular-nums text-muted-foreground">
+                <Link href={i.href} className="block px-3 py-1">
+                  {pct(i.qtd, total)}
+                </Link>
               </td>
             </tr>
           ))}
@@ -155,6 +186,7 @@ export function ResumoConteudos({ linhas }: { linhas: LinhaConteudo[] }) {
     (rotulo) => ({
       rotulo,
       qtd: linhas.filter((l) => norm(l.abrangencia) === norm(rotulo)).length,
+      href: hrefPaginas({ abrangencia: rotulo }),
     })
   );
 
@@ -173,6 +205,7 @@ export function ResumoConteudos({ linhas }: { linhas: LinhaConteudo[] }) {
   ].map(([rotulo, categoria]) => ({
     rotulo,
     qtd: contar(linhas, categoria),
+    href: hrefPaginas({ categoria }),
   }));
 
   const porEstrelas = [
@@ -185,6 +218,7 @@ export function ResumoConteudos({ linhas }: { linhas: LinhaConteudo[] }) {
   ].map((rotulo) => ({
     rotulo,
     qtd: linhas.filter((l) => norm(l.estrelas) === norm(rotulo)).length,
+    href: hrefPaginas({ estrelas: rotulo }),
   }));
 
   const mag = {
@@ -215,18 +249,39 @@ export function ResumoConteudos({ linhas }: { linhas: LinhaConteudo[] }) {
               const tot = contar(linhas, p.categoria);
               return (
                 <div key={p.categoria}>
-                  <Cabecalho rotulo={p.rotulo} total={tot} cor={p.cor} />
+                  <Cabecalho
+                    rotulo={p.rotulo}
+                    total={tot}
+                    cor={p.cor}
+                    href={hrefPaginas({ categoria: p.categoria })}
+                  />
                   {p.apenasInternacional ? (
                     <Par
                       rotulos={["Internacionais"]}
                       valores={[inter]}
                       total={tot}
+                      hrefs={[
+                        hrefPaginas({
+                          categoria: p.categoria,
+                          abrangencia: "Internacional",
+                        }),
+                      ]}
                     />
                   ) : (
                     <Par
                       rotulos={["Nacionais", "Internacionais"]}
                       valores={[nac, inter]}
                       total={tot}
+                      hrefs={[
+                        hrefPaginas({
+                          categoria: p.categoria,
+                          abrangencia: "Nacional",
+                        }),
+                        hrefPaginas({
+                          categoria: p.categoria,
+                          abrangencia: "Internacional",
+                        }),
+                      ]}
                     />
                   )}
                 </div>
@@ -237,6 +292,7 @@ export function ResumoConteudos({ linhas }: { linhas: LinhaConteudo[] }) {
                 rotulo="LV Magazine"
                 total={magTotal}
                 cor="bg-green-800"
+                href={hrefPaginas({ categoria: "LV Magazine" })}
               />
               <Par
                 rotulos={[
@@ -246,6 +302,20 @@ export function ResumoConteudos({ linhas }: { linhas: LinhaConteudo[] }) {
                 ]}
                 valores={[mag.sobre, mag.nacional, mag.internacional]}
                 total={magTotal}
+                hrefs={[
+                  hrefPaginas({
+                    categoria: "LV Magazine",
+                    abrangencia: "Não se aplica",
+                  }),
+                  hrefPaginas({
+                    categoria: "LV Magazine",
+                    abrangencia: "Nacional",
+                  }),
+                  hrefPaginas({
+                    categoria: "LV Magazine",
+                    abrangencia: "Internacional",
+                  }),
+                ]}
               />
             </div>
           </div>
