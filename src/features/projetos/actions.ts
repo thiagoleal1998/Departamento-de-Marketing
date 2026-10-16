@@ -55,6 +55,22 @@ export async function criarProjeto(formData: FormData) {
   redirect(`/projetos/${data.id}`);
 }
 
+export async function atualizarCategoriaProjeto(
+  projetoId: string,
+  categoria: string
+) {
+  const meta = categoriaPorValor(categoria);
+  if (!meta) return;
+  const supabase = await criarClienteServidor();
+  await supabase
+    .from("projetos")
+    .update({ categoria: meta.valor })
+    .eq("id", projetoId);
+  revalidatePath(`/projetos/${projetoId}`);
+  revalidatePath("/projetos");
+  revalidatePath("/projetos/categoria/[slug]", "page");
+}
+
 export async function atualizarStatusProjeto(
   projetoId: string,
   status: ProjetoStatus

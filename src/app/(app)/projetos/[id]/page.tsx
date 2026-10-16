@@ -31,6 +31,8 @@ import {
 } from "@/features/projetos/actions";
 import { EtapaStatusControl } from "@/features/projetos/etapa-status-control";
 import { ProjetoStatusControl } from "@/features/projetos/projeto-status-control";
+import { CategoriaControl } from "@/features/projetos/categoria-control";
+import { categoriaPorValor } from "@/features/projetos/categorias";
 import { PageHeader } from "@/components/shared/page-header";
 import {
   Card,
@@ -425,6 +427,20 @@ export default async function ProjetoDetalhePage({
                   {PROJETO_STATUS_META[projeto.status].label}
                 </Badge>
               )}
+              <div className="space-y-1 text-sm">
+                <p className="text-xs text-muted-foreground">Categoria</p>
+                {lideranca ? (
+                  <CategoriaControl
+                    projetoId={id}
+                    categoria={projeto.categoria}
+                  />
+                ) : (
+                  <p className="font-medium">
+                    {categoriaPorValor(projeto.categoria)?.label ??
+                      projeto.categoria}
+                  </p>
+                )}
+              </div>
               <div className="text-sm">
                 <p className="text-xs text-muted-foreground">Responsável</p>
                 <p className="font-medium">{responsavel?.nome ?? "—"}</p>

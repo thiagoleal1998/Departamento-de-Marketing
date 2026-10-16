@@ -1,5 +1,6 @@
 export type CategoriaProjeto =
   | "eventos"
+  | "feiras"
   | "famtour"
   | "projetos_marketing"
   | "vts";
@@ -18,6 +19,12 @@ export const CATEGORIAS: CategoriaMeta[] = [
     slug: "eventos",
     label: "Eventos",
     descricao: "Eventos, feiras e ações presenciais organizados por etapas.",
+  },
+  {
+    valor: "feiras",
+    slug: "feiras",
+    label: "Feira",
+    descricao: "Feiras e exposições do setor, com stand, brindes e logística.",
   },
   {
     valor: "famtour",

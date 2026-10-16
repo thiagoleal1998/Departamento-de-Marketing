@@ -16,6 +16,7 @@ import {
   FileText,
   ClipboardList,
   CalendarDays,
+  Store,
   Plane,
   Target,
   Clapperboard,
@@ -122,6 +123,11 @@ export const NAVEGACAO: ItemNav[] = [
         href: "/projetos/categoria/eventos",
         label: "Eventos",
         icone: CalendarDays,
+      },
+      {
+        href: "/projetos/categoria/feiras",
+        label: "Feira",
+        icone: Store,
       },
       {
         href: "/projetos/categoria/famtour",
