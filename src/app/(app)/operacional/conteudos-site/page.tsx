@@ -5,6 +5,7 @@ import {
   listarPessoasOpcoes,
 } from "@/features/operacional/cadastros-data";
 import { CadastroCrud } from "@/features/operacional/cadastro-crud";
+import { ResumoConteudos } from "@/features/operacional/resumo-conteudos";
 import { PageHeader } from "@/components/shared/page-header";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +23,7 @@ export default async function ConteudosSitePage() {
         titulo="Conteúdos do site"
         descricao="Tudo o que está no site: destinos, resorts, hotéis, circuitos, casamentos e LV Magazine."
       />
+      <ResumoConteudos linhas={linhas} />
       <CadastroCrud
         chave="conteudos_site"
         linhas={linhas}
