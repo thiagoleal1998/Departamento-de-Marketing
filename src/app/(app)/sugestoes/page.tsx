@@ -13,6 +13,7 @@ import { mapaDePerfis } from "@/features/chamados/data";
 import { AnexosLista } from "@/features/sugestoes/anexos-lista";
 import { CartaoKanban } from "@/features/sugestoes/cartao-kanban";
 import { SugestaoForm } from "@/features/sugestoes/sugestao-form";
+import { AbasFeedback } from "@/features/sugestoes/abas-feedback";
 import {
   GerenciarSugestao,
   STATUS_LABEL,
@@ -53,13 +54,15 @@ function formatarDataHora(iso: string): string {
 export default async function SugestoesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ visao?: string }>;
+  searchParams: Promise<{ visao?: string; aba?: string }>;
 }) {
-  const { visao: visaoRaw } = await searchParams;
+  const { visao: visaoRaw, aba: abaRaw } = await searchParams;
   const usuario = await exigirUsuario();
   const ehGerente = usuario.role === "gerente";
   const verTodas = ehLideranca(usuario.role);
-  const visao = verTodas && visaoRaw === "kanban" ? "kanban" : "lista";
+  // Aba 1 (padrão): formulário. Aba 2: acompanhamento, começando pelo kanban.
+  const aba = abaRaw === "acompanhar" || visaoRaw ? "acompanhar" : "enviar";
+  const visao = verTodas && visaoRaw !== "lista" ? "kanban" : "lista";
 
   const [sugestoes, perfis, etapas] = await Promise.all([
     listarSugestoes(),
@@ -80,137 +83,146 @@ export default async function SugestoesPage({
         descricao="Relate um problema, sugira uma melhoria ou deixe um elogio. A liderança acompanha e responde por aqui."
       />
 
-      <SugestaoForm />
+      <AbasFeedback
+        ativa={aba}
+        rotuloAcompanhar={verTodas ? "Acompanhamento" : "Meus envios"}
+      />
 
-      <section className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold">
-            {verTodas ? "Todos os envios" : "Meus envios"}
-          </h2>
-          {verTodas ? (
-            <div className="flex gap-1">
-              <Button
-                asChild
-                size="sm"
-                variant={visao === "lista" ? "default" : "outline"}
-              >
-                <Link href="/sugestoes?visao=lista">
-                  <List className="size-4" /> Lista
-                </Link>
-              </Button>
-              <Button
-                asChild
-                size="sm"
-                variant={visao === "kanban" ? "default" : "outline"}
-              >
-                <Link href="/sugestoes?visao=kanban">
-                  <Columns3 className="size-4" /> Kanban
-                </Link>
-              </Button>
-            </div>
-          ) : null}
-        </div>
-
-        {sugestoes.length === 0 ? (
-          <EmptyState
-            icone={Lightbulb}
-            titulo="Nenhum envio ainda"
-            descricao="Use o formulário acima para enviar sua primeira ideia ou relato."
-          />
-        ) : visao === "kanban" ? (
-          <div className="flex gap-4 overflow-x-auto pb-2">
-            {COLUNAS.map((status) => {
-              const doStatus = sugestoes.filter((s) => s.status === status);
-              return (
-                <div
-                  key={status}
-                  className="w-72 shrink-0 space-y-3 rounded-lg bg-muted/40 p-3"
+      {aba === "enviar" ? (
+        <SugestaoForm />
+      ) : (
+        <section className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-lg font-semibold">
+              {verTodas ? "Todos os envios" : "Meus envios"}
+            </h2>
+            {verTodas ? (
+              <div className="flex gap-1">
+                <Button
+                  asChild
+                  size="sm"
+                  variant={visao === "lista" ? "default" : "outline"}
                 >
-                  <div className="flex items-center justify-between">
-                    <NomeEtapa
-                      status={status}
-                      nome={etapas[status]}
-                      editavel={ehGerente}
-                    />
-                    <Badge variant="secondary">{doStatus.length}</Badge>
-                  </div>
-                  {doStatus.length === 0 ? (
-                    <p className="py-4 text-center text-xs text-muted-foreground">
-                      Nada aqui
-                    </p>
-                  ) : (
-                    doStatus.map((s) => (
-                      <CartaoKanban
-                        key={s.id}
-                        ehGerente={ehGerente}
-                        rotulos={etapas}
-                        s={{
-                          id: s.id,
-                          titulo: s.titulo,
-                          descricao: s.descricao,
-                          tipoRotulo: TIPO_LABEL[s.tipo],
-                          status: s.status,
-                          resposta: s.resposta,
-                          quando: `${autor(s)}${formatarDataHora(s.created_at)}`,
-                          anexos: anexosDe[s.id] ?? [],
-                        }}
+                  <Link href="/sugestoes?aba=acompanhar&visao=lista">
+                    <List className="size-4" /> Lista
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  size="sm"
+                  variant={visao === "kanban" ? "default" : "outline"}
+                >
+                  <Link href="/sugestoes?aba=acompanhar&visao=kanban">
+                    <Columns3 className="size-4" /> Kanban
+                  </Link>
+                </Button>
+              </div>
+            ) : null}
+          </div>
+
+          {sugestoes.length === 0 ? (
+            <EmptyState
+              icone={Lightbulb}
+              titulo="Nenhum envio ainda"
+              descricao="Use o formulário acima para enviar sua primeira ideia ou relato."
+            />
+          ) : visao === "kanban" ? (
+            <div className="flex gap-4 overflow-x-auto pb-2">
+              {COLUNAS.map((status) => {
+                const doStatus = sugestoes.filter((s) => s.status === status);
+                return (
+                  <div
+                    key={status}
+                    className="w-72 shrink-0 space-y-3 rounded-lg bg-muted/40 p-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <NomeEtapa
+                        status={status}
+                        nome={etapas[status]}
+                        editavel={ehGerente}
                       />
-                    ))
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {sugestoes.map((s) => (
-              <Card key={s.id}>
-                <CardContent className="space-y-3 p-5">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="secondary">{TIPO_LABEL[s.tipo]}</Badge>
-                        <h3 className="font-semibold leading-tight">
-                          {s.titulo}
-                        </h3>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {autor(s)}
-                        {formatarDataHora(s.created_at)}
-                      </p>
+                      <Badge variant="secondary">{doStatus.length}</Badge>
                     </div>
-                    <Badge variant="outline">{etapas[s.status]}</Badge>
+                    {doStatus.length === 0 ? (
+                      <p className="py-4 text-center text-xs text-muted-foreground">
+                        Nada aqui
+                      </p>
+                    ) : (
+                      doStatus.map((s) => (
+                        <CartaoKanban
+                          key={s.id}
+                          ehGerente={ehGerente}
+                          rotulos={etapas}
+                          s={{
+                            id: s.id,
+                            titulo: s.titulo,
+                            descricao: s.descricao,
+                            tipoRotulo: TIPO_LABEL[s.tipo],
+                            status: s.status,
+                            resposta: s.resposta,
+                            quando: `${autor(s)}${formatarDataHora(s.created_at)}`,
+                            anexos: anexosDe[s.id] ?? [],
+                          }}
+                        />
+                      ))
+                    )}
                   </div>
-
-                  <p className="whitespace-pre-line text-sm text-muted-foreground">
-                    {s.descricao}
-                  </p>
-
-                  <AnexosLista anexos={anexosDe[s.id] ?? []} />
-
-                  {s.resposta && !ehGerente ? (
-                    <div className="rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-sm">
-                      <p className="mb-1 text-xs font-medium text-primary">
-                        Resposta da liderança
-                      </p>
-                      <p className="whitespace-pre-line">{s.resposta}</p>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {sugestoes.map((s) => (
+                <Card key={s.id}>
+                  <CardContent className="space-y-3 p-5">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="secondary">
+                            {TIPO_LABEL[s.tipo]}
+                          </Badge>
+                          <h3 className="font-semibold leading-tight">
+                            {s.titulo}
+                          </h3>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {autor(s)}
+                          {formatarDataHora(s.created_at)}
+                        </p>
+                      </div>
+                      <Badge variant="outline">{etapas[s.status]}</Badge>
                     </div>
-                  ) : null}
 
-                  {ehGerente ? (
-                    <GerenciarSugestao
-                      id={s.id}
-                      statusInicial={s.status}
-                      respostaInicial={s.resposta}
-                      rotulos={etapas}
-                    />
-                  ) : null}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </section>
+                    <p className="whitespace-pre-line text-sm text-muted-foreground">
+                      {s.descricao}
+                    </p>
+
+                    <AnexosLista anexos={anexosDe[s.id] ?? []} />
+
+                    {s.resposta && !ehGerente ? (
+                      <div className="rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-sm">
+                        <p className="mb-1 text-xs font-medium text-primary">
+                          Resposta da liderança
+                        </p>
+                        <p className="whitespace-pre-line">{s.resposta}</p>
+                      </div>
+                    ) : null}
+
+                    {ehGerente ? (
+                      <GerenciarSugestao
+                        id={s.id}
+                        statusInicial={s.status}
+                        respostaInicial={s.resposta}
+                        rotulos={etapas}
+                      />
+                    ) : null}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 }

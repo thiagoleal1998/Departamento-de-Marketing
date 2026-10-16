@@ -95,7 +95,7 @@ export async function enviarSugestao(
   await notificar(lideranca, {
     tipo: "sugestao",
     titulo: `Novo feedback: ${titulo}`,
-    link: "/sugestoes",
+    link: "/sugestoes?aba=acompanhar&visao=kanban",
   });
 
   revalidatePath("/sugestoes");
@@ -159,7 +159,7 @@ export async function atualizarSugestao(
         titulo: novaResposta
           ? `Seu feedback "${ant.titulo}" foi respondido`
           : `Seu feedback "${ant.titulo}" mudou de etapa`,
-        link: "/sugestoes",
+        link: "/sugestoes?aba=acompanhar&visao=kanban",
       });
     }
   }

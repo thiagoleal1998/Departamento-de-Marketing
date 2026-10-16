@@ -221,7 +221,7 @@ export async function PainelLideranca() {
     {
       titulo: "Feedbacks novos",
       qtd: d.feedbacksNovos,
-      href: "/sugestoes?visao=kanban",
+      href: "/sugestoes?aba=acompanhar&visao=kanban",
       icone: Lightbulb,
       descricao: "Aguardando sua análise",
     },
