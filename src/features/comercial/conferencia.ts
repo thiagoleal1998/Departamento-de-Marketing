@@ -52,6 +52,7 @@ export function ativoNaPlanilha(secao: string, campos: CampoProduto[]): boolean 
 /** Nomes de LP que também pertencem ao produto (mesmo hotel cadastrado com outro nome). */
 const APELIDOS_LP: Record<string, string[]> = {
   [norm("Vila Galé Eco Resort de Angra")]: ["Vila Galé Angra"],
+  [norm("Vila Galé do Cabo")]: ["Vila Galé Eco Resort do Cabo"],
 };
 
 /**
