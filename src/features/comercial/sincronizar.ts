@@ -1,11 +1,13 @@
 import "server-only";
 import { createHash } from "node:crypto";
-import * as XLSX from "xlsx";
 import { criarClienteAdmin } from "@/lib/supabase/admin";
+import { enviarPush } from "@/lib/push";
+import { lerProdutos } from "./parser";
 import {
   PLANILHA_ID,
-  type CelulaComercial,
-  type DadosAbaComercial,
+  type CampoProduto,
+  type MudancaCampo,
+  type ProdutoComercial,
 } from "./tipos";
 
 const EXPORTACAO = `https://docs.google.com/spreadsheets/d/${PLANILHA_ID}/export?format=xlsx`;
@@ -20,106 +22,172 @@ async function baixarPlanilha(): Promise<Buffer> {
   return Buffer.from(await res.arrayBuffer());
 }
 
-/** Converte uma aba do Excel em células esparsas (texto + cor de fundo). */
-function lerAba(ws: XLSX.WorkSheet): DadosAbaComercial {
-  const celulas: CelulaComercial[] = [];
-  let maxR = 0;
-  let maxC = 0;
-  let cabecalho: number | null = null;
+const normLinha = (s: string) => s.replace(/\s+/g, " ").trim();
 
-  for (const chave of Object.keys(ws)) {
-    if (chave[0] === "!") continue;
-    const cel = ws[chave] as XLSX.CellObject & {
-      w?: string;
-      s?: { patternType?: string; fgColor?: { rgb?: string } };
-    };
-    const { r, c } = XLSX.utils.decode_cell(chave);
-    const texto = (cel.w ?? (cel.v === undefined || cel.v === null ? "" : String(cel.v)))
-      .replace(/\r/g, "")
-      .trim();
-    const rgb =
-      cel.s?.patternType === "solid" ? cel.s.fgColor?.rgb?.toUpperCase() : undefined;
-    const bg = rgb && rgb !== "FFFFFF" && /^[0-9A-F]{6}$/.test(rgb) ? `#${rgb}` : undefined;
-    if (!texto && !bg) continue;
+const hashDe = (p: Pick<ProdutoComercial, "nome" | "tag" | "campos">) =>
+  createHash("sha1")
+    .update(JSON.stringify({ n: p.nome, t: p.tag, c: p.campos }))
+    .digest("hex");
 
-    const item: CelulaComercial = { r, c };
-    if (texto) item.v = texto;
-    if (bg) item.bg = bg;
-    celulas.push(item);
-    if (texto || bg) {
-      maxR = Math.max(maxR, r);
-      maxC = Math.max(maxC, c);
+/** Diferenças (só de texto) entre o que havia e o que está agora. */
+function compararCampos(
+  antes: CampoProduto[],
+  depois: CampoProduto[],
+  tagAntes: string | null,
+  tagDepois: string | null
+): MudancaCampo[] {
+  const mudancas: MudancaCampo[] = [];
+  const a = new Map(antes.map((c) => [c.rotulo, c.linhas.map((l) => normLinha(l.t))]));
+  const d = new Map(depois.map((c) => [c.rotulo, c.linhas.map((l) => normLinha(l.t))]));
+  for (const rotulo of new Set([...a.keys(), ...d.keys()])) {
+    const la = a.get(rotulo) ?? [];
+    const ld = d.get(rotulo) ?? [];
+    if (JSON.stringify(la) !== JSON.stringify(ld)) {
+      mudancas.push({ campo: rotulo, antes: la, depois: ld });
     }
-    if (cabecalho === null && /^hot[eé]is$/i.test(texto)) cabecalho = r;
   }
+  if ((tagAntes ?? "") !== (tagDepois ?? "")) {
+    mudancas.push({
+      campo: "Marcação do produto",
+      antes: tagAntes ? [tagAntes] : [],
+      depois: tagDepois ? [tagDepois] : [],
+    });
+  }
+  return mudancas;
+}
 
-  celulas.sort((a, b) => a.r - b.r || a.c - b.c);
-
-  const mesclagens = ((ws["!merges"] ?? []) as XLSX.Range[])
-    .map((m) => ({ r1: m.s.r, c1: m.s.c, r2: m.e.r, c2: m.e.c }))
-    .filter((m) => m.r1 <= maxR && m.c1 <= maxC)
-    .map((m) => ({ ...m, r2: Math.min(m.r2, maxR), c2: Math.min(m.c2, maxC) }));
-
-  const colunas = maxC + 1;
-  const cols = (ws["!cols"] ?? []) as { wpx?: number; wch?: number }[];
-  const larguras = Array.from({ length: colunas }, (_, i) => {
-    const w = cols[i]?.wpx ?? (cols[i]?.wch ? cols[i].wch! * 7 : 100);
-    return Math.max(24, Math.min(420, Math.round(w)));
-  });
-
-  return { linhas: maxR + 1, colunas, celulas, mesclagens, larguras, cabecalho };
+interface Existente {
+  chave: string;
+  nome: string;
+  tag: string | null;
+  hash: string;
+  campos: CampoProduto[];
 }
 
 export interface ResultadoSync {
-  abas: number;
+  produtos: number;
   alteradas: number;
 }
 
-/** Baixa a planilha e atualiza apenas as abas que mudaram. */
+/** Avisa todos os usuários ativos (sino, contador do menu e notificação do navegador). */
+async function avisarEquipe(
+  admin: ReturnType<typeof criarClienteAdmin>,
+  eventos: { nome: string; secao: string; tipo: string }[]
+) {
+  const { data } = await admin.from("profiles").select("id").eq("ativo", true);
+  const ids = ((data as { id: string }[] | null) ?? []).map((p) => p.id);
+  if (ids.length === 0) return;
+
+  const nomes = Array.from(new Set(eventos.map((e) => e.nome)));
+  const titulo =
+    nomes.length === 1
+      ? `Comercial: condições alteradas — ${nomes[0]}`
+      : `Comercial: ${nomes.length} produtos com condições alteradas`;
+  const corpo = nomes.slice(0, 5).join(", ") + (nomes.length > 5 ? ` e mais ${nomes.length - 5}` : "");
+
+  await admin.from("notificacoes").insert(
+    ids.map((destinatario_id) => ({
+      destinatario_id,
+      tipo: "comercial",
+      titulo,
+      link: "/comercial?alterados=1",
+    }))
+  );
+  await enviarPush(ids, { titulo, corpo, url: "/comercial?alterados=1" });
+}
+
+/** Baixa a planilha, compara com a leitura anterior e grava produtos, mudanças e avisos. */
 export async function sincronizarComercial(origem: string): Promise<ResultadoSync> {
   const admin = criarClienteAdmin();
   try {
-    const wb = XLSX.read(await baixarPlanilha(), { type: "buffer", cellStyles: true });
+    const produtos = lerProdutos(await baixarPlanilha());
+    if (produtos.length === 0) {
+      throw new Error("Nenhum produto encontrado na planilha (o cabeçalho \"Hotéis\" mudou de lugar?).");
+    }
 
-    const { data: existentes } = await admin.from("comercial_abas").select("nome, hash");
-    const hashAtual = new Map(
-      ((existentes as { nome: string; hash: string }[] | null) ?? []).map((a) => [a.nome, a.hash])
-    );
+    const { data } = await admin
+      .from("comercial_produtos")
+      .select("chave, nome, tag, hash, campos");
+    const existentes = (data as Existente[] | null) ?? [];
+    const primeiraCarga = existentes.length === 0; // não gera "alteração" na carga inicial
+    const antigos = new Map(existentes.map((e) => [e.chave, e]));
 
-    let alteradas = 0;
-    const nomes: string[] = [];
-    for (const [ordem, nome] of wb.SheetNames.entries()) {
-      nomes.push(nome);
-      const dados = lerAba(wb.Sheets[nome]);
-      const hash = createHash("sha1").update(JSON.stringify(dados)).digest("hex");
-      if (hashAtual.get(nome) === hash) continue;
-      const { error } = await admin.from("comercial_abas").upsert({
-        nome,
-        ordem,
-        dados,
+    const eventos: {
+      chave: string;
+      secao: string;
+      nome: string;
+      tipo: "novo" | "alterado" | "removido";
+      mudancas: MudancaCampo[];
+    }[] = [];
+    const gravar: Record<string, unknown>[] = [];
+
+    for (const p of produtos) {
+      const hash = hashDe(p);
+      const ant = antigos.get(p.chave);
+      if (ant && ant.hash === hash) continue;
+
+      if (!ant) {
+        if (!primeiraCarga) {
+          eventos.push({ chave: p.chave, secao: p.secao, nome: p.nome, tipo: "novo", mudancas: [] });
+        }
+      } else {
+        const mudancas = compararCampos(ant.campos ?? [], p.campos, ant.tag, p.tag);
+        if (mudancas.length > 0) {
+          eventos.push({ chave: p.chave, secao: p.secao, nome: p.nome, tipo: "alterado", mudancas });
+        }
+      }
+      gravar.push({
+        chave: p.chave,
+        secao: p.secao,
+        nome: p.nome,
+        ordem: p.ordem,
+        tag: p.tag,
+        tag_cor: p.tagCor,
+        campos: p.campos,
         hash,
         atualizado_em: new Date().toISOString(),
       });
-      if (error) throw new Error(error.message);
-      alteradas++;
     }
 
-    // Remove abas que não existem mais na planilha.
-    const sumiram = [...hashAtual.keys()].filter((n) => !nomes.includes(n));
-    if (sumiram.length > 0) {
-      await admin.from("comercial_abas").delete().in("nome", sumiram);
-      alteradas += sumiram.length;
+    // Ordem pode mudar sem alterar o conteúdo: mantém a ordem da planilha.
+    const ordens = produtos
+      .filter((p) => !gravar.some((g) => g.chave === p.chave))
+      .filter((p) => antigos.has(p.chave));
+    for (const p of ordens) {
+      await admin.from("comercial_produtos").update({ ordem: p.ordem }).eq("chave", p.chave);
+    }
+
+    for (let i = 0; i < gravar.length; i += 50) {
+      const { error } = await admin.from("comercial_produtos").upsert(gravar.slice(i, i + 50));
+      if (error) throw new Error(error.message);
+    }
+
+    // Produtos que saíram da planilha.
+    const atuais = new Set(produtos.map((p) => p.chave));
+    const removidos = existentes.filter((e) => !atuais.has(e.chave));
+    for (const r of removidos) {
+      const [secaoNorm] = r.chave.split("|");
+      eventos.push({ chave: r.chave, secao: secaoNorm.toUpperCase(), nome: r.nome, tipo: "removido", mudancas: [] });
+    }
+    if (removidos.length > 0) {
+      await admin.from("comercial_produtos").delete().in("chave", removidos.map((r) => r.chave));
+    }
+
+    if (eventos.length > 0) {
+      const { error } = await admin.from("comercial_alteracoes").insert(eventos);
+      if (error) throw new Error(error.message);
+      await avisarEquipe(admin, eventos);
     }
 
     await admin.from("comercial_sync").upsert({
       id: 1,
       sincronizado_em: new Date().toISOString(),
       origem,
-      abas: nomes.length,
-      alteradas,
+      abas: produtos.length,
+      alteradas: eventos.length,
       erro: null,
     });
-    return { abas: nomes.length, alteradas };
+    return { produtos: produtos.length, alteradas: eventos.length };
   } catch (e) {
     const erro = e instanceof Error ? e.message : "Falha na sincronização.";
     // Mantém o horário da última sincronização bem-sucedida.

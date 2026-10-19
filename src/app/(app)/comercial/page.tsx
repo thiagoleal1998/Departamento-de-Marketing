@@ -1,14 +1,17 @@
 import Link from "next/link";
-import { ExternalLink, Handshake } from "lucide-react";
+import { AlertTriangle, ExternalLink, Handshake } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import { ehLideranca } from "@/lib/permissions";
 import { criarClienteServidor } from "@/lib/supabase/server";
-import { GradeComercial } from "@/features/comercial/grade";
+import { ListaProdutos, type ProdutoView } from "@/features/comercial/cards";
 import { BotaoSincronizar } from "@/features/comercial/botao-sincronizar";
+import { MarcarVisto } from "@/features/notificacoes/marcar-visto";
 import {
+  DIAS_DESTAQUE,
   PLANILHA_URL,
-  type AbaComercial,
+  type AlteracaoComercial,
   type InfoSincronizacao,
+  type ProdutoComercial,
 } from "@/features/comercial/tipos";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -17,13 +20,15 @@ import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-function quando(iso: string | null): string {
+const FUSO = "America/Sao_Paulo";
+
+function quando(iso: string | null, curto = false): string {
   if (!iso) return "nunca";
   return new Date(iso).toLocaleString("pt-BR", {
-    timeZone: "America/Sao_Paulo",
+    timeZone: FUSO,
     day: "2-digit",
     month: "2-digit",
-    year: "numeric",
+    ...(curto ? {} : { year: "numeric" }),
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -31,32 +36,75 @@ function quando(iso: string | null): string {
 
 const ORIGEM: Record<string, string> = {
   planilha: "ao editar a planilha",
-  agendado: "sincronização diária",
+  agendado: "sincronização agendada",
   manual: "botão Sincronizar agora",
 };
+
+interface Linha {
+  chave: string;
+  secao: string;
+  nome: string;
+  ordem: number;
+  tag: string | null;
+  tag_cor: string | null;
+  campos: ProdutoComercial["campos"];
+}
 
 export default async function ComercialPage({
   searchParams,
 }: {
-  searchParams: Promise<{ aba?: string }>;
+  searchParams: Promise<{ aba?: string; alterados?: string }>;
 }) {
-  const { aba: abaRaw } = await searchParams;
+  const { aba: abaRaw, alterados } = await searchParams;
   const usuario = await exigirUsuario();
   const supabase = await criarClienteServidor();
 
-  const [{ data: abasData }, { data: infoData }] = await Promise.all([
-    supabase.from("comercial_abas").select("*").order("ordem", { ascending: true }),
+  const desde = new Date(Date.now() - DIAS_DESTAQUE * 86_400_000).toISOString();
+  const [{ data: prodData }, { data: altData }, { data: infoData }] = await Promise.all([
+    supabase.from("comercial_produtos").select("chave, secao, nome, ordem, tag, tag_cor, campos").order("ordem", { ascending: true }).limit(2000),
+    supabase.from("comercial_alteracoes").select("*").gte("detectado_em", desde).order("detectado_em", { ascending: false }).limit(500),
     supabase.from("comercial_sync").select("*").eq("id", 1).maybeSingle(),
   ]);
-  const abas = (abasData as AbaComercial[] | null) ?? [];
+  const linhas = (prodData as Linha[] | null) ?? [];
+  const alteracoes = (altData as AlteracaoComercial[] | null) ?? [];
   const info = (infoData as InfoSincronizacao | null) ?? null;
-  const ativa = abas.find((a) => a.nome === abaRaw) ?? abas[0];
+
+  // Alteração mais recente de cada produto.
+  const recente = new Map<string, AlteracaoComercial>();
+  for (const a of alteracoes) if (!recente.has(a.chave) && a.tipo !== "removido") recente.set(a.chave, a);
+  const removidos = alteracoes.filter((a) => a.tipo === "removido");
+
+  const secoes = Array.from(new Set(linhas.map((l) => l.secao)));
+  const ativa = secoes.includes(abaRaw ?? "") ? (abaRaw as string) : secoes[0];
+
+  const produtos: ProdutoView[] = linhas
+    .filter((l) => l.secao === ativa)
+    .map((l) => {
+      const a = recente.get(l.chave);
+      return {
+        chave: l.chave,
+        nome: l.nome,
+        tag: l.tag,
+        tagCor: l.tag_cor,
+        campos: l.campos,
+        alteracao: a
+          ? { tipo: a.tipo === "novo" ? "novo" : "alterado", quando: quando(a.detectado_em, true), mudancas: a.mudancas }
+          : undefined,
+      };
+    });
+
+  // Alterações recentes por aba (para o aviso das abas).
+  const alteradosPorSecao = new Map<string, number>();
+  for (const l of linhas) if (recente.has(l.chave)) alteradosPorSecao.set(l.secao, (alteradosPorSecao.get(l.secao) ?? 0) + 1);
+  const totalAlterados = recente.size;
+  const resumo = Array.from(recente.values()).slice(0, 8);
 
   return (
     <div className="space-y-6">
+      <MarcarVisto prefixo="/comercial" />
       <PageHeader
         titulo="Comercial"
-        descricao="Condições e disponibilidades por produto, espelhadas da planilha oficial e atualizadas automaticamente."
+        descricao="Condições e disponibilidades de cada produto, atualizadas automaticamente a partir da planilha oficial."
         acoes={
           <Button asChild variant="outline">
             <a href={PLANILHA_URL} target="_blank" rel="noopener noreferrer">
@@ -75,31 +123,69 @@ export default async function ComercialPage({
         {ehLideranca(usuario.role) ? <BotaoSincronizar /> : null}
       </div>
 
-      {abas.length === 0 ? (
+      {totalAlterados > 0 || removidos.length > 0 ? (
+        <div className="space-y-2 rounded-lg border-2 border-amber-400 bg-amber-50 p-4 dark:bg-amber-950/40">
+          <p className="flex items-center gap-2 font-semibold text-amber-900 dark:text-amber-200">
+            <AlertTriangle className="size-5" />
+            {totalAlterados} produto(s) com condições alteradas nos últimos {DIAS_DESTAQUE} dias
+            {removidos.length > 0 ? ` · ${removidos.length} removido(s) da planilha` : ""}
+          </p>
+          <ul className="space-y-1 text-sm">
+            {resumo.map((a) => (
+              <li key={a.id}>
+                <Link
+                  href={`/comercial?aba=${encodeURIComponent(a.secao)}&alterados=1`}
+                  className="hover:underline"
+                >
+                  <strong>{a.nome}</strong>{" "}
+                  <span className="text-muted-foreground">({a.secao.toLowerCase()})</span>
+                  {" — "}
+                  {a.tipo === "novo"
+                    ? "produto novo"
+                    : `alterou: ${a.mudancas.map((m) => m.campo).join(", ")}`}
+                  <span className="text-xs text-muted-foreground"> · {quando(a.detectado_em, true)}</span>
+                </Link>
+              </li>
+            ))}
+            {removidos.slice(0, 4).map((a) => (
+              <li key={a.id} className="text-muted-foreground">
+                <strong>{a.nome}</strong> foi removido da planilha · {quando(a.detectado_em, true)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {secoes.length === 0 ? (
         <EmptyState
           icone={Handshake}
           titulo="Planilha ainda não sincronizada"
-          descricao="Rode a migration 0043 no Supabase e clique em Sincronizar agora (gerente ou líder)."
+          descricao="Rode a migration 0044 no Supabase e clique em Sincronizar agora (gerente ou líder)."
         />
       ) : (
         <>
-          <nav aria-label="Abas da planilha" className="flex flex-wrap gap-1 border-b">
-            {abas.map((a) => (
+          <nav aria-label="Abas" className="flex flex-wrap gap-1 border-b">
+            {secoes.map((s) => (
               <Link
-                key={a.nome}
-                href={`/comercial?aba=${encodeURIComponent(a.nome)}`}
+                key={s}
+                href={`/comercial?aba=${encodeURIComponent(s)}`}
                 className={cn(
-                  "-mb-px shrink-0 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors",
-                  a.nome === ativa?.nome
+                  "-mb-px flex shrink-0 items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors",
+                  s === ativa
                     ? "border-primary text-foreground"
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 )}
               >
-                {a.nome}
+                {s}
+                {alteradosPorSecao.get(s) ? (
+                  <span className="rounded-full bg-amber-400 px-1.5 py-0.5 text-[11px] font-semibold text-amber-950">
+                    {alteradosPorSecao.get(s)}
+                  </span>
+                ) : null}
               </Link>
             ))}
           </nav>
-          {ativa ? <GradeComercial key={ativa.nome} dados={ativa.dados} /> : null}
+          <ListaProdutos key={`${ativa}-${alterados ?? ""}`} produtos={produtos} somenteAlterados={alterados === "1"} />
         </>
       )}
     </div>

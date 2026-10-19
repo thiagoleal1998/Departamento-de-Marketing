@@ -1,37 +1,40 @@
-/** Uma célula com conteúdo ou cor de fundo (as demais ficam vazias). */
-export interface CelulaComercial {
-  r: number;
-  c: number;
-  /** Texto exibido (já formatado). */
-  v?: string;
-  /** Cor de fundo (#RRGGBB). */
+/** Uma linha de um campo do produto (com a cor da célula, quando houver). */
+export interface LinhaCampo {
+  t: string;
   bg?: string;
 }
 
-export interface MesclagemComercial {
-  r1: number;
-  c1: number;
-  r2: number;
-  c2: number;
+export interface CampoProduto {
+  rotulo: string;
+  linhas: LinhaCampo[];
 }
 
-/** Conteúdo de uma aba da planilha. */
-export interface DadosAbaComercial {
-  linhas: number;
-  colunas: number;
-  celulas: CelulaComercial[];
-  mesclagens: MesclagemComercial[];
-  /** Largura de cada coluna, em pixels. */
-  larguras: number[];
-  /** Linha do cabeçalho da tabela (fica fixa ao rolar), se encontrada. */
-  cabecalho: number | null;
-}
-
-export interface AbaComercial {
+/** Um produto (hotel) da planilha, com todos os seus campos. */
+export interface ProdutoComercial {
+  chave: string;
+  secao: string;
   nome: string;
   ordem: number;
-  dados: DadosAbaComercial;
-  atualizado_em: string;
+  /** Marcação pela cor do nome, conforme a legenda (ex.: "Produtos que temos acordo"). */
+  tag: string | null;
+  tagCor: string | null;
+  campos: CampoProduto[];
+}
+
+export interface MudancaCampo {
+  campo: string;
+  antes: string[];
+  depois: string[];
+}
+
+export interface AlteracaoComercial {
+  id: string;
+  chave: string;
+  secao: string;
+  nome: string;
+  tipo: "novo" | "alterado" | "removido";
+  mudancas: MudancaCampo[];
+  detectado_em: string;
 }
 
 export interface InfoSincronizacao {
@@ -44,3 +47,6 @@ export const PLANILHA_ID =
   process.env.COMERCIAL_PLANILHA_ID ?? "1yWpvf733bZWuzrvmlwic7CtFSexjtPih0rdZNaWkXvg";
 
 export const PLANILHA_URL = `https://docs.google.com/spreadsheets/d/${PLANILHA_ID}/edit`;
+
+/** Por quantos dias um produto alterado fica em destaque. */
+export const DIAS_DESTAQUE = 7;

@@ -6,19 +6,19 @@
     },
     {
       "path": "/api/cron/comercial?hora=1030",
-      "schedule": "30 13 * * *"
+      "schedule": "30 13 * * 1-5"
     },
     {
       "path": "/api/cron/comercial?hora=1400",
-      "schedule": "0 17 * * *"
+      "schedule": "0 17 * * 1-5"
     },
     {
       "path": "/api/cron/comercial?hora=1600",
-      "schedule": "0 19 * * *"
+      "schedule": "0 19 * * 1-5"
     },
     {
       "path": "/api/cron/comercial?hora=1900",
-      "schedule": "0 22 * * *"
+      "schedule": "0 22 * * 1-5"
     }
   ]
 }
