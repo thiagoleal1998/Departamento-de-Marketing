@@ -3,26 +3,47 @@ import { ArrowLeft, LogIn } from "lucide-react";
 import { obterConfig } from "@/lib/config";
 import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { ConsultaLps, type LpPublica } from "@/features/portal/consulta-lps";
+import { ConsultaSite, type PaginaSite } from "@/features/portal/consulta-site";
 import { Marca } from "@/components/shared/marca";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export default async function ConsultaPage() {
+export default async function ConsultaPage({ searchParams }: { searchParams: Promise<{ aba?: string }> }) {
+  const { aba } = await searchParams;
+  const ativa = aba === "site" ? "site" : "lps";
   const { textos, logo } = await obterConfig();
 
-  // Página pública: só expõe nome, grupo e link das landing pages com patrocínio ativo.
+  // Página pública: só expõe títulos, categorias e links.
   let lps: LpPublica[] = [];
+  let paginas: PaginaSite[] = [];
   if (servicoDisponivel()) {
-    const { data } = await criarClienteAdmin()
-      .from("landing_pages")
-      .select("id, nome, grupo, url")
-      .eq("status_patrocinio", "ativo")
-      .order("nome")
-      .limit(1000);
-    lps = (data as LpPublica[] | null) ?? [];
+    const supabase = criarClienteAdmin();
+    if (ativa === "lps") {
+      const { data } = await supabase
+        .from("landing_pages")
+        .select("id, nome, grupo, url")
+        .eq("status_patrocinio", "ativo")
+        .order("nome")
+        .limit(1000);
+      lps = (data as LpPublica[] | null) ?? [];
+    } else {
+      const { data } = await supabase
+        .from("conteudos_site")
+        .select("id, titulo, pagina_url, categoria, estrelas, abrangencia")
+        .eq("status", "publicado")
+        .order("titulo")
+        .limit(2000);
+      paginas = (data as PaginaSite[] | null) ?? [];
+    }
   }
+
+  const abas = [
+    { id: "lps", rotulo: "Landing pages ativas", href: "/consulta" },
+    { id: "site", rotulo: "Site da LV", href: "/consulta?aba=site" },
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-accent/40 via-background to-background">
@@ -51,10 +72,31 @@ export default async function ConsultaPage() {
         <div className="space-y-2">
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Consulta</h1>
           <p className="text-sm text-muted-foreground">
-            Landing pages ativas e os sites em que estão publicadas. Use a busca para encontrar o link que precisa.
+            {ativa === "lps"
+              ? "Landing pages ativas e os sites em que estão publicadas. Use a busca para encontrar o link que precisa."
+              : "Páginas e conteúdos publicados no site da LV: resorts, hotéis, destinos, circuitos e LV Magazine."}
           </p>
         </div>
-        <ConsultaLps lps={lps} />
+
+        <nav className="flex gap-1 border-b" aria-label="Seções da consulta">
+          {abas.map((a) => (
+            <Link
+              key={a.id}
+              href={a.href}
+              aria-current={a.id === ativa ? "page" : undefined}
+              className={cn(
+                "-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+                a.id === ativa
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {a.rotulo}
+            </Link>
+          ))}
+        </nav>
+
+        {ativa === "lps" ? <ConsultaLps lps={lps} /> : <ConsultaSite paginas={paginas} />}
       </main>
     </div>
   );
