@@ -3,12 +3,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { ExternalLink, Search, Sparkles, X } from "lucide-react";
 import type { CampoProduto, MudancaCampo, ProdutoComercial } from "./tipos";
+import { ROTULO_DIVERGENCIA, ROTULO_SITUACAO, type ConferenciaProduto, type SituacaoLp } from "./conferencia";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 export interface ProdutoView extends Pick<ProdutoComercial, "chave" | "nome" | "tag" | "tagCor" | "campos"> {
+  /** Aba da planilha de onde veio o produto. */
+  secao: string;
+  /** Conferência com as landing pages cadastradas no sistema. */
+  conferencia: ConferenciaProduto;
   /** Alteração recente (se houver): quando e o que mudou. */
   alteracao?: {
     tipo: "novo" | "alterado";
@@ -85,7 +90,13 @@ function Selos({ p }: { p: ProdutoView }) {
   const pensao = primeira(p.campos, /pens/i);
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      {status ? <Badge variant={/^ativ/i.test(status) ? "success" : "muted"}>{status}</Badge> : null}
+      <Badge
+        variant={p.conferencia.situacao === "ativa" ? "success" : p.conferencia.situacao === "inativa" ? "danger" : "muted"}
+        title={p.conferencia.lps.length > 0 ? p.conferencia.lps.map((l) => `${l.nome} (${l.status ?? "sem status"})`).join(", ") + (p.conferencia.aproximado ? " — correspondência por nome aproximado" : "") : "Nenhuma LP do sistema corresponde a este produto"}
+      >
+        {ROTULO_SITUACAO[p.conferencia.situacao]}
+      </Badge>
+      {status ? <Badge variant="outline">Planilha: {status}</Badge> : null}
       {pensao ? <Badge variant="outline">{pensao}</Badge> : null}
       {p.tag ? (
         <span
@@ -126,6 +137,12 @@ function CardResumo({ p, aoAbrir }: { p: ProdutoView; aoAbrir: () => void }) {
           <span className="line-clamp-2 block text-base font-semibold leading-tight">{p.nome}</span>
           <Selos p={p} />
         </span>
+
+        {p.conferencia.divergencia ? (
+          <span className="block rounded bg-red-50 px-2 py-1 text-[11px] font-medium text-red-700 dark:bg-red-950/40 dark:text-red-300">
+            ⚠ {ROTULO_DIVERGENCIA[p.conferencia.divergencia]}
+          </span>
+        ) : null}
 
         {alterados.length > 0 ? (
           <span className="block text-xs text-amber-800 dark:text-amber-300">
@@ -225,6 +242,33 @@ function Detalhes({ p, aoFechar }: { p: ProdutoView; aoFechar: () => void }) {
           </div>
         </div>
 
+        <div className="space-y-2 border-b px-5 py-4 text-sm">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Conferência com as landing pages do sistema
+          </p>
+          {p.conferencia.divergencia ? (
+            <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 font-medium text-red-800 dark:bg-red-950/40 dark:text-red-300">
+              ⚠ {ROTULO_DIVERGENCIA[p.conferencia.divergencia]}
+            </p>
+          ) : null}
+          {p.conferencia.lps.length === 0 ? (
+            <p className="text-muted-foreground">Nenhuma LP cadastrada corresponde a este produto.</p>
+          ) : (
+            <ul className="space-y-1">
+              {p.conferencia.lps.map((l) => (
+                <li key={l.id} className="flex items-center gap-2">
+                  <Badge variant={l.status === "ativo" ? "success" : "muted"}>{l.status ?? "sem status"}</Badge>
+                  <span>{l.nome}</span>
+                  {l.grupo ? <span className="text-xs text-muted-foreground">({l.grupo})</span> : null}
+                </li>
+              ))}
+            </ul>
+          )}
+          {p.conferencia.aproximado ? (
+            <p className="text-xs text-muted-foreground">Correspondência encontrada por semelhança de nome.</p>
+          ) : null}
+        </div>
+
         <div className="grid gap-3 p-5 md:grid-cols-2">
           {detalhes.length === 0 && sumidos.length === 0 ? (
             <p className="text-sm text-muted-foreground md:col-span-2">Sem condições cadastradas.</p>
@@ -245,10 +289,14 @@ function Detalhes({ p, aoFechar }: { p: ProdutoView; aoFechar: () => void }) {
 export function ListaProdutos({
   produtos,
   somenteAlterados: inicial = false,
+  mostrarAba = false,
 }: {
   produtos: ProdutoView[];
   somenteAlterados?: boolean;
+  /** Exibe de qual aba da planilha cada produto veio. */
+  mostrarAba?: boolean;
 }) {
+  const [situacao, setSituacao] = useState<"todas" | SituacaoLp | "divergentes">("todas");
   const [busca, setBusca] = useState("");
   const [soAlterados, setSoAlterados] = useState(inicial);
   const [aberto, setAberto] = useState<string | null>(null);
@@ -258,6 +306,9 @@ export function ListaProdutos({
     const t = busca.trim().toLowerCase();
     return produtos
       .filter((p) => (soAlterados ? !!p.alteracao : true))
+      .filter((p) =>
+        situacao === "todas" ? true : situacao === "divergentes" ? !!p.conferencia.divergencia : p.conferencia.situacao === situacao
+      )
       .filter(
         (p) =>
           !t ||
@@ -265,7 +316,7 @@ export function ListaProdutos({
           p.campos.some((c) => c.linhas.some((l) => l.t.toLowerCase().includes(t)))
       )
       .sort((a, b) => Number(!!b.alteracao) - Number(!!a.alteracao));
-  }, [produtos, busca, soAlterados]);
+  }, [produtos, busca, soAlterados, situacao]);
 
   const selecionado = produtos.find((p) => p.chave === aberto) ?? null;
 
@@ -282,6 +333,19 @@ export function ListaProdutos({
             aria-label="Buscar"
           />
         </div>
+        <select
+          value={situacao}
+          onChange={(e) => setSituacao(e.target.value as typeof situacao)}
+          aria-label="Situação da LP"
+          className="h-9 rounded-md border bg-background px-2 text-sm"
+        >
+          <option value="todas">Todas as situações</option>
+          <option value="ativa">LP ativa</option>
+          <option value="inativa">LP inativa</option>
+          <option value="sem_status">LP sem status</option>
+          <option value="sem_lp">Sem LP no sistema</option>
+          <option value="divergentes">Somente divergentes</option>
+        </select>
         <label className="flex cursor-pointer items-center gap-2 text-sm">
           <input
             type="checkbox"
@@ -306,7 +370,12 @@ export function ListaProdutos({
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {visiveis.map((p) => (
-            <CardResumo key={p.chave} p={p} aoAbrir={() => setAberto(p.chave)} />
+            <div key={p.chave} className="space-y-1">
+              {mostrarAba ? (
+                <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{p.secao}</p>
+              ) : null}
+              <CardResumo p={p} aoAbrir={() => setAberto(p.chave)} />
+            </div>
           ))}
         </div>
       )}

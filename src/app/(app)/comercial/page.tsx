@@ -5,6 +5,8 @@ import { ehLideranca } from "@/lib/permissions";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { ListaProdutos, type ProdutoView } from "@/features/comercial/cards";
 import { BotaoSincronizar } from "@/features/comercial/botao-sincronizar";
+import { ConferenciaPainel } from "@/features/comercial/conferencia-painel";
+import { conferir, type LpSistema } from "@/features/comercial/conferencia";
 import { MarcarVisto } from "@/features/notificacoes/marcar-visto";
 import {
   DIAS_DESTAQUE,
@@ -62,11 +64,13 @@ export default async function ComercialPage({
   const supabase = await criarClienteServidor();
 
   const desde = new Date(Date.now() - DIAS_DESTAQUE * 86_400_000).toISOString();
-  const [{ data: prodData }, { data: altData }, { data: infoData }] = await Promise.all([
+  const [{ data: prodData }, { data: altData }, { data: infoData }, { data: lpData }] = await Promise.all([
     supabase.from("comercial_produtos").select("chave, secao, nome, ordem, tag, tag_cor, campos").order("ordem", { ascending: true }).limit(2000),
     supabase.from("comercial_alteracoes").select("*").gte("detectado_em", desde).order("detectado_em", { ascending: false }).limit(500),
     supabase.from("comercial_sync").select("*").eq("id", 1).maybeSingle(),
+    supabase.from("landing_pages").select("id, nome, grupo, status_patrocinio, url").limit(3000),
   ]);
+  const lps = (lpData as LpSistema[] | null) ?? [];
   const linhas = (prodData as Linha[] | null) ?? [];
   const alteracoes = (altData as AlteracaoComercial[] | null) ?? [];
   const info = (infoData as InfoSincronizacao | null) ?? null;
@@ -77,28 +81,49 @@ export default async function ComercialPage({
   const removidos = alteracoes.filter((a) => a.tipo === "removido");
 
   const secoes = Array.from(new Set(linhas.map((l) => l.secao)));
-  const ativa = secoes.includes(abaRaw ?? "") ? (abaRaw as string) : secoes[0];
+  const ATIVOS = "Produtos ativos";
+  const CONFERENCIA = "Conferência com as LPs";
+  const abas = secoes.length > 0 ? [ATIVOS, ...secoes, CONFERENCIA] : [];
+  const primeiraComAlteracao = linhas.find((l) => recente.has(l.chave))?.secao;
+  const ativa = abas.includes(abaRaw ?? "")
+    ? (abaRaw as string)
+    : alterados === "1" && primeiraComAlteracao
+      ? primeiraComAlteracao
+      : abas[0];
 
-  const produtos: ProdutoView[] = linhas
-    .filter((l) => l.secao === ativa)
-    .map((l) => {
-      const a = recente.get(l.chave);
-      return {
-        chave: l.chave,
-        nome: l.nome,
-        tag: l.tag,
-        tagCor: l.tag_cor,
-        campos: l.campos,
-        alteracao: a
-          ? { tipo: a.tipo === "novo" ? "novo" : "alterado", quando: quando(a.detectado_em, true), mudancas: a.mudancas }
-          : undefined,
-      };
-    });
+  const todos: ProdutoView[] = linhas.map((l) => {
+    const a = recente.get(l.chave);
+    return {
+      chave: l.chave,
+      secao: l.secao,
+      nome: l.nome,
+      tag: l.tag,
+      tagCor: l.tag_cor,
+      campos: l.campos,
+      conferencia: conferir(l.secao, l.nome, l.campos, lps),
+      alteracao: a
+        ? { tipo: a.tipo === "novo" ? "novo" : "alterado", quando: quando(a.detectado_em, true), mudancas: a.mudancas }
+        : undefined,
+    };
+  });
+  const produtos =
+    ativa === ATIVOS
+      ? todos.filter((p) => p.conferencia.situacao === "ativa")
+      : todos.filter((p) => p.secao === ativa);
+
+  // LPs ativas que nenhum produto do Comercial referencia.
+  const lpsUsadas = new Set(todos.flatMap((p) => p.conferencia.lps.map((l) => l.id)));
+  const lpsAtivas = lps.filter((l) => l.status_patrocinio === "ativo");
+  const lpsAtivasSemProduto = lpsAtivas
+    .filter((l) => !lpsUsadas.has(l.id))
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  const divergentes = todos.filter((p) => p.conferencia.divergencia).length;
 
   // Alterações recentes por aba (para o aviso das abas).
   const alteradosPorSecao = new Map<string, number>();
   for (const l of linhas) if (recente.has(l.chave)) alteradosPorSecao.set(l.secao, (alteradosPorSecao.get(l.secao) ?? 0) + 1);
   const totalAlterados = recente.size;
+  const ativosReais = todos.filter((p) => p.conferencia.situacao === "ativa").length;
   const resumo = Array.from(recente.values()).slice(0, 8);
 
   return (
@@ -174,7 +199,7 @@ export default async function ComercialPage({
       ) : (
         <>
           <nav aria-label="Abas" className="flex flex-wrap gap-1 border-b">
-            {secoes.map((s) => (
+            {abas.map((s) => (
               <Link
                 key={s}
                 href={`/comercial?aba=${encodeURIComponent(s)}`}
@@ -186,6 +211,16 @@ export default async function ComercialPage({
                 )}
               >
                 {s}
+                {s === ATIVOS ? (
+                  <span className="rounded-full bg-emerald-500 px-1.5 py-0.5 text-[11px] font-semibold text-white">
+                    {ativosReais}
+                  </span>
+                ) : null}
+                {s === CONFERENCIA && divergentes > 0 ? (
+                  <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[11px] font-semibold text-white">
+                    {divergentes}
+                  </span>
+                ) : null}
                 {alteradosPorSecao.get(s) ? (
                   <span className="rounded-full bg-amber-400 px-1.5 py-0.5 text-[11px] font-semibold text-amber-950">
                     {alteradosPorSecao.get(s)}
@@ -194,7 +229,28 @@ export default async function ComercialPage({
               </Link>
             ))}
           </nav>
-          <ListaProdutos key={`${ativa}-${alterados ?? ""}`} produtos={produtos} somenteAlterados={alterados === "1"} />
+          {ativa === CONFERENCIA ? (
+            <ConferenciaPainel
+              produtos={todos}
+              lpsAtivasSemProduto={lpsAtivasSemProduto}
+              totalLpsAtivas={lpsAtivas.length}
+            />
+          ) : (
+            <>
+              {ativa === ATIVOS ? (
+                <p className="text-sm text-muted-foreground">
+                  Somente produtos cuja landing page está com patrocínio <strong>ativo</strong> no sistema (conferido
+                  com Operacional &gt; Landing Pages).
+                </p>
+              ) : null}
+              <ListaProdutos
+                key={`${ativa}-${alterados ?? ""}`}
+                produtos={produtos}
+                somenteAlterados={alterados === "1"}
+                mostrarAba={ativa === ATIVOS}
+              />
+            </>
+          )}
         </>
       )}
     </div>
