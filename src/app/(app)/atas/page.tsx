@@ -2,6 +2,11 @@ import Link from "next/link";
 import { NotebookPen, AlertTriangle, CalendarClock } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import { mapaDePerfis } from "@/features/chamados/data";
+import { ehLideranca } from "@/lib/permissions";
+import { estadoVivoPorSerie } from "@/features/atas/vivo";
+import { criarReuniao } from "@/features/atas/actions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   carregarAtas,
   itemAberto,
@@ -124,11 +129,14 @@ export default async function AtasPage({
   searchParams: Promise<{ aba?: string }>;
 }) {
   const { aba: abaRaw } = await searchParams;
-  await exigirUsuario();
-  const [{ reunioes, itens }, perfis] = await Promise.all([
+  const usuario = await exigirUsuario();
+  const [{ reunioes, itens }, perfis, vivo] = await Promise.all([
     carregarAtas(),
     mapaDePerfis(),
+    estadoVivoPorSerie(),
   ]);
+  const lideranca = ehLideranca(usuario.role);
+  const hojeBR = new Date().toLocaleDateString("en-CA", { timeZone: FUSO });
   const aba = abaRaw === "reunioes" ? "reunioes" : "pendencias";
   const agora = Date.now();
 
@@ -151,9 +159,23 @@ export default async function AtasPage({
   }
 
   // Pendências = itens ainda abertos na reunião mais recente.
-  const pendentes = (ultima ? porReuniao.get(ultima.id) ?? [] : []).filter(
-    (it) => it.secao === "ata" && itemAberto(it.status)
-  );
+  // O andamento real vem da tarefa vinculada (atualizada pelo responsável no kanban).
+  const comEstadoAtual = (it: ItemAta): ItemAta => {
+    const v = vivo.get(it.serie);
+    return v
+      ? {
+          ...it,
+          status: v.status,
+          prazo: v.prazo ?? it.prazo,
+          responsavel_id: v.responsavel_id ?? it.responsavel_id,
+          prioridade: v.prioridade ?? it.prioridade,
+        }
+      : it;
+  };
+  const pendentes = (ultima ? porReuniao.get(ultima.id) ?? [] : [])
+    .filter((it) => it.secao === "ata")
+    .map(comEstadoAtual)
+    .filter((it) => itemAberto(it.status));
   const atrasados = pendentes.filter(
     (it) => it.prazo && new Date(it.prazo).getTime() < agora
   ).length;
@@ -183,6 +205,21 @@ export default async function AtasPage({
       <PageHeader
         titulo="Atas"
         descricao="Reuniões de planejamento de marketing: o que foi combinado, quem é o responsável e até quando."
+        acoes={
+          lideranca ? (
+            <form action={criarReuniao} className="flex items-center gap-2">
+              <Input
+                type="date"
+                name="data"
+                required
+                defaultValue={hojeBR}
+                aria-label="Data da reunião"
+                className="h-9 w-40"
+              />
+              <Button type="submit">Nova reunião</Button>
+            </form>
+          ) : undefined
+        }
       />
 
       <nav aria-label="Seções das atas" className="flex flex-wrap gap-1 border-b">
@@ -273,7 +310,9 @@ export default async function AtasPage({
                   <CardContent className="p-0">
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-muted/40 px-4 py-2">
                       <h2 className="font-semibold">
-                        {dataBR(r.data + "T12:00:00-03:00")}
+                        <Link href={`/atas/${r.id}`} className="hover:underline">
+                          {dataBR(r.data + "T12:00:00-03:00")}
+                        </Link>
                         {r.estado === "em_andamento" ? (
                           <Badge variant="secondary" className="ml-2">
                             Em andamento
