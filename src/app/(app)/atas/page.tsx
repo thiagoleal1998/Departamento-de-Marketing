@@ -5,6 +5,7 @@ import { mapaDePerfis } from "@/features/chamados/data";
 import { ehLideranca } from "@/lib/permissions";
 import { estadoVivoPorSerie } from "@/features/atas/vivo";
 import { criarReuniao } from "@/features/atas/actions";
+import { ItemCard, type ItemCardDados } from "@/features/atas/item-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -48,79 +49,26 @@ function situacaoPrazo(prazo: string | null, agora: number) {
   return { tom: "ok" as const, texto: "No prazo" };
 }
 
-const TOM: Record<string, string> = {
-  atrasado: "border-red-300 bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300",
-  proximo: "border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
-  ok: "border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
-  neutro: "border-muted bg-muted text-muted-foreground",
-};
-
-function LinhaItem({
-  it,
-  agora,
-  vezes,
-  mostrarSituacao,
-}: {
-  it: ItemAta;
-  agora: number;
-  vezes?: number;
-  mostrarSituacao: boolean;
-}) {
+function paraCard(
+  it: ItemAta,
+  agora: number,
+  opcoes: { situacao: boolean; vezes?: number; responsavel: string | null }
+): ItemCardDados {
   const aberto = itemAberto(it.status);
-  const sit = situacaoPrazo(it.prazo, agora);
-  return (
-    <div className="space-y-1.5 border-b p-4 last:border-b-0">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <p className="font-medium leading-tight">
-          {it.prioridade ? (
-            <Badge variant="outline" className="mr-2">
-              P{it.prioridade}
-            </Badge>
-          ) : null}
-          {it.titulo}
-        </p>
-        <div className="flex flex-wrap items-center gap-1.5">
-          {mostrarSituacao && aberto ? (
-            <span className={cn("rounded border px-2 py-0.5 text-xs", TOM[sit.tom])}>
-              {sit.texto}
-            </span>
-          ) : null}
-          <Badge variant={aberto ? "secondary" : "outline"}>
-            {STATUS_ITEM_LABEL[it.status ?? "sem"]}
-          </Badge>
-        </div>
-      </div>
-      {it.detalhamento ? (
-        <p className="line-clamp-4 whitespace-pre-line text-sm text-muted-foreground">
-          {it.detalhamento}
-        </p>
-      ) : null}
-      {it.plano_acao ? (
-        <p className="whitespace-pre-line text-sm">
-          <span className="font-medium">Plano de ação: </span>
-          {it.plano_acao}
-        </p>
-      ) : null}
-      <p className="text-xs text-muted-foreground">
-        Prazo: {dataBR(it.prazo, true)}
-        {it.responsaveis_texto ? ` · ${it.responsaveis_texto}` : ""}
-        {vezes && vezes > 1 ? ` · aparece há ${vezes} reuniões` : ""}
-        {it.link ? (
-          <>
-            {" · "}
-            <a
-              href={it.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary underline"
-            >
-              link
-            </a>
-          </>
-        ) : null}
-      </p>
-    </div>
-  );
+  return {
+    id: it.id,
+    titulo: it.titulo,
+    prioridade: it.prioridade,
+    statusRotulo: STATUS_ITEM_LABEL[it.status ?? "sem"],
+    aberto,
+    situacao: opcoes.situacao && aberto ? situacaoPrazo(it.prazo, agora) : undefined,
+    prazo: dataBR(it.prazo, true),
+    responsavel: opcoes.responsavel,
+    vezes: opcoes.vezes,
+    detalhamento: it.detalhamento,
+    plano: it.plano_acao,
+    link: it.link,
+  };
 }
 
 export default async function AtasPage({
@@ -147,9 +95,7 @@ export default async function AtasPage({
     porReuniao.set(it.reuniao_id, l);
   }
   for (const l of porReuniao.values()) {
-    l.sort((a, b) =>
-      a.secao === b.secao ? a.ordem - b.ordem : a.secao === "ata" ? -1 : 1
-    );
+    l.sort((a, b) => (a.secao === b.secao ? a.ordem - b.ordem : a.secao === "ata" ? -1 : 1));
   }
 
   const ultima: Reuniao | undefined = reunioes[reunioes.length - 1];
@@ -158,7 +104,6 @@ export default async function AtasPage({
     vezesPorSerie.set(it.serie, (vezesPorSerie.get(it.serie) ?? 0) + 1);
   }
 
-  // Pendências = itens ainda abertos na reunião mais recente.
   // O andamento real vem da tarefa vinculada (atualizada pelo responsável no kanban).
   const comEstadoAtual = (it: ItemAta): ItemAta => {
     const v = vivo.get(it.serie);
@@ -172,6 +117,8 @@ export default async function AtasPage({
         }
       : it;
   };
+
+  // Pendências = itens ainda abertos na reunião mais recente.
   const pendentes = (ultima ? porReuniao.get(ultima.id) ?? [] : [])
     .filter((it) => it.secao === "ata")
     .map(comEstadoAtual)
@@ -180,11 +127,14 @@ export default async function AtasPage({
     (it) => it.prazo && new Date(it.prazo).getTime() < agora
   ).length;
 
+  const nomeResp = (it: ItemAta) =>
+    (it.responsavel_id ? perfis.get(it.responsavel_id)?.nome : null) ??
+    it.responsaveis_texto ??
+    null;
+
   const grupos = new Map<string, ItemAta[]>();
   for (const it of pendentes) {
-    const chave = it.responsavel_id
-      ? perfis.get(it.responsavel_id)?.nome ?? it.responsaveis_texto ?? "Sem responsável"
-      : it.responsaveis_texto ?? "Sem responsável";
+    const chave = nomeResp(it) ?? "Sem responsável";
     const l = grupos.get(chave) ?? [];
     l.push(it);
     grupos.set(chave, l);
@@ -258,6 +208,9 @@ export default async function AtasPage({
                 <AlertTriangle className="size-3" /> {atrasados} atrasado(s)
               </Badge>
             ) : null}
+            <span className="text-xs text-muted-foreground">
+              Clique em um item para ver o card completo.
+            </span>
           </div>
 
           {ordemGrupos.length === 0 ? (
@@ -267,77 +220,94 @@ export default async function AtasPage({
               descricao="Nenhum item aberto na última reunião."
             />
           ) : (
-            ordemGrupos.map(([nome, lista]) => (
-              <Card key={nome}>
-                <CardContent className="p-0">
-                  <div className="flex items-center justify-between border-b bg-muted/40 px-4 py-2">
-                    <h2 className="font-semibold">{nome}</h2>
-                    <Badge variant="secondary">{lista.length}</Badge>
-                  </div>
-                  {lista
-                    .slice()
-                    .sort(
-                      (a, b) =>
-                        new Date(a.prazo ?? "2999-01-01").getTime() -
-                        new Date(b.prazo ?? "2999-01-01").getTime()
-                    )
-                    .map((it) => (
-                      <LinhaItem
-                        key={it.id}
-                        it={it}
-                        agora={agora}
-                        vezes={vezesPorSerie.get(it.serie)}
-                        mostrarSituacao
-                      />
-                    ))}
-                </CardContent>
-              </Card>
-            ))
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {ordemGrupos.map(([nome, lista]) => {
+                const atrasos = lista.filter(
+                  (it) => it.prazo && new Date(it.prazo).getTime() < agora
+                ).length;
+                return (
+                  <Card key={nome} className="flex max-h-[75vh] flex-col overflow-hidden">
+                    <div className="flex items-center justify-between gap-2 border-b bg-muted/40 px-4 py-2.5">
+                      <h2 className="font-semibold">{nome}</h2>
+                      <div className="flex items-center gap-1.5">
+                        {atrasos > 0 ? <Badge variant="danger">{atrasos} atrasado(s)</Badge> : null}
+                        <Badge variant="secondary">{lista.length}</Badge>
+                      </div>
+                    </div>
+                    <CardContent className="min-h-0 flex-1 overflow-y-auto p-0">
+                      {lista
+                        .slice()
+                        .sort(
+                          (a, b) =>
+                            new Date(a.prazo ?? "2999-01-01").getTime() -
+                            new Date(b.prazo ?? "2999-01-01").getTime()
+                        )
+                        .map((it) => (
+                          <ItemCard
+                            key={it.id}
+                            it={paraCard(it, agora, {
+                              situacao: true,
+                              vezes: vezesPorSerie.get(it.serie),
+                              responsavel: null,
+                            })}
+                          />
+                        ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           )}
         </div>
       ) : (
-        <div className="space-y-5">
-          {reunioes
-            .slice()
-            .reverse()
-            .map((r) => {
-              const lista = porReuniao.get(r.id) ?? [];
-              const ausentes = r.presencas.filter((p) =>
-                /ausente/i.test(p.presenca)
-              );
-              return (
-                <Card key={r.id}>
-                  <CardContent className="p-0">
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-muted/40 px-4 py-2">
-                      <h2 className="font-semibold">
-                        <Link href={`/atas/${r.id}`} className="hover:underline">
-                          {dataBR(r.data + "T12:00:00-03:00")}
-                        </Link>
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Da reunião mais recente (esquerda) para a mais antiga. Role para o lado e
+            clique em um item para abrir o card completo.
+          </p>
+          <div className="flex items-start gap-4 overflow-x-auto pb-4">
+            {reunioes
+              .slice()
+              .reverse()
+              .map((r) => {
+                const lista = porReuniao.get(r.id) ?? [];
+                const ausentes = r.presencas.filter((p) => /ausente/i.test(p.presenca));
+                return (
+                  <Card key={r.id} className="flex max-h-[78vh] w-[360px] shrink-0 flex-col overflow-hidden">
+                    <div className="space-y-0.5 border-b bg-muted/40 px-4 py-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <h2 className="font-semibold">
+                          <Link href={`/atas/${r.id}`} className="hover:underline">
+                            {dataBR(r.data + "T12:00:00-03:00")}
+                          </Link>
+                        </h2>
                         {r.estado === "em_andamento" ? (
-                          <Badge variant="secondary" className="ml-2">
-                            Em andamento
-                          </Badge>
-                        ) : null}
-                      </h2>
-                      <span className="text-xs text-muted-foreground">
-                        {lista.length} item(ns)
-                        {ausentes.length > 0
-                          ? ` · ausentes: ${ausentes.map((a) => a.nome).join(", ")}`
-                          : ""}
-                      </span>
+                          <Badge variant="warning">Em andamento</Badge>
+                        ) : (
+                          <Badge variant="muted">{lista.length} itens</Badge>
+                        )}
+                      </div>
+                      {ausentes.length > 0 ? (
+                        <p className="text-[11px] text-muted-foreground">
+                          Ausentes: {ausentes.map((a) => a.nome.split(" ")[0]).join(", ")}
+                        </p>
+                      ) : null}
                     </div>
-                    {lista.map((it) => (
-                      <LinhaItem
-                        key={it.id}
-                        it={it}
-                        agora={agora}
-                        mostrarSituacao={false}
-                      />
-                    ))}
-                  </CardContent>
-                </Card>
-              );
-            })}
+                    <CardContent className="min-h-0 flex-1 overflow-y-auto p-0">
+                      {lista.map((it) => (
+                        <ItemCard
+                          key={it.id}
+                          it={paraCard(it, agora, {
+                            situacao: false,
+                            responsavel: nomeResp(it),
+                          })}
+                        />
+                      ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+          </div>
         </div>
       )}
     </div>
