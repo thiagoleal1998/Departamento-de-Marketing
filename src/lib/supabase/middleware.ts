@@ -8,6 +8,8 @@ type CookieParaGravar = { name: string; value: string; options: CookieOptions };
 const PUBLICAS_EXATAS = ["/"];
 const PUBLICAS_PREFIXO = [
   "/login",
+  "/central",
+  "/consulta",
   "/auth",
   "/acompanhar",
   "/api/cron",

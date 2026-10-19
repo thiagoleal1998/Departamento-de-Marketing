@@ -70,7 +70,7 @@ export default async function LoginPage() {
             href="/"
             className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
           >
-            <ArrowLeft className="size-3" /> Voltar ao portal de solicitações
+            <ArrowLeft className="size-3" /> Voltar à página inicial
           </Link>
         </div>
       </div>

@@ -26,7 +26,7 @@ export default async function AcompanharPage() {
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <Button asChild variant="outline" size="sm">
-            <Link href="/">
+            <Link href="/central">
               <ArrowLeft className="size-4" /> Abrir chamado
             </Link>
           </Button>
@@ -35,7 +35,7 @@ export default async function AcompanharPage() {
 
       <main className="mx-auto max-w-3xl px-4 pb-16 pt-6">
         <Link
-          href="/"
+          href="/central"
           className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-4" /> Voltar para a central
