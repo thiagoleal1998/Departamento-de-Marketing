@@ -13,16 +13,33 @@ export async function contagensDoMenu(): Promise<Contagens> {
 
   const { data: notifs } = await supabase
     .from("notificacoes")
-    .select("link")
+    .select("link, created_at")
     .eq("destinatario_id", user.id)
     .eq("lida", false)
     .not("link", "is", null)
     .limit(500);
 
-  for (const n of (notifs as { link: string | null }[] | null) ?? []) {
+  let comercialDesde: string | null = null;
+  for (const n of (notifs as { link: string | null; created_at: string }[] | null) ?? []) {
     if (!n.link) continue;
+    if (n.link.startsWith("/comercial") && (!comercialDesde || n.created_at < comercialDesde)) {
+      comercialDesde = n.created_at;
+    }
     const caminho = n.link.split("?")[0].split("#")[0];
     contagens[caminho] = (contagens[caminho] ?? 0) + 1;
+  }
+
+  // Comercial: o número é a quantidade de produtos alterados desde o primeiro aviso não lido
+  // (e não a quantidade de avisos).
+  if (comercialDesde) {
+    const { data: alt } = await supabase
+      .from("comercial_alteracoes")
+      .select("chave")
+      .neq("tipo", "removido")
+      .gte("detectado_em", comercialDesde)
+      .limit(1000);
+    const produtos = new Set(((alt as { chave: string }[] | null) ?? []).map((a) => a.chave));
+    if (produtos.size > 0) contagens["/comercial"] = produtos.size;
   }
 
   // Chat: mensagens não lidas (tabela pode não existir antes da migration).
