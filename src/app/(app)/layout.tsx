@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
+import { ProgressoNavegacao } from "@/components/layout/progresso-navegacao";
 import { Topbar } from "@/components/layout/topbar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { exigirUsuario } from "@/lib/auth";
@@ -20,6 +22,9 @@ export default async function AppLayout({
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
+      <Suspense fallback={null}>
+        <ProgressoNavegacao />
+      </Suspense>
       <Sidebar
         papel={usuario.role}
         nomePainel={textos.painel_nome}
