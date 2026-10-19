@@ -1,6 +1,6 @@
 {
   "name": "painel-marketing",
-  "version": "0.55.0",
+  "version": "0.56.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -23,6 +23,7 @@
     "react-hook-form": "^7.54.2",
     "tailwind-merge": "^2.6.0",
     "web-push": "^3.6.7",
+    "xlsx": "^0.18.5",
     "zod": "^3.24.1"
   },
   "devDependencies": {

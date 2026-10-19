@@ -6,7 +6,13 @@ type CookieParaGravar = { name: string; value: string; options: CookieOptions };
 
 // Rotas públicas: o portal ("/") e o login. Exatas evitam liberar tudo.
 const PUBLICAS_EXATAS = ["/"];
-const PUBLICAS_PREFIXO = ["/login", "/auth", "/acompanhar", "/api/cron"];
+const PUBLICAS_PREFIXO = [
+  "/login",
+  "/auth",
+  "/acompanhar",
+  "/api/cron",
+  "/api/comercial/sync",
+];
 
 function rotaPublica(pathname: string): boolean {
   return (

@@ -17,6 +17,7 @@ import {
   ClipboardList,
   CalendarDays,
   NotebookPen,
+  Handshake,
   Store,
   Plane,
   Target,
@@ -153,6 +154,13 @@ export const NAVEGACAO: ItemNav[] = [
     icone: NotebookPen,
     gradiente: "from-cyan-500 to-sky-600",
     descricao: "Reuniões, responsáveis e prazos",
+  },
+  {
+    href: "/comercial",
+    label: "Comercial",
+    icone: Handshake,
+    gradiente: "from-emerald-500 to-green-600",
+    descricao: "Condições e disponibilidades",
   },
   {
     href: "/estoque",
