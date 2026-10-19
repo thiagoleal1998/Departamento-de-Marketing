@@ -121,7 +121,7 @@ function CardResumo({ p, aoAbrir }: { p: ProdutoView; aoAbrir: () => void }) {
       id={`prod-${p.chave}`}
       onClick={aoAbrir}
       className={cn(
-        "group relative flex h-[300px] flex-col overflow-hidden rounded-xl border bg-card text-left shadow-sm transition-shadow hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary",
+        "group relative flex h-[300px] w-full min-w-0 flex-col overflow-hidden rounded-xl border bg-card text-left shadow-sm transition-shadow hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary",
         p.alteracao && "border-amber-400 ring-2 ring-amber-400/70"
       )}
     >
@@ -370,7 +370,7 @@ export function ListaProdutos({
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {visiveis.map((p) => (
-            <div key={p.chave} className="space-y-1">
+            <div key={p.chave} className="flex min-w-0 flex-col gap-1">
               {mostrarAba ? (
                 <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{p.secao}</p>
               ) : null}
