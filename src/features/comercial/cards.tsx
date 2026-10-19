@@ -315,7 +315,7 @@ export function ListaProdutos({
           p.nome.toLowerCase().includes(t) ||
           p.campos.some((c) => c.linhas.some((l) => l.t.toLowerCase().includes(t)))
       )
-      .sort((a, b) => Number(!!b.alteracao) - Number(!!a.alteracao));
+      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base", numeric: true }));
   }, [produtos, busca, soAlterados, situacao]);
 
   const selecionado = produtos.find((p) => p.chave === aberto) ?? null;
