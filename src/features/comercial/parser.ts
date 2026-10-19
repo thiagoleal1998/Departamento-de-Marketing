@@ -75,6 +75,11 @@ function lerAba(
   // ---- células ----
   const cel = new Map<string, Cel>();
   let maxR = 0;
+  // Linhas e colunas ocultas na planilha não entram no sistema.
+  const linhasOcultas = new Set<number>();
+  (ws["!rows"] ?? []).forEach((l, i) => l?.hidden && linhasOcultas.add(i));
+  const colunasOcultas = new Set<number>();
+  (ws["!cols"] ?? []).forEach((c, i) => c?.hidden && colunasOcultas.add(i));
   for (const chave of Object.keys(ws)) {
     if (chave[0] === "!") continue;
     const c = ws[chave] as XLSX.CellObject & {
@@ -82,6 +87,7 @@ function lerAba(
       s?: { patternType?: string; fgColor?: { rgb?: string } };
     };
     const { r, c: col } = XLSX.utils.decode_cell(chave);
+    if (linhasOcultas.has(r) || colunasOcultas.has(col)) continue;
     const t = limpa(c.w ?? (c.v === undefined || c.v === null ? "" : String(c.v)));
     const rgb = c.s?.patternType === "solid" ? c.s.fgColor?.rgb?.toUpperCase() : undefined;
     const bg = rgb && rgb !== "FFFFFF" && /^[0-9A-F]{6}$/.test(rgb) ? `#${rgb}` : undefined;
