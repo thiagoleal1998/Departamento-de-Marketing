@@ -10,7 +10,7 @@ import {
   salvarItem,
   salvarPresencas,
 } from "./actions";
-import { STATUS_ITEM_LABEL, type ItemAta, type StatusItem } from "./data";
+import { STATUS_ITEM_LABEL, type ItemAta, type StatusItem } from "./tipos";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
