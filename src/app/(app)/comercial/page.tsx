@@ -15,6 +15,7 @@ import {
 } from "@/features/comercial/tipos";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -34,10 +35,11 @@ function quando(iso: string | null, curto = false): string {
   });
 }
 
-const ORIGEM: Record<string, string> = {
-  planilha: "ao editar a planilha",
-  agendado: "sincronização agendada",
-  manual: "botão Sincronizar agora",
+/** Tipo (manual ou automática) e detalhe da última sincronização. */
+const ORIGEM: Record<string, { tipo: "Manual" | "Automática"; detalhe: string }> = {
+  manual: { tipo: "Manual", detalhe: "botão Sincronizar agora" },
+  planilha: { tipo: "Automática", detalhe: "ao editar a planilha" },
+  agendado: { tipo: "Automática", detalhe: "horário agendado" },
 };
 
 interface Linha {
@@ -115,10 +117,17 @@ export default async function ComercialPage({
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-        <span>
-          Última sincronização: <strong>{quando(info?.sincronizado_em ?? null)}</strong>
-          {info?.origem ? ` (${ORIGEM[info.origem] ?? info.origem})` : ""}
-          {info?.erro ? <span className="ml-2 text-destructive">Erro: {info.erro}</span> : null}
+        <span className="flex flex-wrap items-center gap-2">
+          Última sincronização: <strong className="text-foreground">{quando(info?.sincronizado_em ?? null)}</strong>
+          {info?.origem && ORIGEM[info.origem] ? (
+            <>
+              <Badge variant={ORIGEM[info.origem].tipo === "Manual" ? "info" : "success"}>
+                {ORIGEM[info.origem].tipo}
+              </Badge>
+              <span>({ORIGEM[info.origem].detalhe})</span>
+            </>
+          ) : null}
+          {info?.erro ? <span className="text-destructive">Erro: {info.erro}</span> : null}
         </span>
         {ehLideranca(usuario.role) ? <BotaoSincronizar /> : null}
       </div>
