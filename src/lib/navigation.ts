@@ -16,6 +16,7 @@ import {
   FileText,
   ClipboardList,
   CalendarDays,
+  NotebookPen,
   Store,
   Plane,
   Target,
@@ -145,6 +146,13 @@ export const NAVEGACAO: ItemNav[] = [
         icone: Clapperboard,
       },
     ],
+  },
+  {
+    href: "/atas",
+    label: "Atas",
+    icone: NotebookPen,
+    gradiente: "from-cyan-500 to-sky-600",
+    descricao: "Reuniões, responsáveis e prazos",
   },
   {
     href: "/estoque",
