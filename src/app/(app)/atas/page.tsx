@@ -285,7 +285,7 @@ export default async function AtasPage({
               .reverse()
               .map((r) => {
                 const lista = porReuniao.get(r.id) ?? [];
-                const ausentes = r.presencas.filter((p) => /ausente/i.test(p.presenca));
+                const ausentes = r.presencas.filter((p) => /ausente|ausentar/i.test(p.presenca));
                 const vigente = r.id === ultima?.id;
                 return (
                   <Card

@@ -24,6 +24,8 @@ export interface Frequencia {
   dispensado: number;
   /** % de presença sobre as reuniões em que era esperado (presente ÷ presente+ausente). */
   pct: number | null;
+  /** Ausências por atestado, licença ou afastamento. */
+  afastamento: number;
   motivosAusencia: [string, number][];
 }
 
@@ -73,11 +75,12 @@ export function calcularRelatorio(
     for (const p of r.presencas) {
       const f =
         mapa.get(p.nome) ??
-        { nome: p.nome, presente: 0, ausente: 0, dispensado: 0, pct: null, motivosAusencia: [] };
+        { nome: p.nome, presente: 0, ausente: 0, dispensado: 0, pct: null, afastamento: 0, motivosAusencia: [] };
       const v = p.presenca.toLowerCase();
       if (v.startsWith("presente")) f.presente++;
-      else if (v.startsWith("ausente")) {
+      else if (v.startsWith("ausente") || v.startsWith("precisou")) {
         f.ausente++;
+        if (/atestado|afastad|licen[cç]a/i.test(p.obs)) f.afastamento++;
         const obs = p.obs.trim() || "Sem motivo informado";
         const m = motivos.get(p.nome) ?? new Map<string, number>();
         m.set(obs, (m.get(obs) ?? 0) + 1);

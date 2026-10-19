@@ -90,7 +90,14 @@ export function Relatorios({ r }: { r: Relatorio }) {
               <tbody className="divide-y">
                 {r.frequencia.map((f) => (
                   <tr key={f.nome}>
-                    <td className="px-4 py-2 font-medium">{f.nome}</td>
+                    <td className="px-4 py-2 font-medium">
+                      {f.nome}
+                      {f.afastamento >= 3 ? (
+                        <span className="ml-2 rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-normal text-amber-700">
+                          afastada(o) · {f.afastamento} reuniões
+                        </span>
+                      ) : null}
+                    </td>
                     <td className="px-4 py-2 text-center">{f.presente}</td>
                     <td className="px-4 py-2 text-center">{f.ausente}</td>
                     <td className="px-4 py-2 text-center">{f.dispensado}</td>
