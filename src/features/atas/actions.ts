@@ -5,7 +5,14 @@ import { redirect } from "next/navigation";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { notificar } from "@/features/notificacoes/enviar";
 import { estadoVivoPorSerie, itemParaTarefa } from "./vivo";
-import { itemAberto, type StatusItem } from "./data";
+import {
+  CATEGORIA_LABEL,
+  MOTIVO_LABEL,
+  itemAberto,
+  type CategoriaDemanda,
+  type MotivoAlteracao,
+  type StatusItem,
+} from "./data";
 
 export type Resultado = { ok?: boolean; erro?: string };
 
@@ -103,6 +110,8 @@ export async function criarReuniao(formData: FormData) {
         link: x.it.link,
         prazo: x.prazo,
         status: x.status ?? "nao_iniciado",
+        categoria: x.it.categoria ?? null,
+        motivo: null,
       }));
     if (copiar.length > 0) await supabase.from("reuniao_itens").insert(copiar);
   }
@@ -120,6 +129,8 @@ export interface DadosItem {
   prazo: string | null; // ISO com fuso
   status: StatusItem;
   link: string;
+  categoria: CategoriaDemanda | null;
+  motivo: MotivoAlteracao | null;
 }
 
 export async function salvarItem(itemId: string, reuniaoId: string, d: DadosItem): Promise<Resultado> {
@@ -134,19 +145,26 @@ export async function salvarItem(itemId: string, reuniaoId: string, d: DadosItem
   if (d.prioridade !== null && (d.prioridade < 1 || d.prioridade > 5)) {
     return { erro: "Prioridade deve ser de 1 a 5." };
   }
-  const { error } = await supabase
+  if (d.categoria && !(d.categoria in CATEGORIA_LABEL)) return { erro: "Tipo de demanda inválido." };
+  if (d.motivo && !(d.motivo in MOTIVO_LABEL)) return { erro: "Motivo inválido." };
+  const base = {
+    titulo,
+    detalhamento: d.detalhamento.trim() || null,
+    plano_acao: d.plano_acao.trim() || null,
+    prioridade: d.prioridade,
+    responsavel_id: d.responsavel_id || null,
+    prazo: d.prazo || null,
+    status: d.status,
+    link: d.link.trim() || null,
+  };
+  let { error } = await supabase
     .from("reuniao_itens")
-    .update({
-      titulo,
-      detalhamento: d.detalhamento.trim() || null,
-      plano_acao: d.plano_acao.trim() || null,
-      prioridade: d.prioridade,
-      responsavel_id: d.responsavel_id || null,
-      prazo: d.prazo || null,
-      status: d.status,
-      link: d.link.trim() || null,
-    })
+    .update({ ...base, categoria: d.categoria || null, motivo: d.motivo || null })
     .eq("id", itemId);
+  // Colunas novas ainda não criadas (migration 0040): salva sem elas.
+  if (error && (error.code === "42703" || error.code === "PGRST204")) {
+    ({ error } = await supabase.from("reuniao_itens").update(base).eq("id", itemId));
+  }
   if (error) return { erro: "Não foi possível salvar. Tente novamente." };
   revalidatePath(`/atas/${reuniaoId}`);
   return { ok: true };

@@ -37,7 +37,8 @@ export interface ResultadoCobranca {
  *  • véspera e dia do prazo → responsável;
  *  • atrasado → responsável, todo dia útil;
  *  • atrasado há 3+ dias → gerente também (no 3º dia e a cada 7 dias depois).
- * Cada aviso é registrado em cobrancas_log (não repete no mesmo dia).
+ * Itens sem responsável vinculado NÃO são cobrados de ninguém (aparecem sinalizados
+ * em Atas > Pendências). Cada aviso é registrado em cobrancas_log (uma vez por dia).
  */
 export async function executarCobrancaAtas(
   agora = new Date()
@@ -49,6 +50,7 @@ export async function executarCobrancaAtas(
     .from("tarefas")
     .select("id, titulo, prazo, responsavel_id")
     .not("ata_serie", "is", null)
+    .not("responsavel_id", "is", null)
     .neq("status", "concluida")
     .not("prazo", "is", null);
 
@@ -106,16 +108,13 @@ export async function executarCobrancaAtas(
         `Atrasado há ${atraso} dia(s): ${t.titulo}`,
         "Item da ata com prazo vencido. Atualize o status ou o prazo."
       );
-      const semResp = resp.length === 0;
-      if (atraso >= 3 && (atraso === 3 || (atraso - 3) % 7 === 0 || semResp)) {
+      if (atraso >= 3 && (atraso === 3 || (atraso - 3) % 7 === 0)) {
         await avisar(
           t,
           "atraso_gerente",
           idsGerente,
           `Atraso de ${atraso} dia(s): ${t.titulo}`,
-          semResp
-            ? "Item da ata atrasado e sem responsável."
-            : "Item da ata atrasado há mais de 3 dias."
+          "Item da ata atrasado há mais de 3 dias."
         );
       }
     }

@@ -74,14 +74,26 @@ insert into reuniao_itens
 select
   ru.id, i->>'secao', (i->>'ordem')::int, i->>'titulo', i->>'serie',
   i->>'detalhamento', i->>'plano', nullif(i->>'prioridade', '')::smallint,
-  (select p.id from profiles p
-    where lower(p.email) = case (i->'resp'->>0)
-      when 'T' then 'thiago.leal@litoralverde.com.br'
-      when 'J' then 'social.media@litoralverde.com.br'
-      when 'S' then 'criacao@litoralverde.com.br'
-      when 'G' then 'gustavo.monken@litoralverde.com.br'
-      else null end
-    limit 1),
+  coalesce(
+    (select p.id from profiles p
+      where lower(p.email) = case (i->'resp'->>0)
+        when 'T' then 'thiago.leal@litoralverde.com.br'
+        when 'J' then 'social.media@litoralverde.com.br'
+        when 'S' then 'criacao@litoralverde.com.br'
+        when 'G' then 'gustavo.monken@litoralverde.com.br'
+        else null end
+      limit 1),
+    (select p.id from profiles p
+      where p.nome ilike case (i->'resp'->>0)
+        when 'T' then 'Thiago Leal%'
+        when 'J' then 'J_ssica Esteves%'
+        when 'G' then 'Gustavo Monken%'
+        when 'S' then 'Shayene Rempto%'
+        when 'C' then 'Cesar Ricart%'
+        when 'P' then 'Stephanie%'
+        else null end
+      limit 1)
+  ),
   i->>'resp_texto', i->>'link', nullif(i->>'prazo', '')::timestamptz, i->>'status'
 from tmp_atas,
      jsonb_array_elements(dados) r

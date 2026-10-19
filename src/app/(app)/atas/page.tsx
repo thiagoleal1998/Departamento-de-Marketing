@@ -6,6 +6,8 @@ import { ehLideranca } from "@/lib/permissions";
 import { estadoVivoPorSerie } from "@/features/atas/vivo";
 import { criarReuniao } from "@/features/atas/actions";
 import { ItemCard, type ItemCardDados } from "@/features/atas/item-card";
+import { Relatorios } from "@/features/atas/relatorios";
+import { calcularRelatorio } from "@/features/atas/relatorios-calculo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -85,7 +87,8 @@ export default async function AtasPage({
   ]);
   const lideranca = ehLideranca(usuario.role);
   const hojeBR = new Date().toLocaleDateString("en-CA", { timeZone: FUSO });
-  const aba = abaRaw === "reunioes" ? "reunioes" : "pendencias";
+  const aba =
+    abaRaw === "reunioes" ? "reunioes" : abaRaw === "relatorios" ? "relatorios" : "pendencias";
   const agora = Date.now();
 
   const porReuniao = new Map<string, ItemAta[]>();
@@ -148,6 +151,7 @@ export default async function AtasPage({
   const abas = [
     { chave: "pendencias", rotulo: "Pendências", href: "/atas" },
     { chave: "reunioes", rotulo: "Reuniões", href: "/atas?aba=reunioes" },
+    { chave: "relatorios", rotulo: "Relatórios", href: "/atas?aba=relatorios" },
   ];
 
   return (
@@ -225,11 +229,17 @@ export default async function AtasPage({
                 const atrasos = lista.filter(
                   (it) => it.prazo && new Date(it.prazo).getTime() < agora
                 ).length;
+                const semVinculo = lista.every((it) => !it.responsavel_id);
                 return (
                   <Card key={nome} className="flex max-h-[75vh] flex-col overflow-hidden">
                     <div className="flex items-center justify-between gap-2 border-b bg-muted/40 px-4 py-2.5">
                       <h2 className="font-semibold">{nome}</h2>
                       <div className="flex items-center gap-1.5">
+                        {semVinculo ? (
+                          <Badge variant="warning" title="Sem usuário vinculado: não recebe cobrança automática">
+                            sem vínculo
+                          </Badge>
+                        ) : null}
                         {atrasos > 0 ? <Badge variant="danger">{atrasos} atrasado(s)</Badge> : null}
                         <Badge variant="secondary">{lista.length}</Badge>
                       </div>
@@ -259,6 +269,10 @@ export default async function AtasPage({
             </div>
           )}
         </div>
+      ) : aba === "relatorios" ? (
+        <Relatorios
+          r={calcularRelatorio(reunioes, itens, (it) => nomeResp(it) ?? "Sem responsável")}
+        />
       ) : (
         <div className="space-y-3">
           <p className="text-xs text-muted-foreground">
@@ -272,23 +286,35 @@ export default async function AtasPage({
               .map((r) => {
                 const lista = porReuniao.get(r.id) ?? [];
                 const ausentes = r.presencas.filter((p) => /ausente/i.test(p.presenca));
+                const vigente = r.id === ultima?.id;
                 return (
-                  <Card key={r.id} className="flex max-h-[78vh] w-[360px] shrink-0 flex-col overflow-hidden">
-                    <div className="space-y-0.5 border-b bg-muted/40 px-4 py-2.5">
+                  <Card
+                    key={r.id}
+                    className={cn(
+                      "flex max-h-[78vh] w-[360px] shrink-0 flex-col overflow-hidden",
+                      vigente && "border-primary shadow-md ring-2 ring-primary/40"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "space-y-0.5 border-b px-4 py-2.5",
+                        vigente ? "bg-primary text-primary-foreground" : "bg-muted/40"
+                      )}
+                    >
                       <div className="flex items-center justify-between gap-2">
                         <h2 className="font-semibold">
                           <Link href={`/atas/${r.id}`} className="hover:underline">
                             {dataBR(r.data + "T12:00:00-03:00")}
                           </Link>
                         </h2>
-                        {r.estado === "em_andamento" ? (
-                          <Badge variant="warning">Em andamento</Badge>
+                        {vigente ? (
+                          <Badge variant="warning">Vigente</Badge>
                         ) : (
                           <Badge variant="muted">{lista.length} itens</Badge>
                         )}
                       </div>
                       {ausentes.length > 0 ? (
-                        <p className="text-[11px] text-muted-foreground">
+                        <p className={cn("text-[11px]", vigente ? "text-primary-foreground/80" : "text-muted-foreground")}>
                           Ausentes: {ausentes.map((a) => a.nome.split(" ")[0]).join(", ")}
                         </p>
                       ) : null}

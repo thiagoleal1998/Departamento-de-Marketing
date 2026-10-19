@@ -10,7 +10,16 @@ import {
   salvarItem,
   salvarPresencas,
 } from "./actions";
-import { STATUS_ITEM_LABEL, type ItemAta, type StatusItem } from "./tipos";
+import {
+  CATEGORIA_LABEL,
+  MOTIVO_LABEL,
+  STATUS_ITEM_LABEL,
+  inferirCategoria,
+  type CategoriaDemanda,
+  type ItemAta,
+  type MotivoAlteracao,
+  type StatusItem,
+} from "./tipos";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -51,6 +60,10 @@ function ItemEditor({
   const [prio, setPrio] = useState(it.prioridade ? String(it.prioridade) : "");
   const [prazo, setPrazo] = useState(paraInput(it.prazo));
   const [link, setLink] = useState(it.link ?? "");
+  const [categoria, setCategoria] = useState<string>(
+    it.categoria ?? inferirCategoria(it.titulo)
+  );
+  const [motivo, setMotivo] = useState<string>(it.motivo ?? "");
   const [det, setDet] = useState(it.detalhamento ?? "");
   const [plano, setPlano] = useState(it.plano_acao ?? "");
   const [msg, setMsg] = useState<{ ok: boolean; texto: string } | null>(null);
@@ -68,6 +81,8 @@ function ItemEditor({
         prazo: deInput(prazo),
         status,
         link,
+        categoria: (categoria || null) as CategoriaDemanda | null,
+        motivo: (motivo || null) as MotivoAlteracao | null,
       });
       setMsg(r.erro ? { ok: false, texto: r.erro } : { ok: true, texto: "Salvo" });
     });
@@ -142,9 +157,32 @@ function ItemEditor({
             <Textarea value={plano} disabled={!editavel} onChange={(e) => setPlano(e.target.value)} className="min-h-[90px]" />
           </div>
         </div>
-        <div className="space-y-1">
-          <Label>Link</Label>
-          <Input value={link} disabled={!editavel} onChange={(e) => setLink(e.target.value)} placeholder="https://" />
+        <div className="grid gap-3 lg:grid-cols-3">
+          <div className="space-y-1">
+            <Label>Tipo de demanda</Label>
+            <Select value={categoria} disabled={!editavel} onChange={(e) => setCategoria(e.target.value)}>
+              {(Object.keys(CATEGORIA_LABEL) as CategoriaDemanda[]).map((c) => (
+                <option key={c} value={c}>
+                  {CATEGORIA_LABEL[c]}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label>Motivo da alteração (prazo ou andamento)</Label>
+            <Select value={motivo} disabled={!editavel} onChange={(e) => setMotivo(e.target.value)}>
+              <option value="">Sem alteração / não informado</option>
+              {(Object.keys(MOTIVO_LABEL) as MotivoAlteracao[]).map((m) => (
+                <option key={m} value={m}>
+                  {MOTIVO_LABEL[m]}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label>Link</Label>
+            <Input value={link} disabled={!editavel} onChange={(e) => setLink(e.target.value)} placeholder="https://" />
+          </div>
         </div>
         {editavel ? (
           <div className="flex items-center justify-end gap-2">
