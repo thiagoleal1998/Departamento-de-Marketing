@@ -275,7 +275,7 @@ export function EditorReuniao({
                   className="h-9 w-36"
                   aria-label={`Presença de ${p.nome}`}
                 >
-                  {["Presente", "Ausente", "Dispensado"].map((o) => (
+                  {["Presente", "Ausente", "Dispensado", "Afastado(a)"].map((o) => (
                     <option key={o} value={o}>
                       {o}
                     </option>

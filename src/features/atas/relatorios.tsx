@@ -72,7 +72,7 @@ export function Relatorios({ r }: { r: Relatorio }) {
 
       <Secao
         titulo="Frequência nas reuniões"
-        descricao="Presença sobre as reuniões em que a pessoa era esperada (dispensas não entram na conta)."
+        descricao="Presença sobre as reuniões em que a pessoa era esperada (dispensas e afastamentos não entram na conta; ex-integrantes ficam de fora)."
       >
         <Card>
           <CardContent className="overflow-x-auto p-0">
@@ -83,6 +83,7 @@ export function Relatorios({ r }: { r: Relatorio }) {
                   <th className="px-4 py-2 text-center font-medium">Presente</th>
                   <th className="px-4 py-2 text-center font-medium">Ausente</th>
                   <th className="px-4 py-2 text-center font-medium">Dispensado</th>
+                  <th className="px-4 py-2 text-center font-medium">Afastado</th>
                   <th className="min-w-[160px] px-4 py-2 font-medium">Presença</th>
                   <th className="px-4 py-2 font-medium">Principais motivos de ausência</th>
                 </tr>
@@ -92,15 +93,16 @@ export function Relatorios({ r }: { r: Relatorio }) {
                   <tr key={f.nome}>
                     <td className="px-4 py-2 font-medium">
                       {f.nome}
-                      {f.afastamento >= 3 ? (
+                      {f.afastamento > 0 ? (
                         <span className="ml-2 rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-normal text-amber-700">
-                          afastada(o) · {f.afastamento} reuniões
+                          afastada(o){f.afastadoDesde ? ` desde ${f.afastadoDesde.split("-").reverse().join("/")}` : ""} · {f.afastamento} reuniões
                         </span>
                       ) : null}
                     </td>
                     <td className="px-4 py-2 text-center">{f.presente}</td>
                     <td className="px-4 py-2 text-center">{f.ausente}</td>
                     <td className="px-4 py-2 text-center">{f.dispensado}</td>
+                    <td className="px-4 py-2 text-center">{f.afastamento}</td>
                     <td className="px-4 py-2">
                       {f.pct === null ? (
                         <span className="text-xs text-muted-foreground">—</span>

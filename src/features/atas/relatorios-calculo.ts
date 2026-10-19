@@ -3,7 +3,9 @@ import {
   MOTIVO_LABEL,
   inferirCategoria,
   itemAberto,
+  situacaoNaData,
   type CategoriaDemanda,
+  type MembroAta,
   type ItemAta,
   type MotivoAlteracao,
   type Reuniao,
@@ -24,8 +26,9 @@ export interface Frequencia {
   dispensado: number;
   /** % de presença sobre as reuniões em que era esperado (presente ÷ presente+ausente). */
   pct: number | null;
-  /** Ausências por atestado, licença ou afastamento. */
+  /** Reuniões em que a pessoa estava afastada (não entram no percentual). */
   afastamento: number;
+  afastadoDesde: string | null;
   motivosAusencia: [string, number][];
 }
 
@@ -62,7 +65,8 @@ export interface Relatorio {
 export function calcularRelatorio(
   reunioes: Reuniao[],
   itens: ItemAta[],
-  nomeDe: (it: ItemAta) => string
+  nomeDe: (it: ItemAta) => string,
+  membros: MembroAta[] = []
 ): Relatorio {
   const ordem = reunioes.slice().sort((a, b) => a.data.localeCompare(b.data));
   const dataDe = new Map(ordem.map((r) => [r.id, r.data]));
@@ -73,14 +77,21 @@ export function calcularRelatorio(
   for (const r of ordem) {
     if (r.estado !== "realizada") continue; // reunião em andamento ainda não conta
     for (const p of r.presencas) {
+      const sit = situacaoNaData(p.nome, r.data, membros);
+      if (sit === "desligado") continue; // ex-integrante: fora dos relatórios
       const f =
         mapa.get(p.nome) ??
-        { nome: p.nome, presente: 0, ausente: 0, dispensado: 0, pct: null, afastamento: 0, motivosAusencia: [] };
+        { nome: p.nome, presente: 0, ausente: 0, dispensado: 0, pct: null, afastamento: 0, afastadoDesde: null, motivosAusencia: [] };
       const v = p.presenca.toLowerCase();
+      if (sit === "afastado" || v.startsWith("afastad")) {
+        f.afastamento++;
+        f.afastadoDesde = membros.find((m) => m.nome === p.nome)?.desde ?? f.afastadoDesde;
+        mapa.set(p.nome, f);
+        continue;
+      }
       if (v.startsWith("presente")) f.presente++;
       else if (v.startsWith("ausente") || v.startsWith("precisou")) {
         f.ausente++;
-        if (/atestado|afastad|licen[cç]a/i.test(p.obs)) f.afastamento++;
         const obs = p.obs.trim() || "Sem motivo informado";
         const m = motivos.get(p.nome) ?? new Map<string, number>();
         m.set(obs, (m.get(obs) ?? 0) + 1);

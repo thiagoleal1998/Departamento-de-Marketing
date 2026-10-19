@@ -7,8 +7,10 @@ import { notificar } from "@/features/notificacoes/enviar";
 import { estadoVivoPorSerie, itemParaTarefa } from "./vivo";
 import {
   CATEGORIA_LABEL,
+  carregarMembros,
   MOTIVO_LABEL,
   itemAberto,
+  situacaoNaData,
   type CategoriaDemanda,
   type MotivoAlteracao,
   type StatusItem,
@@ -63,9 +65,16 @@ export async function criarReuniao(formData: FormData) {
     .limit(1)
     .maybeSingle();
 
+  const membros = await carregarMembros();
   const presencas = (
     (anterior?.presencas as { nome: string; presenca: string; obs: string }[] | undefined) ?? []
-  ).map((p) => ({ nome: p.nome, presenca: "Presente", obs: "" }));
+  )
+    .filter((p) => situacaoNaData(p.nome, data, membros) !== "desligado")
+    .map((p) =>
+      situacaoNaData(p.nome, data, membros) === "afastado"
+        ? { nome: p.nome, presenca: "Afastado(a)", obs: membros.find((m) => m.nome === p.nome)?.observacao ?? "" }
+        : { nome: p.nome, presenca: "Presente", obs: "" }
+    );
 
   const { data: nova, error } = await supabase
     .from("reunioes")

@@ -108,6 +108,35 @@ export const STATUS_ITEM_LABEL: Record<StatusItem | "sem", string> = {
   sem: "Sem status",
 };
 
+export type SituacaoMembro = "ativo" | "afastado" | "desligado";
+
+export interface MembroAta {
+  nome: string;
+  situacao: SituacaoMembro;
+  /** Afastamento: a partir desta data (AAAA-MM-DD). */
+  desde: string | null;
+  observacao: string | null;
+}
+
+/** Valores usados enquanto a tabela ata_membros (migration 0041) não existir. */
+export const MEMBROS_PADRAO: MembroAta[] = [
+  { nome: "Jéssica Esteves", situacao: "afastado", desde: "2026-01-05", observacao: "Afastada (atestado médico)" },
+  { nome: "Stephanie Mesquita", situacao: "desligado", desde: null, observacao: "Não faz mais parte da equipe" },
+];
+
+/** Situação de uma pessoa numa data de reunião. */
+export function situacaoNaData(
+  nome: string,
+  data: string,
+  membros: MembroAta[]
+): "ativo" | "afastado" | "desligado" {
+  const m = membros.find((x) => x.nome === nome);
+  if (!m) return "ativo";
+  if (m.situacao === "desligado") return "desligado";
+  if (m.situacao === "afastado" && m.desde && data >= m.desde) return "afastado";
+  return "ativo";
+}
+
 /** Item ainda aberto (cobrável). */
 export const itemAberto = (s: StatusItem | null) =>
   s !== "concluido" && s !== "cancelado";

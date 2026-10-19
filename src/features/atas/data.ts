@@ -1,5 +1,5 @@
 import { criarClienteServidor } from "@/lib/supabase/server";
-import type { ItemAta, Reuniao } from "./tipos";
+import { MEMBROS_PADRAO, type ItemAta, type MembroAta, type Reuniao } from "./tipos";
 
 export * from "./tipos";
 
@@ -20,6 +20,20 @@ async function todos<T>(tabela: string, ordem: string): Promise<T[]> {
     if (pagina.length < 1000) break;
   }
   return out;
+}
+
+/** Equipe das atas (afastados e desligados); cai nos valores padrão se a tabela não existir. */
+export async function carregarMembros(): Promise<MembroAta[]> {
+  try {
+    const supabase = await criarClienteServidor();
+    const { data, error } = await supabase
+      .from("ata_membros")
+      .select("nome, situacao, desde, observacao");
+    if (error || !data || data.length === 0) return MEMBROS_PADRAO;
+    return data as MembroAta[];
+  } catch {
+    return MEMBROS_PADRAO;
+  }
 }
 
 export async function carregarAtas() {

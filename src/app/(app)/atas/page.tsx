@@ -12,8 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   carregarAtas,
+  carregarMembros,
   itemAberto,
   STATUS_ITEM_LABEL,
+  situacaoNaData,
   type ItemAta,
   type Reuniao,
 } from "@/features/atas/data";
@@ -80,10 +82,11 @@ export default async function AtasPage({
 }) {
   const { aba: abaRaw } = await searchParams;
   const usuario = await exigirUsuario();
-  const [{ reunioes, itens }, perfis, vivo] = await Promise.all([
+  const [{ reunioes, itens }, perfis, vivo, membros] = await Promise.all([
     carregarAtas(),
     mapaDePerfis(),
     estadoVivoPorSerie(),
+    carregarMembros(),
   ]);
   const lideranca = ehLideranca(usuario.role);
   const hojeBR = new Date().toLocaleDateString("en-CA", { timeZone: FUSO });
@@ -271,7 +274,7 @@ export default async function AtasPage({
         </div>
       ) : aba === "relatorios" ? (
         <Relatorios
-          r={calcularRelatorio(reunioes, itens, (it) => nomeResp(it) ?? "Sem responsável")}
+          r={calcularRelatorio(reunioes, itens, (it) => nomeResp(it) ?? "Sem responsável", membros)}
         />
       ) : (
         <div className="space-y-3">
@@ -285,7 +288,14 @@ export default async function AtasPage({
               .reverse()
               .map((r) => {
                 const lista = porReuniao.get(r.id) ?? [];
-                const ausentes = r.presencas.filter((p) => /ausente|ausentar/i.test(p.presenca));
+                const ausentes = r.presencas.filter(
+                  (p) =>
+                    /ausente|ausentar/i.test(p.presenca) &&
+                    situacaoNaData(p.nome, r.data, membros) === "ativo"
+                );
+                const afastados = r.presencas.filter(
+                  (p) => situacaoNaData(p.nome, r.data, membros) === "afastado"
+                );
                 const vigente = r.id === ultima?.id;
                 return (
                   <Card
@@ -316,6 +326,11 @@ export default async function AtasPage({
                       {ausentes.length > 0 ? (
                         <p className={cn("text-[11px]", vigente ? "text-primary-foreground/80" : "text-muted-foreground")}>
                           Ausentes: {ausentes.map((a) => a.nome.split(" ")[0]).join(", ")}
+                        </p>
+                      ) : null}
+                      {afastados.length > 0 ? (
+                        <p className={cn("text-[11px]", vigente ? "text-primary-foreground/80" : "text-muted-foreground")}>
+                          Afastada(o): {afastados.map((a) => a.nome.split(" ")[0]).join(", ")}
                         </p>
                       ) : null}
                     </div>
