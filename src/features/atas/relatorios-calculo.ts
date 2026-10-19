@@ -24,7 +24,9 @@ export interface Frequencia {
   presente: number;
   ausente: number;
   dispensado: number;
-  /** % de presença sobre as reuniões em que era esperado (presente ÷ presente+ausente). */
+  /** Reuniões em que a pessoa consta na lista de presença. */
+  total: number;
+  /** Frequência = presenças ÷ reuniões em que a pessoa consta na lista. */
   pct: number | null;
   /** Reuniões em que a pessoa estava afastada (não entram no percentual). */
   afastamento: number;
@@ -81,8 +83,10 @@ export function calcularRelatorio(
       if (sit === "desligado") continue; // ex-integrante: fora dos relatórios
       const f =
         mapa.get(p.nome) ??
-        { nome: p.nome, presente: 0, ausente: 0, dispensado: 0, pct: null, afastamento: 0, afastadoDesde: null, motivosAusencia: [] };
+        { nome: p.nome, presente: 0, ausente: 0, dispensado: 0, total: 0, pct: null, afastamento: 0, afastadoDesde: null, motivosAusencia: [] };
       const v = p.presenca.toLowerCase();
+      if (v.startsWith("aguardando")) continue; // ainda não preenchido
+      f.total++;
       if (sit === "afastado" || v.startsWith("afastad")) {
         f.afastamento++;
         f.afastadoDesde = membros.find((m) => m.nome === p.nome)?.desde ?? f.afastadoDesde;
@@ -103,10 +107,10 @@ export function calcularRelatorio(
   const frequencia = Array.from(mapa.values())
     .map((f) => ({
       ...f,
-      pct: f.presente + f.ausente > 0 ? (f.presente / (f.presente + f.ausente)) * 100 : null,
+      pct: f.total > 0 ? (f.presente / f.total) * 100 : null,
       motivosAusencia: Array.from(motivos.get(f.nome)?.entries() ?? []).sort((a, b) => b[1] - a[1]),
     }))
-    .sort((a, b) => (b.pct ?? -1) - (a.pct ?? -1) || a.nome.localeCompare(b.nome, "pt-BR"));
+    .sort((a, b) => b.presente - a.presente || a.nome.localeCompare(b.nome, "pt-BR"));
 
   // ---- Alterações de demanda (por assunto/série, só itens da ata) ----
   const series = new Map<string, ItemAta[]>();

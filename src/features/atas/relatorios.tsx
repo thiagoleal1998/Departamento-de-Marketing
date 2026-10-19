@@ -72,7 +72,7 @@ export function Relatorios({ r }: { r: Relatorio }) {
 
       <Secao
         titulo="Frequência nas reuniões"
-        descricao="Presença sobre as reuniões em que a pessoa era esperada (dispensas e afastamentos não entram na conta; ex-integrantes ficam de fora)."
+        descricao="Frequência pela quantidade de presenças: presenças ÷ reuniões em que a pessoa consta na lista (dispensas, ausências e afastamentos contam como não presença; ex-integrantes ficam de fora)."
       >
         <Card>
           <CardContent className="overflow-x-auto p-0">
@@ -80,11 +80,11 @@ export function Relatorios({ r }: { r: Relatorio }) {
               <thead>
                 <tr className="border-b text-left text-xs text-muted-foreground">
                   <th className="px-4 py-2 font-medium">Pessoa</th>
-                  <th className="px-4 py-2 text-center font-medium">Presente</th>
+                  <th className="px-4 py-2 text-center font-medium">Presenças</th>
                   <th className="px-4 py-2 text-center font-medium">Ausente</th>
                   <th className="px-4 py-2 text-center font-medium">Dispensado</th>
                   <th className="px-4 py-2 text-center font-medium">Afastado</th>
-                  <th className="min-w-[160px] px-4 py-2 font-medium">Presença</th>
+                  <th className="min-w-[160px] px-4 py-2 font-medium">Frequência</th>
                   <th className="px-4 py-2 font-medium">Principais motivos de ausência</th>
                 </tr>
               </thead>
@@ -99,7 +99,10 @@ export function Relatorios({ r }: { r: Relatorio }) {
                         </span>
                       ) : null}
                     </td>
-                    <td className="px-4 py-2 text-center">{f.presente}</td>
+                    <td className="px-4 py-2 text-center font-medium">
+                      {f.presente}
+                      <span className="font-normal text-muted-foreground"> de {f.total}</span>
+                    </td>
                     <td className="px-4 py-2 text-center">{f.ausente}</td>
                     <td className="px-4 py-2 text-center">{f.dispensado}</td>
                     <td className="px-4 py-2 text-center">{f.afastamento}</td>
