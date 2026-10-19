@@ -87,7 +87,6 @@ function lerAba(
       s?: { patternType?: string; fgColor?: { rgb?: string } };
     };
     const { r, c: col } = XLSX.utils.decode_cell(chave);
-    if (linhasOcultas.has(r) || colunasOcultas.has(col)) continue;
     const t = limpa(c.w ?? (c.v === undefined || c.v === null ? "" : String(c.v)));
     const rgb = c.s?.patternType === "solid" ? c.s.fgColor?.rgb?.toUpperCase() : undefined;
     const bg = rgb && rgb !== "FFFFFF" && /^[0-9A-F]{6}$/.test(rgb) ? `#${rgb}` : undefined;
@@ -118,6 +117,9 @@ function lerAba(
     if (r === hr && v.t && c !== nomeCol) rotulos.set(c, v.t.replace(/\s+/g, " ").trim());
   }
   const colunas = [...rotulos.keys()].sort((a, b) => a - b);
+  // A estrutura (onde começa/termina cada produto) considera todas as colunas;
+  // o conteúdo exibido só usa o que está visível na planilha.
+  const colunasVisiveis = colunas.filter((c) => !colunasOcultas.has(c));
 
   // ---- legenda (células acima do cabeçalho com texto e cor) ----
   const legenda = new Map<string, string>();
@@ -147,18 +149,20 @@ function lerAba(
     // nome: textos da coluna do nome (colados se forem linhas seguidas)
     let nome = "";
     let tagCor: string | undefined;
-    linhasNome.forEach((r, i) => {
+    const visiveis = colunasOcultas.has(nomeCol) ? [] : linhasNome.filter((r) => !linhasOcultas.has(r));
+    visiveis.forEach((r, i) => {
       const t = texto(r, nomeCol);
       if (!tagCor) tagCor = at(r, nomeCol)?.bg;
       if (i === 0) nome = t;
-      else nome += (r - linhasNome[i - 1] === 1 ? " " : " · ") + t;
+      else nome += (r - visiveis[i - 1] === 1 ? " " : " · ") + t;
     });
     nome = nome.replace(/\s+/g, " ").trim();
 
     const campos: CampoProduto[] = [];
-    for (const c of colunas) {
+    for (const c of colunasVisiveis) {
       const linhas: LinhaCampo[] = [];
       for (let r = r0; r <= r1; r++) {
+        if (linhasOcultas.has(r)) continue;
         const v = at(r, c);
         if (!v?.t) continue;
         for (const parte of v.t.split("\n")) {
@@ -168,7 +172,7 @@ function lerAba(
       }
       if (linhas.length > 0) campos.push({ rotulo: rotulos.get(c)!, linhas });
     }
-    if (!nome && campos.length === 0) return;
+    if (!nome && (campos.length === 0 || linhasNome.length > 0)) return; // nome oculto = produto oculto
     produtos.push({
       chave: "",
       secao: nomeAba,
