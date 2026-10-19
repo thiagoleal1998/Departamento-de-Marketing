@@ -49,26 +49,47 @@ export function ativoNaPlanilha(secao: string, campos: CampoProduto[]): boolean 
   return !/inativ/i.test(secao);
 }
 
-/** Localiza as LPs do sistema que correspondem ao produto (link primeiro, depois nome). */
+/** Nomes de LP que também pertencem ao produto (mesmo hotel cadastrado com outro nome). */
+const APELIDOS_LP: Record<string, string[]> = {
+  [norm("Vila Galé Eco Resort de Angra")]: ["Vila Galé Angra"],
+};
+
+/**
+ * Localiza as LPs do sistema que correspondem ao produto: junta as que casam pelo link,
+ * pelo nome (exato; na falta, parecido) e pelos apelidos. Se alguma estiver ativa, o produto está ativo.
+ */
 export function acharLps(
   nome: string,
   campos: CampoProduto[],
   lps: LpSistema[]
 ): { achadas: LpSistema[]; aproximado: boolean } {
+  const achadas = new Map<string, LpSistema>();
+  let aproximado = false;
+
   const url = urlDoProduto(campos);
   if (url) {
     const u = normUrl(url);
-    const porUrl = lps.filter((l) => l.url && normUrl(l.url) === u);
-    if (porUrl.length > 0) return { achadas: porUrl, aproximado: false };
+    for (const l of lps) if (l.url && normUrl(l.url) === u) achadas.set(l.id, l);
   }
+
   const n = norm(nome);
   const exato = lps.filter((l) => norm(l.nome) === n);
-  if (exato.length > 0) return { achadas: exato, aproximado: false };
-  const parecido = lps.filter((l) => {
-    const x = norm(l.nome);
-    return x.length > 5 && n.length > 5 && (n.includes(x) || x.includes(n));
-  });
-  return { achadas: parecido, aproximado: parecido.length > 0 };
+  if (exato.length > 0) {
+    for (const l of exato) achadas.set(l.id, l);
+  } else {
+    const parecido = lps.filter((l) => {
+      const x = norm(l.nome);
+      return x.length > 5 && n.length > 5 && (n.includes(x) || x.includes(n));
+    });
+    for (const l of parecido) achadas.set(l.id, l);
+    if (parecido.length > 0 && achadas.size === parecido.length) aproximado = true;
+  }
+
+  for (const apelido of APELIDOS_LP[n] ?? []) {
+    const a = norm(apelido);
+    for (const l of lps) if (norm(l.nome) === a) achadas.set(l.id, l);
+  }
+  return { achadas: [...achadas.values()], aproximado };
 }
 
 export function conferir(

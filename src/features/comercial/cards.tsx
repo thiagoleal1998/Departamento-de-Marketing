@@ -14,6 +14,8 @@ export interface ProdutoView extends Pick<ProdutoComercial, "chave" | "nome" | "
   secao: string;
   /** Conferência com as landing pages cadastradas no sistema. */
   conferencia: ConferenciaProduto;
+  /** Complexo: hotéis exibidos juntos no mesmo card, cada um com suas condições. */
+  partes?: { nome: string; campos: CampoProduto[] }[];
   /** Alteração recente (se houver): quando e o que mudou. */
   alteracao?: {
     tipo: "novo" | "alterado";
@@ -112,7 +114,9 @@ function Selos({ p }: { p: ProdutoView }) {
 
 /** Card resumido, sempre do mesmo tamanho. */
 function CardResumo({ p, aoAbrir }: { p: ProdutoView; aoAbrir: () => void }) {
-  const detalhes = p.campos.filter((c) => !/link|status|pens/i.test(c.rotulo));
+  const detalhes = p.partes
+    ? p.partes.flatMap((x) => x.campos).filter((c) => !/link|status|pens/i.test(c.rotulo))
+    : p.campos.filter((c) => !/link|status|pens/i.test(c.rotulo));
   const alterados = p.alteracao?.mudancas.map((m) => m.campo) ?? [];
 
   return (
@@ -151,7 +155,21 @@ function CardResumo({ p, aoAbrir }: { p: ProdutoView; aoAbrir: () => void }) {
         ) : null}
 
         <span className="min-h-0 flex-1 space-y-1.5 overflow-hidden text-sm">
-          {detalhes.length === 0 ? (
+          {p.partes ? (
+            p.partes.map((parte) => (
+              <span key={parte.nome} className="block rounded-md border bg-muted/30 px-2 py-1.5">
+                <span className="block truncate text-[13px] font-semibold">{parte.nome}</span>
+                {parte.campos
+                  .filter((c) => !/link|status|pens/i.test(c.rotulo))
+                  .slice(0, 1)
+                  .map((c) => (
+                    <span key={c.rotulo} className="block truncate text-[12px] text-muted-foreground">
+                      {c.rotulo}: {c.linhas[0]?.t}
+                    </span>
+                  ))}
+              </span>
+            ))
+          ) : detalhes.length === 0 ? (
             <span className="text-muted-foreground">Sem condições cadastradas.</span>
           ) : (
             detalhes.slice(0, 3).map((c) => (
@@ -196,11 +214,12 @@ function Detalhes({ p, aoFechar }: { p: ProdutoView; aoFechar: () => void }) {
     };
   }, [aoFechar]);
 
-  const link = p.campos.find((c) => /link/i.test(c.rotulo))?.linhas.find((l) => ehUrl(l.t))?.t;
+  const todosCampos = p.partes ? p.partes.flatMap((x) => x.campos) : p.campos;
+  const link = todosCampos.find((c) => /link/i.test(c.rotulo))?.linhas.find((l) => ehUrl(l.t))?.t;
   const mudancas = new Map((p.alteracao?.mudancas ?? []).map((m) => [m.campo, m]));
   const detalhes = p.campos.filter((c) => !/link|status|pens/i.test(c.rotulo));
   const sumidos = (p.alteracao?.mudancas ?? []).filter(
-    (m) => m.depois.length === 0 && !p.campos.some((c) => c.rotulo === m.campo)
+    (m) => m.depois.length === 0 && !todosCampos.some((c) => c.rotulo === m.campo)
   );
 
   return (
@@ -269,7 +288,24 @@ function Detalhes({ p, aoFechar }: { p: ProdutoView; aoFechar: () => void }) {
           ) : null}
         </div>
 
-        <div className="grid gap-3 p-5 md:grid-cols-2">
+        {p.partes ? (
+          <div className="space-y-5 p-5">
+            {p.partes.map((parte) => (
+              <section key={parte.nome} className="space-y-3 rounded-lg border p-4">
+                <h3 className="text-base font-semibold">{parte.nome}</h3>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {parte.campos
+                    .filter((c) => !/link|status|pens/i.test(c.rotulo))
+                    .map((c) => (
+                      <Campo key={c.rotulo} campo={c} mudanca={mudancas.get(`${parte.nome} · ${c.rotulo}`)} />
+                    ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        ) : null}
+
+        <div className={cn("grid gap-3 p-5 md:grid-cols-2", p.partes && "hidden")}>
           {detalhes.length === 0 && sumidos.length === 0 ? (
             <p className="text-sm text-muted-foreground md:col-span-2">Sem condições cadastradas.</p>
           ) : null}

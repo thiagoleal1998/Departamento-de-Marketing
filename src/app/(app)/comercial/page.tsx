@@ -7,6 +7,7 @@ import { ListaProdutos, type ProdutoView } from "@/features/comercial/cards";
 import { BotaoSincronizar } from "@/features/comercial/botao-sincronizar";
 import { ConferenciaPainel } from "@/features/comercial/conferencia-painel";
 import { conferir, type LpSistema } from "@/features/comercial/conferencia";
+import { achaComplexos, mesclarDuplicados, nomeCorreto } from "@/features/comercial/ajustes";
 import { MarcarVisto } from "@/features/notificacoes/marcar-visto";
 import {
   DIAS_DESTAQUE,
@@ -91,25 +92,53 @@ export default async function ComercialPage({
       ? primeiraComAlteracao
       : abas[0];
 
-  const todos: ProdutoView[] = linhas.map((l) => {
+  const complexos = achaComplexos(linhas);
+  const emitidos = new Set<string>();
+  const todos: ProdutoView[] = [];
+  for (const l of linhas) {
+    const cx = complexos.get(l.chave);
+    if (cx) {
+      // Complexo: um único card, com cada hotel separado dentro dele.
+      if (emitidos.has(cx.nome)) continue;
+      emitidos.add(cx.nome);
+      const membros = cx.partes.map((pt) => ({ pt, l: linhas.find((x) => x.chave === pt.chave)! }));
+      const mudancas = membros.flatMap(({ pt, l: m }) =>
+        (recente.get(m.chave)?.mudancas ?? []).map((x) => ({ ...x, campo: `${pt.nome} · ${x.campo}` }))
+      );
+      const a = membros.map(({ l: m }) => recente.get(m.chave)).find(Boolean);
+      todos.push({
+        chave: membros[0].l.chave,
+        secao: l.secao,
+        nome: cx.nome,
+        tag: membros[0].l.tag,
+        tagCor: membros[0].l.tag_cor,
+        campos: membros.flatMap(({ l: m }) => m.campos),
+        partes: membros.map(({ pt, l: m }) => ({ nome: pt.nome, campos: m.campos })),
+        conferencia: conferir(l.secao, cx.nome, membros[0].l.campos, lps),
+        alteracao: a
+          ? { tipo: a.tipo === "novo" ? "novo" : "alterado", quando: quando(a.detectado_em, true), mudancas }
+          : undefined,
+      });
+      continue;
+    }
     const a = recente.get(l.chave);
-    return {
+    const nome = nomeCorreto(l.nome);
+    todos.push({
       chave: l.chave,
       secao: l.secao,
-      nome: l.nome,
+      nome,
       tag: l.tag,
       tagCor: l.tag_cor,
       campos: l.campos,
-      conferencia: conferir(l.secao, l.nome, l.campos, lps),
+      conferencia: conferir(l.secao, nome, l.campos, lps),
       alteracao: a
         ? { tipo: a.tipo === "novo" ? "novo" : "alterado", quando: quando(a.detectado_em, true), mudancas: a.mudancas }
         : undefined,
-    };
-  });
-  const produtos =
-    ativa === ATIVOS
-      ? todos.filter((p) => p.conferencia.situacao === "ativa")
-      : todos.filter((p) => p.secao === ativa);
+    });
+  }
+  // "Produtos ativos": um card por produto (o mesmo hotel pode repetir ou estar em mais de uma aba).
+  const ativosUnicos = mesclarDuplicados(todos.filter((p) => p.conferencia.situacao === "ativa"));
+  const produtos = ativa === ATIVOS ? ativosUnicos : todos.filter((p) => p.secao === ativa);
 
   // LPs ativas que nenhum produto do Comercial referencia.
   const lpsUsadas = new Set(todos.flatMap((p) => p.conferencia.lps.map((l) => l.id)));
@@ -123,7 +152,7 @@ export default async function ComercialPage({
   const alteradosPorSecao = new Map<string, number>();
   for (const l of linhas) if (recente.has(l.chave)) alteradosPorSecao.set(l.secao, (alteradosPorSecao.get(l.secao) ?? 0) + 1);
   const totalAlterados = recente.size;
-  const ativosReais = todos.filter((p) => p.conferencia.situacao === "ativa").length;
+  const ativosReais = ativosUnicos.length;
   const resumo = Array.from(recente.values()).slice(0, 8);
 
   return (

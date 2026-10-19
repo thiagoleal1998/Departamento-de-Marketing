@@ -147,7 +147,7 @@ function lerAba(
       if (i === 0) nome = t;
       else nome += (r - linhasNome[i - 1] === 1 ? " " : " · ") + t;
     });
-    nome = nome.replace(/s+/g, " ").trim();
+    nome = nome.replace(/\s+/g, " ").trim();
 
     const campos: CampoProduto[] = [];
     for (const c of colunas) {
