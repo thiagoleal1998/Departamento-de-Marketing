@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { Users, User } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
+import { ehLideranca } from "@/lib/permissions";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { obterDiretorio } from "@/features/equipe/diretorio";
 import { abrirConversaDireta } from "@/features/chat/actions";
 import { CONVERSA_GERAL } from "@/features/chat/constantes";
 import { ChatJanela, type MensagemView } from "@/features/chat/chat-janela";
+import type { ItemEstoqueChat } from "@/features/chat/vinculo-tipos";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -69,13 +71,21 @@ export default async function ChatPage({
 
   const { data: msgData } = await supabase
     .from("chat_mensagens")
-    .select("id, autor_id, texto, created_at")
+    .select("*")
     .eq("conversa_id", conversaId)
     .order("created_at", { ascending: false })
     .limit(100);
   const mensagens = ((msgData as MensagemView[] | null) ?? []).reverse();
 
   const outras = pessoas.filter((p) => p.id !== usuario.id);
+
+  // Itens do estoque que podem ser vinculados à mensagem.
+  const { data: itensData } = await supabase
+    .from("estoque_itens")
+    .select("id, nome, quantidade, estoque_minimo")
+    .eq("ativo", true)
+    .order("nome");
+  const itens = (itensData as ItemEstoqueChat[] | null) ?? [];
 
   return (
     <div className="space-y-4">
@@ -152,6 +162,10 @@ export default async function ChatPage({
               meuId={usuario.id}
               mensagensIniciais={mensagens}
               nomes={nomes}
+              itens={itens}
+              pessoas={pessoas}
+              podeCriarTarefa={ehLideranca(usuario.role)}
+              outroId={ehGeral ? null : diretas.get(conversaId) ?? null}
             />
           </div>
         </section>

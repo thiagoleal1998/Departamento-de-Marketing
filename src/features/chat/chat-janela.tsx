@@ -1,18 +1,24 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Send, Loader2 } from "lucide-react";
+import { Send, Loader2, Link2 } from "lucide-react";
 import { criarClienteBrowser } from "@/lib/supabase/client";
 import { enviarMensagem, marcarConversaLida } from "./actions";
+import { enviarMensagemVinculada } from "./vinculos-actions";
+import { VinculoCard } from "./vinculo-card";
+import type { ItemEstoqueChat } from "./vinculo-tipos";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 
 export interface MensagemView {
   id: string;
   autor_id: string;
   texto: string;
   created_at: string;
+  tarefa_id?: string | null;
+  estoque_item_id?: string | null;
 }
 
 function hora(iso: string): string {
@@ -27,11 +33,20 @@ export function ChatJanela({
   meuId,
   mensagensIniciais,
   nomes,
+  itens,
+  pessoas,
+  podeCriarTarefa,
+  outroId,
 }: {
   conversaId: string;
   meuId: string;
   mensagensIniciais: MensagemView[];
   nomes: Record<string, string>;
+  itens: ItemEstoqueChat[];
+  pessoas: { id: string; nome: string }[];
+  podeCriarTarefa: boolean;
+  /** Na conversa direta, a outra pessoa (responsável sugerido). */
+  outroId: string | null;
 }) {
   const [mensagens, setMensagens] = useState<MensagemView[]>(mensagensIniciais);
   const [texto, setTexto] = useState("");
@@ -39,10 +54,19 @@ export function ChatJanela({
   const [pendente, startTransition] = useTransition();
   const fimRef = useRef<HTMLDivElement>(null);
 
+  // Vínculos (estoque / tarefa) da próxima mensagem.
+  const [vincular, setVincular] = useState(false);
+  const [itemId, setItemId] = useState("");
+  const [criarTarefa, setCriarTarefa] = useState(false);
+  const [responsavel, setResponsavel] = useState(outroId ?? "");
+  const [prazo, setPrazo] = useState("");
+  const [tituloTarefa, setTituloTarefa] = useState("");
+
   // Reinicia ao trocar de conversa.
   useEffect(() => {
     setMensagens(mensagensIniciais);
-  }, [conversaId, mensagensIniciais]);
+    setResponsavel(outroId ?? "");
+  }, [conversaId, mensagensIniciais, outroId]);
 
   // Tempo real: novas mensagens da conversa.
   useEffect(() => {
@@ -84,17 +108,50 @@ export function ChatJanela({
     fimRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [mensagens]);
 
+  const itemEscolhido = itens.find((i) => i.id === itemId);
+  const temVinculo = !!itemId || (criarTarefa && !!responsavel);
+
+  function limparVinculo() {
+    setVincular(false);
+    setItemId("");
+    setCriarTarefa(false);
+    setPrazo("");
+    setTituloTarefa("");
+  }
+
   function enviar(e: React.FormEvent) {
     e.preventDefault();
     const conteudo = texto.trim();
     if (!conteudo || pendente) return;
+    if (criarTarefa && !responsavel) {
+      setErro("Escolha quem vai cuidar da tarefa.");
+      return;
+    }
     setErro(null);
     startTransition(async () => {
-      const res = await enviarMensagem(conversaId, conteudo);
+      const res = temVinculo
+        ? await enviarMensagemVinculada(conversaId, conteudo, {
+            itemId: itemId || null,
+            tarefa: criarTarefa
+              ? {
+                  titulo: tituloTarefa || (itemEscolhido ? `Repor: ${itemEscolhido.nome}` : conteudo.slice(0, 80)),
+                  responsavelId: responsavel,
+                  prazo: prazo || null,
+                }
+              : null,
+          })
+        : await enviarMensagem(conversaId, conteudo);
       if (res.erro) setErro(res.erro);
-      else setTexto("");
+      else {
+        setTexto("");
+        limparVinculo();
+      }
     });
   }
+
+  // Quantas mensagens citam o mesmo vínculo (para recarregar os cartões).
+  const versaoDe = (m: MensagemView) =>
+    mensagens.filter((x) => (m.tarefa_id ? x.tarefa_id === m.tarefa_id : x.estoque_item_id === m.estoque_item_id)).length;
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -125,6 +182,16 @@ export function ChatJanela({
                     </p>
                   ) : null}
                   <p className="whitespace-pre-wrap break-words">{m.texto}</p>
+                  {m.tarefa_id || m.estoque_item_id ? (
+                    <VinculoCard
+                      conversaId={conversaId}
+                      tarefaId={m.tarefa_id ?? null}
+                      itemId={m.estoque_item_id ?? null}
+                      versao={versaoDe(m)}
+                      nomes={nomes}
+                      minha={minha}
+                    />
+                  ) : null}
                   <p
                     className={cn(
                       "mt-0.5 text-right text-[10px]",
@@ -143,11 +210,74 @@ export function ChatJanela({
 
       <form onSubmit={enviar} className="border-t p-3">
         {erro ? <p className="mb-2 text-xs text-destructive">{erro}</p> : null}
+
+        {vincular ? (
+          <div className="mb-2 grid gap-2 rounded-lg border bg-muted/40 p-3 text-sm sm:grid-cols-2">
+            <label className="space-y-1">
+              <span className="text-xs font-medium text-muted-foreground">Item do estoque</span>
+              <Select value={itemId} onChange={(e) => setItemId(e.target.value)} aria-label="Item do estoque">
+                <option value="">Nenhum</option>
+                {itens.map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.nome} (estoque: {i.quantidade})
+                  </option>
+                ))}
+              </Select>
+            </label>
+
+            {podeCriarTarefa ? (
+              <div className="space-y-2 sm:col-span-2">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={criarTarefa}
+                    onChange={(e) => setCriarTarefa(e.target.checked)}
+                    className="size-4 accent-primary"
+                  />
+                  Criar tarefa a partir desta mensagem
+                </label>
+                {criarTarefa ? (
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    <Select value={responsavel} onChange={(e) => setResponsavel(e.target.value)} aria-label="Responsável">
+                      <option value="">Responsável…</option>
+                      {pessoas
+                        .filter((p) => p.id !== meuId)
+                        .map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.nome}
+                          </option>
+                        ))}
+                    </Select>
+                    <Input type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} aria-label="Prazo" />
+                    <Input
+                      value={tituloTarefa}
+                      onChange={(e) => setTituloTarefa(e.target.value)}
+                      placeholder={itemEscolhido ? `Repor: ${itemEscolhido.nome}` : "Título da tarefa"}
+                      maxLength={200}
+                      aria-label="Título da tarefa"
+                    />
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
         <div className="flex gap-2">
+          <Button
+            type="button"
+            variant={vincular || temVinculo ? "default" : "outline"}
+            size="icon"
+            aria-label="Vincular estoque ou tarefa"
+            title="Vincular item do estoque / criar tarefa"
+            onClick={() => (vincular ? limparVinculo() : setVincular(true))}
+          >
+            <Link2 className="size-4" />
+          </Button>
           <Input
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
-            placeholder="Escreva uma mensagem…"
+            placeholder={temVinculo ? "Descreva o pedido…" : "Escreva uma mensagem…"}
             maxLength={2000}
             autoComplete="off"
           />

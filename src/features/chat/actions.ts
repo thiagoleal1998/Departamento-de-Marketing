@@ -3,9 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { criarClienteServidor } from "@/lib/supabase/server";
-import { enviarPush } from "@/lib/push";
-import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
-import { CONVERSA_GERAL } from "./constantes";
+import { avisarNovaMensagem } from "./aviso";
 
 /** Envia uma mensagem (a entrega em tempo real vem do Supabase Realtime). */
 export async function enviarMensagem(
@@ -33,45 +31,7 @@ export async function enviarMensagem(
           : "Não foi possível enviar. Tente novamente.",
     };
   }
-  // Aviso push para quem não está com o painel aberto em foco.
-  try {
-    const { data: eu } = await supabase
-      .from("profiles")
-      .select("nome")
-      .eq("id", user.id)
-      .single();
-    const nome = (eu as { nome: string } | null)?.nome ?? "Alguém";
-
-    let destinatarios: string[] = [];
-    if (conversaId === CONVERSA_GERAL) {
-      // Service role: o colaborador não lê os perfis dos colegas pela RLS.
-      const lista = servicoDisponivel() ? criarClienteAdmin() : supabase;
-      const { data } = await lista
-        .from("profiles")
-        .select("id")
-        .eq("ativo", true)
-        .neq("id", user.id);
-      destinatarios = ((data as { id: string }[] | null) ?? []).map((p) => p.id);
-    } else {
-      const { data } = await supabase
-        .from("chat_membros")
-        .select("usuario_id")
-        .eq("conversa_id", conversaId)
-        .neq("usuario_id", user.id);
-      destinatarios = ((data as { usuario_id: string }[] | null) ?? []).map(
-        (m) => m.usuario_id
-      );
-    }
-
-    await enviarPush(destinatarios, {
-      titulo: conversaId === CONVERSA_GERAL ? `${nome} · Sala geral` : nome,
-      corpo: limpo.length > 120 ? `${limpo.slice(0, 117)}…` : limpo,
-      url: conversaId === CONVERSA_GERAL ? "/chat" : `/chat?c=${conversaId}`,
-      tag: `chat-${conversaId}`,
-    });
-  } catch {
-    // ignora
-  }
+  await avisarNovaMensagem(supabase, user.id, conversaId, limpo);
 
   return { ok: true };
 }
