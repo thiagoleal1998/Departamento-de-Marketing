@@ -264,8 +264,12 @@ export function ChatJanela({
                 {itens
                   .filter((i) => !itensSel.some((x) => x.id === i.id))
                   .map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {i.nome} (estoque: {i.quantidade})
+                    <option
+                      key={i.id}
+                      value={i.id}
+                      style={i.quantidade <= 0 ? { color: "#dc2626", fontWeight: 600 } : undefined}
+                    >
+                      {i.quantidade <= 0 ? `${i.nome} — ZERADO` : `${i.nome} (estoque: ${i.quantidade})`}
                     </option>
                   ))}
               </Select>
@@ -276,7 +280,12 @@ export function ChatJanela({
                     return (
                       <li key={s.id} className="flex items-center gap-2 rounded-md border bg-background px-2 py-1">
                         <span className="min-w-0 flex-1 truncate">
-                          {it?.nome ?? "Item"} <span className="text-xs text-muted-foreground">(estoque: {it?.quantidade ?? "—"})</span>
+                          {it?.nome ?? "Item"}{" "}
+                          {it && it.quantidade <= 0 ? (
+                            <span className="rounded bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-700">zerado</span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">(estoque: {it?.quantidade ?? "—"})</span>
+                          )}
                         </span>
                         <Input
                           type="number"

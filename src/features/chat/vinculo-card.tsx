@@ -182,8 +182,17 @@ export function VinculoCard({
                 <Package className="size-3.5 shrink-0" />
                 <span className="font-medium">{item.nome}</span>
                 {item.pedido ? <span className="rounded bg-primary/15 px-1.5 py-0.5">pedido: {item.pedido} un.</span> : null}
-                <span className={cn("rounded px-1.5 py-0.5", baixo ? "bg-red-100 text-red-800" : "bg-muted text-foreground")}>
-                  estoque: {item.quantidade} (mín. {item.estoque_minimo})
+                <span
+                  className={cn(
+                    "rounded px-1.5 py-0.5",
+                    item.quantidade <= 0
+                      ? "bg-red-600 font-semibold text-white"
+                      : baixo
+                        ? "bg-red-100 text-red-800"
+                        : "bg-muted text-foreground"
+                  )}
+                >
+                  {item.quantidade <= 0 ? "estoque ZERADO" : `estoque: ${item.quantidade}`} (mín. {item.estoque_minimo})
                 </span>
               </li>
             );
