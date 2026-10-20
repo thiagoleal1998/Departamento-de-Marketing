@@ -156,7 +156,7 @@ export async function renomearItemEstoque(id: string, novoNome: string): Promise
   } = await supabase.auth.getUser();
   if (!user) return { erro: "Sessão expirada. Entre novamente." };
 
-  const nome = novoNome.trim().replace(/s+/g, " ").slice(0, 120);
+  const nome = novoNome.trim().replace(/\s+/g, " ").slice(0, 120);
   if (!nome) return { erro: "Informe o novo nome." };
 
   const { error } = await supabase.rpc("renomear_item_estoque", { p_item: id, p_nome: nome });
