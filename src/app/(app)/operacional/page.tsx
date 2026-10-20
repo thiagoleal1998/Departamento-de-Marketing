@@ -10,7 +10,12 @@ import type { Tarefa } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
-export default async function OperacionalPage() {
+export default async function OperacionalPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tarefa?: string }>;
+}) {
+  const { tarefa: abrirId } = await searchParams;
   await exigirUsuario();
   const supabase = await criarClienteServidor();
 
@@ -18,7 +23,10 @@ export default async function OperacionalPage() {
     supabase.from("tarefas").select("*").order("ordem", { ascending: true }),
     obterDiretorio(),
   ]);
-  const todas = (tarefasData as Tarefa[] | null) ?? [];
+  // Mesma ordem manual de antes; dentro dela, as tarefas mais novas aparecem primeiro.
+  const todas = ((tarefasData as Tarefa[] | null) ?? []).sort(
+    (a, b) => a.ordem - b.ordem || b.created_at.localeCompare(a.created_at)
+  );
 
   // Coluna "Concluída": só as 30 mais recentes (o histórico importado é grande).
   const LIMITE_CONCLUIDAS = 30;
@@ -28,6 +36,8 @@ export default async function OperacionalPage() {
   const idsConcluidasVisiveis = new Set(
     concluidas.slice(0, LIMITE_CONCLUIDAS).map((t) => t.id)
   );
+  // A tarefa pedida pelo link (ex.: vinda do chat) sempre aparece, mesmo que seja antiga.
+  if (abrirId) idsConcluidasVisiveis.add(abrirId);
   const tarefas = todas.filter(
     (t) => t.status !== "concluida" || idsConcluidasVisiveis.has(t.id)
   );
@@ -92,6 +102,7 @@ export default async function OperacionalPage() {
         </p>
       ) : null}
       <KanbanTarefas
+        abrirId={abrirId ?? null}
         tarefas={view}
         pessoas={Array.from(perfis.values()).map((p) => ({
           id: p.id,

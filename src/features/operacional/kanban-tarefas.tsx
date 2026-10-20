@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { ChevronLeft, ChevronRight, GripVertical, Link2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, GripVertical, Link2, Search } from "lucide-react";
 import { KanbanSquare } from "lucide-react";
 import { moverTarefa } from "./actions";
 import { TarefaDetalhe } from "./tarefa-detalhe";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { EmptyState } from "@/components/shared/empty-state";
 import { cn, formatarData } from "@/lib/utils";
 import { TAREFA_STATUS_META, type TarefaStatus } from "@/types";
@@ -48,9 +50,12 @@ const COLUNAS: TarefaStatus[] = [
 export function KanbanTarefas({
   tarefas,
   pessoas,
+  abrirId = null,
 }: {
   tarefas: TarefaView[];
   pessoas: PessoaOpcao[];
+  /** Tarefa para abrir logo ao carregar (link vindo do chat). */
+  abrirId?: string | null;
 }) {
   const [lista, setLista] = useState(tarefas);
   // Tarefas criadas por outros caminhos (chat, ata) aparecem assim que a página atualiza.
@@ -59,7 +64,9 @@ export function KanbanTarefas({
   }, [tarefas]);
   const [arrastando, setArrastando] = useState<string | null>(null);
   const [sobre, setSobre] = useState<TarefaStatus | null>(null);
-  const [aberta, setAberta] = useState<string | null>(null);
+  const [aberta, setAberta] = useState<string | null>(abrirId);
+  const [busca, setBusca] = useState("");
+  const [filtroResp, setFiltroResp] = useState("");
   const [, startTransition] = useTransition();
   const trilho = useRef<HTMLDivElement>(null);
 
@@ -90,6 +97,18 @@ export function KanbanTarefas({
     trilho.current?.scrollBy({ left: direcao * 320, behavior: "smooth" });
   }
 
+  const termo = busca.trim().toLowerCase();
+  const visiveis = lista.filter(
+    (t) =>
+      (!filtroResp ||
+        (filtroResp === "__sem__" ? !t.responsavel_id : t.responsavel_id === filtroResp)) &&
+      (!termo ||
+        t.titulo.toLowerCase().includes(termo) ||
+        (t.descricao ?? "").toLowerCase().includes(termo) ||
+        (t.responsavel_nome ?? "").toLowerCase().includes(termo) ||
+        (t.tag ?? "").toLowerCase().includes(termo))
+  );
+
   const colunas: TarefaStatus[] = lista.some((t) => t.status === "revisao")
     ? [...COLUNAS.slice(0, -1), "revisao", "concluida"]
     : COLUNAS;
@@ -98,6 +117,37 @@ export function KanbanTarefas({
 
   return (
     <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+          <Input
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar tarefa…"
+            aria-label="Buscar tarefa"
+            className="h-9 w-64 pl-8"
+          />
+        </div>
+        <Select
+          value={filtroResp}
+          onChange={(e) => setFiltroResp(e.target.value)}
+          aria-label="Filtrar por responsável"
+          className="h-9 w-52"
+        >
+          <option value="">Todos os responsáveis</option>
+          <option value="__sem__">Sem responsável</option>
+          {pessoas.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.nome}
+            </option>
+          ))}
+        </Select>
+        {termo || filtroResp ? (
+          <span className="text-xs text-muted-foreground">
+            {visiveis.length} de {lista.length} tarefas
+          </span>
+        ) : null}
+      </div>
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">
           Clique em um card para abrir e editar. Arraste para mudar de coluna.
@@ -128,7 +178,7 @@ export function KanbanTarefas({
 
       <div ref={trilho} className="flex gap-4 overflow-x-auto pb-3">
         {colunas.map((coluna) => {
-          const daColuna = lista.filter((t) => t.status === coluna);
+          const daColuna = visiveis.filter((t) => t.status === coluna);
           return (
             <div
               key={coluna}

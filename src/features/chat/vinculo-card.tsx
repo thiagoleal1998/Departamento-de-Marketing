@@ -97,8 +97,14 @@ export function VinculoCard({
     <div className={cn("mt-1.5 space-y-1.5 rounded-lg border p-2 text-xs", minha ? "border-white/30 bg-white/10" : "bg-background")}>
       {tarefa ? (
         <div className="space-y-0.5">
-          <p className="flex items-center gap-1.5 font-semibold">
+          <p className="flex flex-wrap items-center gap-x-1.5 font-semibold">
             <ClipboardList className="size-3.5 shrink-0" /> {tarefa.titulo}
+            <Link
+              href={"/operacional?tarefa=" + tarefa.id}
+              className="text-[11px] font-medium underline underline-offset-2 opacity-90 hover:opacity-100"
+            >
+              Abrir no quadro
+            </Link>
           </p>
           <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 opacity-90">
             <span
