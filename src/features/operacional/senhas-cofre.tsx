@@ -1,5 +1,7 @@
 "use client";
 
+import { useDialogo } from "@/components/shared/dialogo-provider";
+
 import { useState, useTransition } from "react";
 import {
   Plus,
@@ -48,6 +50,7 @@ export function SenhasCofre({
   const [revelada, setRevelada] = useState<Record<string, string>>({});
   const [copiado, setCopiado] = useState<string | null>(null);
   const [pendente, startTransition] = useTransition();
+  const { confirmar, avisar } = useDialogo();
 
   function abrirNovo() {
     setForm(VAZIO);
@@ -82,11 +85,17 @@ export function SenhasCofre({
     });
   }
 
-  function excluir(a: AcessoView) {
-    if (!confirm(`Excluir o acesso "${a.servico}"?`)) return;
+  async function excluir(a: AcessoView) {
+    const ok = await confirmar({
+      titulo: "Excluir este acesso?",
+      descricao: a.servico + "\n\nA senha guardada será apagada.",
+      confirmar: "Excluir",
+      perigo: true,
+    });
+    if (!ok) return;
     startTransition(async () => {
       const res = await excluirSenhaAcesso(a.id);
-      if (res.erro) alert(res.erro);
+      if (res.erro) void avisar(res.erro, "Não foi possível excluir");
     });
   }
 
@@ -101,7 +110,7 @@ export function SenhasCofre({
     }
     startTransition(async () => {
       const res = await revelarSenhaAcesso(a.id);
-      if (res.erro) alert(res.erro);
+      if (res.erro) void avisar(res.erro, "Não foi possível revelar");
       else if (res.senha !== undefined) {
         setRevelada((r) => ({ ...r, [a.id]: res.senha as string }));
       }
@@ -118,7 +127,7 @@ export function SenhasCofre({
         setCopiado(a.id);
         setTimeout(() => setCopiado(null), 2000);
       } catch {
-        alert("Não foi possível copiar. Use o botão de revelar.");
+        void avisar("Não foi possível copiar. Use o botão de revelar.", "Copiar senha");
       }
     });
   }

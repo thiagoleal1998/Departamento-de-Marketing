@@ -1,5 +1,7 @@
 "use client";
 
+import { useDialogo } from "@/components/shared/dialogo-provider";
+
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { X, Loader2, Save, ExternalLink, Check, Trash2 } from "lucide-react";
@@ -60,6 +62,7 @@ export function TarefaDetalhe({
   const [erro, setErro] = useState<string | null>(null);
   const [salvo, setSalvo] = useState(false);
   const [pendente, startTransition] = useTransition();
+  const { confirmar } = useDialogo();
 
   useEffect(() => {
     function aoTecla(e: KeyboardEvent) {
@@ -69,13 +72,15 @@ export function TarefaDetalhe({
     return () => document.removeEventListener("keydown", aoTecla);
   }, [onFechar]);
 
-  function excluir() {
-    if (
-      !confirm(
-        `Excluir a tarefa “${tarefa.titulo}”?\n\nUse para tarefas que não são mais necessárias. A exclusão é definitiva e não pode ser desfeita.`
-      )
-    )
-      return;
+  async function excluir() {
+    const ok = await confirmar({
+      titulo: "Excluir esta tarefa?",
+      descricao:
+        tarefa.titulo + "\n\nUse para tarefas que não são mais necessárias. A exclusão é definitiva e não pode ser desfeita.",
+      confirmar: "Excluir tarefa",
+      perigo: true,
+    });
+    if (!ok) return;
     setErro(null);
     startTransition(async () => {
       const res = await excluirTarefa(tarefa.id);

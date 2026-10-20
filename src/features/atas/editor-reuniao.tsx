@@ -1,5 +1,7 @@
 "use client";
 
+import { useDialogo } from "@/components/shared/dialogo-provider";
+
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Loader2, Plus, Save, Trash2 } from "lucide-react";
@@ -55,6 +57,7 @@ function ItemEditor({
   editavel: boolean;
 }) {
   const router = useRouter();
+  const { confirmar } = useDialogo();
   const [titulo, setTitulo] = useState(it.titulo);
   const [status, setStatus] = useState<StatusItem>(it.status ?? "nao_iniciado");
   const [resp, setResp] = useState(it.responsavel_id ?? "");
@@ -89,8 +92,8 @@ function ItemEditor({
     });
   }
 
-  function remover() {
-    if (!confirm("Remover este item da ata?")) return;
+  async function remover() {
+    if (!(await confirmar({ titulo: "Remover este item da ata?", confirmar: "Remover", perigo: true }))) return;
     start(async () => {
       const r = await removerItem(it.id, reuniaoId);
       if (r.erro) setMsg({ ok: false, texto: r.erro });
@@ -224,6 +227,7 @@ export function EditorReuniao({
   presencas: { nome: string; presenca: string; obs: string }[];
 }) {
   const router = useRouter();
+  const { confirmar } = useDialogo();
   const [presencas, setPresencas] = useState(presencasIniciais);
   const [novo, setNovo] = useState("");
   const [dataEdit, setDataEdit] = useState(data);
@@ -259,13 +263,14 @@ export function EditorReuniao({
     });
   }
 
-  function concluir() {
-    if (
-      !confirm(
-        "Concluir a reunião? Os itens viram tarefas no kanban, os itens finalizados fecham as tarefas e os responsáveis serão avisados."
-      )
-    )
-      return;
+  async function concluir() {
+    const ok = await confirmar({
+      titulo: "Concluir a reunião?",
+      descricao:
+        "Os itens viram tarefas no kanban, os itens finalizados fecham as tarefas e os responsáveis serão avisados.",
+      confirmar: "Concluir reunião",
+    });
+    if (!ok) return;
     setMsg(null);
     start(async () => {
       const r = await concluirReuniao(reuniaoId);

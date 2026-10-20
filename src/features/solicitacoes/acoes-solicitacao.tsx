@@ -1,5 +1,7 @@
 "use client";
 
+import { useDialogo } from "@/components/shared/dialogo-provider";
+
 import { useState, useTransition } from "react";
 import { Check, X, Loader2, Ban } from "lucide-react";
 import { cancelarSolicitacao, decidirSolicitacao } from "./actions";
@@ -8,6 +10,7 @@ import { Input } from "@/components/ui/input";
 
 /** Botão do solicitante para cancelar uma solicitação pendente. */
 export function CancelarSolicitacao({ id }: { id: string }) {
+  const { confirmar } = useDialogo();
   const [pendente, startTransition] = useTransition();
   const [erro, setErro] = useState<string | null>(null);
 
@@ -19,8 +22,14 @@ export function CancelarSolicitacao({ id }: { id: string }) {
         variant="outline"
         size="sm"
         disabled={pendente}
-        onClick={() => {
-          if (!confirm("Cancelar esta solicitação?")) return;
+        onClick={async () => {
+          const ok = await confirmar({
+            titulo: "Cancelar esta solicitação?",
+            confirmar: "Cancelar solicitação",
+            cancelar: "Voltar",
+            perigo: true,
+          });
+          if (!ok) return;
           setErro(null);
           startTransition(async () => {
             const res = await cancelarSolicitacao(id);

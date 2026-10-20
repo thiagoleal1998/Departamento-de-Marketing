@@ -1,5 +1,7 @@
 "use client";
 
+import { useDialogo } from "@/components/shared/dialogo-provider";
+
 import { useState, useTransition } from "react";
 import { Plus, Pencil, Trash2, Loader2, X, ExternalLink } from "lucide-react";
 import { salvarRegistro, excluirRegistro } from "./cadastros-actions";
@@ -62,6 +64,7 @@ export function CadastroCrud({
   const [valores, setValores] = useState<Record<string, string>>({});
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, startTransition] = useTransition();
+  const { confirmar, avisar } = useDialogo();
   const [busca, setBusca] = useState("");
   const [limite, setLimite] = useState(200);
   const [filtroVal, setFiltroVal] = useState<Record<string, string>>(
@@ -102,11 +105,17 @@ export function CadastroCrud({
     });
   }
 
-  function excluir(l: Linha) {
-    if (!confirm("Excluir este registro definitivamente?")) return;
+  async function excluir(l: Linha) {
+    const ok = await confirmar({
+      titulo: "Excluir este registro?",
+      descricao: "A exclusão é definitiva e não pode ser desfeita.",
+      confirmar: "Excluir",
+      perigo: true,
+    });
+    if (!ok) return;
     startTransition(async () => {
       const res = await excluirRegistro(chave, l.id);
-      if (res.erro) alert(res.erro);
+      if (res.erro) void avisar(res.erro, "Não foi possível excluir");
     });
   }
 

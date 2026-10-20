@@ -1,5 +1,7 @@
 "use client";
 
+import { useDialogo } from "@/components/shared/dialogo-provider";
+
 import { useTransition } from "react";
 import { Pin, PinOff, Trash2 } from "lucide-react";
 import { alternarFixado, excluirComunicado } from "./actions";
@@ -13,6 +15,7 @@ export function AcoesComunicado({
   fixado: boolean;
 }) {
   const [pendente, startTransition] = useTransition();
+  const { confirmar } = useDialogo();
 
   return (
     <div className="flex shrink-0 gap-1">
@@ -36,8 +39,14 @@ export function AcoesComunicado({
         title="Excluir"
         aria-label="Excluir comunicado"
         disabled={pendente}
-        onClick={() => {
-          if (!confirm("Excluir este comunicado?")) return;
+        onClick={async () => {
+          const ok = await confirmar({
+            titulo: "Excluir este comunicado?",
+            descricao: "Ele deixa de aparecer para todo o time.",
+            confirmar: "Excluir",
+            perigo: true,
+          });
+          if (!ok) return;
           startTransition(async () => {
             await excluirComunicado(id);
           });

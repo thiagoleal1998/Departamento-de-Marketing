@@ -1,5 +1,7 @@
 "use client";
 
+import { useDialogo } from "@/components/shared/dialogo-provider";
+
 /* eslint-disable @next/next/no-img-element */
 import { useState, useTransition } from "react";
 import {
@@ -46,6 +48,7 @@ export function ItemCard({
   const [projeto, setProjeto] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, startTransition] = useTransition();
+  const { confirmar: pedirConfirmacao } = useDialogo();
   const [editandoNome, setEditandoNome] = useState(false);
   const [nomeEdit, setNomeEdit] = useState(item.nome);
   const [erroNome, setErroNome] = useState<string | null>(null);
@@ -97,8 +100,14 @@ export function ItemCard({
     });
   }
 
-  function arquivar() {
-    if (!confirm(`Remover "${item.nome}" do estoque? O histórico é mantido.`)) return;
+  async function arquivar() {
+    const ok = await pedirConfirmacao({
+      titulo: "Remover este item do estoque?",
+      descricao: item.nome + "\n\nO histórico de entradas e saídas é mantido.",
+      confirmar: "Remover",
+      perigo: true,
+    });
+    if (!ok) return;
     startTransition(async () => {
       const res = await arquivarItemEstoque(item.id);
       if (res.erro) setErro(res.erro);

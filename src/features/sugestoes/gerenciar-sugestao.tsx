@@ -1,5 +1,7 @@
 "use client";
 
+import { useDialogo } from "@/components/shared/dialogo-provider";
+
 import { useState, useTransition } from "react";
 import { Loader2, Save, Trash2 } from "lucide-react";
 import { atualizarSugestao, excluirSugestao } from "./actions";
@@ -32,6 +34,7 @@ export function GerenciarSugestao({
   const [erro, setErro] = useState<string | null>(null);
   const [salvo, setSalvo] = useState(false);
   const [pendente, startTransition] = useTransition();
+  const { confirmar } = useDialogo();
 
   function salvar() {
     setErro(null);
@@ -46,8 +49,14 @@ export function GerenciarSugestao({
     });
   }
 
-  function excluir() {
-    if (!confirm("Excluir este envio definitivamente?")) return;
+  async function excluir() {
+    const ok = await confirmar({
+      titulo: "Excluir este envio?",
+      descricao: "A exclusão é definitiva e não pode ser desfeita.",
+      confirmar: "Excluir",
+      perigo: true,
+    });
+    if (!ok) return;
     startTransition(async () => {
       const res = await excluirSugestao(id);
       if (res.erro) setErro(res.erro);

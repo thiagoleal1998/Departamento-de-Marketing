@@ -1,5 +1,7 @@
 "use client";
 
+import { useDialogo } from "@/components/shared/dialogo-provider";
+
 import { useMemo, useState, useTransition } from "react";
 import { ExternalLink, FileText, Search, Trash2 } from "lucide-react";
 import { removerDocumento } from "./actions";
@@ -12,6 +14,7 @@ export function ListaDocumentos({ docs, podeEditar }: { docs: DocumentoCentral[]
   const [busca, setBusca] = useState("");
   const [categoria, setCategoria] = useState("");
   const [, startTransition] = useTransition();
+  const { confirmar } = useDialogo();
 
   const categorias = useMemo(() => Array.from(new Set(docs.map((d) => d.categoria))).sort(), [docs]);
 
@@ -97,8 +100,14 @@ export function ListaDocumentos({ docs, podeEditar }: { docs: DocumentoCentral[]
                       <button
                         type="button"
                         aria-label={`Remover ${d.nome}`}
-                        onClick={() => {
-                          if (confirm(`Remover "${d.nome}" da lista?`)) startTransition(() => removerDocumento(d.id));
+                        onClick={async () => {
+                          const ok = await confirmar({
+                            titulo: "Remover este documento da lista?",
+                            descricao: d.nome,
+                            confirmar: "Remover",
+                            perigo: true,
+                          });
+                          if (ok) startTransition(() => removerDocumento(d.id));
                         }}
                         className="text-muted-foreground hover:text-destructive"
                       >
