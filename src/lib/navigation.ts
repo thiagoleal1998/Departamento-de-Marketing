@@ -18,6 +18,7 @@ import {
   CalendarDays,
   NotebookPen,
   Handshake,
+  FolderOpen,
   Store,
   Plane,
   Target,
@@ -161,6 +162,13 @@ export const NAVEGACAO: ItemNav[] = [
     icone: Handshake,
     gradiente: "from-emerald-500 to-green-600",
     descricao: "Condições e disponibilidades",
+  },
+  {
+    href: "/documentos",
+    label: "Documentos",
+    icone: FolderOpen,
+    gradiente: "from-amber-500 to-orange-600",
+    descricao: "Planilhas, modelos e links",
   },
   {
     href: "/estoque",

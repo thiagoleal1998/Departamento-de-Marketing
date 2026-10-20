@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { exigirUsuario } from "@/lib/auth";
@@ -139,4 +140,34 @@ export async function prepararEnvioPlano(
     .createSignedUploadUrl(caminho);
   if (error || !url) return { erro: "Não foi possível preparar o envio. Tente novamente." };
   return { caminho, token: url.token };
+}
+
+/** Cria um plano de ação direto (sem partir de um feedback) e abre o editor. */
+export async function criarPlanoDireto(formData: FormData) {
+  const usuario = await exigirUsuario();
+  if (!ehLideranca(usuario.role)) redirect("/desenvolvimento");
+
+  const colaborador_id = String(formData.get("colaborador_id") ?? "").trim();
+  const titulo = texto(formData.get("titulo"), 200).trim();
+  const descricao = texto(formData.get("descricao"), 20000).trim();
+  if (!colaborador_id || !descricao) redirect("/desenvolvimento/novo-plano?erro=1");
+
+  const supabase = await criarClienteServidor();
+  const { data, error } = await supabase
+    .from("planos_acao")
+    .insert({
+      origem_tipo: "feedback",
+      origem_id: null,
+      colaborador_id,
+      autor_id: usuario.id,
+      titulo: titulo || null,
+      descricao,
+    })
+    .select("id")
+    .single();
+  if (error || !data) redirect("/desenvolvimento/novo-plano?erro=2");
+
+  revalidatePath("/desenvolvimento");
+  revalidatePath(`/desenvolvimento/colaborador/${colaborador_id}`);
+  redirect(`/desenvolvimento/plano/${data.id}`);
 }

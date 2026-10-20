@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Plus, MessageCircle } from "lucide-react";
+import { ArrowLeft, Plus, MessageCircle, Target } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import { ehLideranca } from "@/lib/permissions";
 import {
@@ -58,6 +58,11 @@ export default async function ColaboradorPage({
         </div>
         {lideranca ? (
           <div className="flex gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/desenvolvimento/novo-plano?colaborador=${colaborador.id}`}>
+                <Target className="size-4" /> Novo plano
+              </Link>
+            </Button>
             <Button asChild variant="outline" size="sm">
               <Link href="/desenvolvimento/nova-1a1">
                 <MessageCircle className="size-4" /> Nova 1:1

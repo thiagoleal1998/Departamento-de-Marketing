@@ -56,6 +56,11 @@ export default async function DesenvolvimentoPage() {
         acoes={
           <div className="flex gap-2">
             <Button asChild variant="outline">
+              <Link href="/desenvolvimento/novo-plano">
+                <Target className="size-4" /> Novo plano de ação
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
               <Link href="/desenvolvimento/nova-1a1">
                 <MessageCircle className="size-4" /> Nova 1:1
               </Link>
