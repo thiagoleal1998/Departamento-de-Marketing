@@ -29,6 +29,8 @@ export interface TarefaView {
   tag: string | null;
   link: string | null;
   conteudo: string | null;
+  /** Liderança ou responsável: pode excluir o card. */
+  podeExcluir?: boolean;
 }
 
 export interface PessoaOpcao {
@@ -287,6 +289,8 @@ export function KanbanTarefas({
           tarefa={aberto}
           pessoas={pessoas}
           onFechar={() => setAberta(null)}
+          podeExcluir={aberto.podeExcluir ?? false}
+          onExcluida={(id) => setLista((l) => l.filter((x) => x.id !== id))}
           onSalvo={(t) =>
             setLista((l) => l.map((x) => (x.id === t.id ? t : x)))
           }

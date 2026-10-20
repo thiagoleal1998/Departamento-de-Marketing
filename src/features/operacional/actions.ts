@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { criarClienteServidor } from "@/lib/supabase/server";
+import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { tarefaParaEtapaStatus } from "@/features/projetos/tarefa";
 import type { TarefaStatus } from "@/types";
 
@@ -100,5 +101,40 @@ export async function salvarTarefa(
     revalidatePath("/projetos");
   }
   revalidatePath("/operacional");
+  return { ok: true };
+}
+
+/**
+ * Exclui uma tarefa (card) que não é mais necessária. Pode quem é da liderança ou o responsável
+ * pela tarefa. A exclusão é definitiva.
+ */
+export async function excluirTarefa(tarefaId: string): Promise<{ ok?: boolean; erro?: string }> {
+  const supabase = await criarClienteServidor();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { erro: "Sessão expirada. Entre novamente." };
+
+  // A leitura passa pela RLS: só enxerga a tarefa quem é da liderança ou o responsável.
+  const { data: tarefa } = await supabase
+    .from("tarefas")
+    .select("id, responsavel_id")
+    .eq("id", tarefaId)
+    .maybeSingle();
+  if (!tarefa) return { erro: "Tarefa não encontrada ou sem permissão." };
+
+  const { data: eu } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  const lideranca = eu?.role === "gerente" || eu?.role === "lider";
+  if (!lideranca && tarefa.responsavel_id !== user.id) {
+    return { erro: "Só a liderança ou o responsável pela tarefa pode excluí-la." };
+  }
+
+  // A regra de acesso do banco não prevê exclusão; a permissão foi conferida acima.
+  if (!servicoDisponivel()) return { erro: "Exclusão indisponível no momento." };
+  const { error } = await criarClienteAdmin().from("tarefas").delete().eq("id", tarefaId);
+  if (error) return { erro: "Não foi possível excluir a tarefa." };
+
+  revalidatePath("/operacional");
+  revalidatePath("/chat");
   return { ok: true };
 }

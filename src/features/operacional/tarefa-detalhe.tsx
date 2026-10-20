@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { X, Loader2, Save, ExternalLink, Check } from "lucide-react";
-import { salvarTarefa } from "./actions";
+import { X, Loader2, Save, ExternalLink, Check, Trash2 } from "lucide-react";
+import { excluirTarefa, salvarTarefa } from "./actions";
 import { ConteudoCard } from "./conteudo-card";
 import { ItensEstoqueTarefa } from "./itens-estoque-tarefa";
 import { HistoricoChatTarefa } from "./historico-chat-tarefa";
@@ -32,11 +32,17 @@ export function TarefaDetalhe({
   pessoas,
   onFechar,
   onSalvo,
+  onExcluida,
+  podeExcluir = false,
 }: {
   tarefa: TarefaView;
   pessoas: PessoaOpcao[];
   onFechar: () => void;
   onSalvo: (t: TarefaView) => void;
+  /** Chamado depois que a tarefa é excluída (o quadro a retira da tela). */
+  onExcluida?: (id: string) => void;
+  /** Liderança ou responsável pela tarefa. */
+  podeExcluir?: boolean;
 }) {
   const [titulo, setTitulo] = useState(tarefa.titulo);
   const [descricao, setDescricao] = useState(tarefa.descricao ?? "");
@@ -62,6 +68,24 @@ export function TarefaDetalhe({
     document.addEventListener("keydown", aoTecla);
     return () => document.removeEventListener("keydown", aoTecla);
   }, [onFechar]);
+
+  function excluir() {
+    if (
+      !confirm(
+        `Excluir a tarefa “${tarefa.titulo}”?\n\nUse para tarefas que não são mais necessárias. A exclusão é definitiva e não pode ser desfeita.`
+      )
+    )
+      return;
+    setErro(null);
+    startTransition(async () => {
+      const res = await excluirTarefa(tarefa.id);
+      if (res.erro) setErro(res.erro);
+      else {
+        onExcluida?.(tarefa.id);
+        onFechar();
+      }
+    });
+  }
 
   function salvar() {
     setErro(null);
@@ -258,6 +282,17 @@ export function TarefaDetalhe({
 
         {/* Rodapé */}
         <div className="flex flex-wrap items-center justify-end gap-3 border-t p-4">
+          {podeExcluir ? (
+            <Button
+              type="button"
+              variant="ghost"
+              className="mr-auto text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={excluir}
+              disabled={pendente}
+            >
+              <Trash2 className="size-4" /> Excluir tarefa
+            </Button>
+          ) : null}
           {erro ? <span className="text-sm text-destructive">{erro}</span> : null}
           {salvo ? (
             <span className="flex items-center gap-1 text-sm text-emerald-600">

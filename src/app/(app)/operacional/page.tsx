@@ -16,7 +16,8 @@ export default async function OperacionalPage({
   searchParams: Promise<{ tarefa?: string }>;
 }) {
   const { tarefa: abrirId } = await searchParams;
-  await exigirUsuario();
+  const usuario = await exigirUsuario();
+  const lideranca = usuario.role === "gerente" || usuario.role === "lider";
   const supabase = await criarClienteServidor();
 
   const [{ data: tarefasData }, perfis] = await Promise.all([
@@ -73,6 +74,7 @@ export default async function OperacionalPage({
       tag: t.tag ?? null,
       link: t.link ?? null,
       conteudo: t.conteudo ?? null,
+      podeExcluir: lideranca || t.responsavel_id === usuario.id,
       origemHref,
       origemLabel,
     };
