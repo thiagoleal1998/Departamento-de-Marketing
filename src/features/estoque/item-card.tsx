@@ -12,7 +12,7 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
-import { arquivarItemEstoque, atualizarMinimoEstoque, registrarMovimento } from "./actions";
+import { arquivarItemEstoque, atualizarMinimoEstoque, registrarMovimento, renomearItemEstoque } from "./actions";
 import type { OpcaoVinculo } from "./data";
 import type { EstoqueItem } from "@/types/database";
 import { Card, CardContent } from "@/components/ui/card";
@@ -46,11 +46,23 @@ export function ItemCard({
   const [projeto, setProjeto] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, startTransition] = useTransition();
+  const [editandoNome, setEditandoNome] = useState(false);
+  const [nomeEdit, setNomeEdit] = useState(item.nome);
+  const [erroNome, setErroNome] = useState<string | null>(null);
   const [editandoMinimo, setEditandoMinimo] = useState(false);
   const [minimo, setMinimo] = useState(String(item.estoque_minimo));
   const [erroMinimo, setErroMinimo] = useState<string | null>(null);
 
   const baixo = item.quantidade <= item.estoque_minimo;
+
+  function salvarNome() {
+    setErroNome(null);
+    startTransition(async () => {
+      const res = await renomearItemEstoque(item.id, nomeEdit);
+      if (res.erro) setErroNome(res.erro);
+      else setEditandoNome(false);
+    });
+  }
 
   function salvarMinimo() {
     setErroMinimo(null);
@@ -110,7 +122,51 @@ export function ItemCard({
           )}
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="truncate font-semibold leading-tight">{item.nome}</h3>
+              {editandoNome ? (
+                <div className="min-w-0 flex-1 space-y-1">
+                  <Input
+                    value={nomeEdit}
+                    onChange={(e) => setNomeEdit(e.target.value)}
+                    maxLength={120}
+                    className="h-8 text-sm font-semibold"
+                    aria-label="Novo nome do item"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") salvarNome();
+                      if (e.key === "Escape") setEditandoNome(false);
+                    }}
+                  />
+                  <p className="text-[11px] text-muted-foreground">A troca fica registrada no histórico do estoque.</p>
+                  <div className="flex gap-1.5">
+                    <Button type="button" size="sm" className="h-7 px-2 text-xs" onClick={salvarNome} disabled={pendente}>
+                      {pendente ? <Loader2 className="size-3 animate-spin" /> : "Salvar nome"}
+                    </Button>
+                    <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setEditandoNome(false)}>
+                      Cancelar
+                    </Button>
+                  </div>
+                  {erroNome ? <p className="text-xs text-destructive">{erroNome}</p> : null}
+                </div>
+              ) : (
+                <h3 className="flex min-w-0 items-center gap-1 font-semibold leading-tight">
+                  <span className="truncate">{item.nome}</span>
+                  {ehGerente ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNomeEdit(item.nome);
+                        setErroNome(null);
+                        setEditandoNome(true);
+                      }}
+                      className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+                      title="Renomear item"
+                      aria-label={`Renomear ${item.nome}`}
+                    >
+                      <Pencil className="size-3.5" />
+                    </button>
+                  ) : null}
+                </h3>
+              )}
               <Badge variant="secondary">{CATEGORIA_LABEL[item.categoria]}</Badge>
             </div>
             {item.cor || item.descricao ? (

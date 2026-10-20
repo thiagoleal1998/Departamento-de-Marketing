@@ -127,8 +127,58 @@ export async function atualizarMinimoEstoque(id: string, minimo: number): Promis
   if (perfil?.role !== "gerente") return { erro: "Apenas gerentes alteram o estoque mínimo." };
   if (!Number.isInteger(minimo) || minimo < 0) return { erro: "Informe um número inteiro, zero ou maior." };
 
+  const { data: atual } = await supabase.from("estoque_itens").select("estoque_minimo").eq("id", id).maybeSingle();
   const { data, error } = await supabase.from("estoque_itens").update({ estoque_minimo: minimo }).eq("id", id).select("id");
   if (error || !data || data.length === 0) return { erro: "Não foi possível salvar o mínimo." };
+  // Registro da troca (complementar: não bloqueia se a tabela ainda não existir).
+  if (atual && atual.estoque_minimo !== minimo) {
+    await supabase.from("estoque_alteracoes").insert({
+      item_id: id,
+      campo: "estoque_minimo",
+      valor_anterior: String(atual.estoque_minimo),
+      valor_novo: String(minimo),
+      usuario_id: user.id,
+    });
+  }
+  revalidatePath("/estoque");
+  revalidatePath("/chat");
+  return { ok: true };
+}
+
+/** Renomeia um item do estoque (só gerente). A troca fica registrada: quem, quando, nome anterior e novo. */
+export async function renomearItemEstoque(id: string, novoNome: string): Promise<EstadoEstoque> {
+  const supabase = await criarClienteServidor();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { erro: "Sessão expirada. Entre novamente." };
+  const { data: perfil } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  if (perfil?.role !== "gerente") return { erro: "Apenas gerentes renomeiam itens do estoque." };
+
+  const nome = novoNome.trim().replace(/s+/g, " ").slice(0, 120);
+  if (!nome) return { erro: "Informe o novo nome." };
+
+  const { data: atual } = await supabase.from("estoque_itens").select("nome").eq("id", id).maybeSingle();
+  if (!atual) return { erro: "Item não encontrado." };
+  if (atual.nome === nome) return { erro: "O nome é o mesmo que o atual." };
+
+  const { data, error } = await supabase.from("estoque_itens").update({ nome }).eq("id", id).select("id");
+  if (error || !data || data.length === 0) return { erro: "Não foi possível renomear o item." };
+
+  // A troca precisa constar no registro: se não for possível registrar, o nome volta ao anterior.
+  const { error: erroLog } = await supabase
+    .from("estoque_alteracoes")
+    .insert({ item_id: id, campo: "nome", valor_anterior: atual.nome, valor_novo: nome, usuario_id: user.id });
+  if (erroLog) {
+    await supabase.from("estoque_itens").update({ nome: atual.nome }).eq("id", id);
+    return {
+      erro:
+        erroLog.code === "42P01" || erroLog.code === "PGRST205"
+          ? "O registro de alterações ainda não foi ativado no banco (migration 0052). O nome não foi alterado."
+          : "Não foi possível registrar a troca de nome. O nome não foi alterado.",
+    };
+  }
+
   revalidatePath("/estoque");
   revalidatePath("/chat");
   return { ok: true };

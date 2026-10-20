@@ -2,6 +2,7 @@ import { Boxes } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import {
   listarItensEstoque,
+  listarAlteracoesRecentes,
   listarMovimentosRecentes,
   listarOpcoesVinculo,
 } from "@/features/estoque/data";
@@ -29,9 +30,10 @@ export default async function EstoquePage() {
   const usuario = await exigirUsuario();
   const ehGerente = usuario.role === "gerente";
 
-  const [itens, movimentos, vinculos, perfis] = await Promise.all([
+  const [itens, movimentos, alteracoes, vinculos, perfis] = await Promise.all([
     listarItensEstoque(),
     listarMovimentosRecentes(),
+    listarAlteracoesRecentes(),
     listarOpcoesVinculo(),
     obterDiretorio(),
   ]);
@@ -81,6 +83,29 @@ export default async function EstoquePage() {
           ))}
         </div>
       )}
+
+      {alteracoes.length > 0 ? (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">Alterações de cadastro</h2>
+          <Card>
+            <CardContent className="divide-y p-0">
+              {alteracoes.map((a) => (
+                <div key={a.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-sm">
+                  <Badge variant="outline">{a.campo === "nome" ? "Nome alterado" : "Mínimo alterado"}</Badge>
+                  <span>
+                    <span className="text-muted-foreground line-through">{a.valor_anterior ?? "—"}</span>
+                    {" → "}
+                    <span className="font-medium">{a.valor_novo ?? "—"}</span>
+                  </span>
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    {a.usuario_id ? perfis.get(a.usuario_id)?.nome ?? "—" : "—"} · {formatarDataHora(a.created_at)}
+                  </span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </section>
+      ) : null}
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Histórico recente</h2>

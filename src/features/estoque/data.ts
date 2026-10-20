@@ -56,3 +56,24 @@ export async function listarOpcoesVinculo(): Promise<{
     })),
   };
 }
+
+export interface AlteracaoEstoque {
+  id: string;
+  item_id: string | null;
+  campo: "nome" | "estoque_minimo";
+  valor_anterior: string | null;
+  valor_novo: string | null;
+  usuario_id: string | null;
+  created_at: string;
+}
+
+/** Trocas de nome e de estoque mínimo (vazio se a migration 0052 ainda não foi aplicada). */
+export async function listarAlteracoesRecentes(limite = 40): Promise<AlteracaoEstoque[]> {
+  const supabase = await criarClienteServidor();
+  const { data } = await supabase
+    .from("estoque_alteracoes")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limite);
+  return (data as AlteracaoEstoque[] | null) ?? [];
+}
