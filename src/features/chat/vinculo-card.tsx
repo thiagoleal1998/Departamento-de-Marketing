@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { CalendarClock, CheckCircle2, ClipboardList, Loader2, Package, Reply } from "lucide-react";
-import { dadosVinculo, responderVinculo } from "./vinculos-actions";
-import { STATUS_TAREFA_ROTULO, type DadosVinculo } from "./vinculo-tipos";
+import { CalendarClock, CheckCircle2, ClipboardList, FolderKanban, Loader2, Package, Pencil, Reply } from "lucide-react";
+import Link from "next/link";
+import { atualizarProjetoPeloChat, dadosVinculo, responderVinculo } from "./vinculos-actions";
+import { STATUS_PROJETO_ROTULO, STATUS_TAREFA_ROTULO, type DadosVinculo } from "./vinculo-tipos";
+import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -16,6 +18,7 @@ export function VinculoCard({
   conversaId,
   tarefaId,
   itemId,
+  projetoId,
   versao,
   nomes,
   minha,
@@ -23,6 +26,7 @@ export function VinculoCard({
   conversaId: string;
   tarefaId: string | null;
   itemId: string | null;
+  projetoId: string | null;
   /** Muda quando chega nova mensagem ligada ao mesmo vínculo (recarrega os dados). */
   versao: number;
   nomes: Record<string, string>;
@@ -35,19 +39,36 @@ export function VinculoCard({
   const [concluir, setConcluir] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, startTransition] = useTransition();
+  const [atualizando, setAtualizando] = useState(false);
+  const [textoProj, setTextoProj] = useState("");
+  const [statusProj, setStatusProj] = useState("");
 
   useEffect(() => {
     let vivo = true;
-    void dadosVinculo(tarefaId, itemId).then((r) => vivo && setD(r));
+    void dadosVinculo(tarefaId, itemId, projetoId).then((r) => vivo && setD(r));
     return () => {
       vivo = false;
     };
-  }, [tarefaId, itemId, versao]);
+  }, [tarefaId, itemId, projetoId, versao]);
 
-  if (!d || (!d.tarefa && !d.item)) return null;
-  const { tarefa, item } = d;
+  if (!d || (!d.tarefa && !d.item && !d.projeto)) return null;
+  const { tarefa, item, projeto } = d;
   const concluida = tarefa?.status === "concluida";
   const baixo = item ? item.quantidade <= item.estoque_minimo : false;
+
+  function atualizarProjeto() {
+    if (!projeto) return;
+    setErro(null);
+    startTransition(async () => {
+      const r = await atualizarProjetoPeloChat(conversaId, projeto.id, textoProj, statusProj || null);
+      if (r.erro) setErro(r.erro);
+      else {
+        setAtualizando(false);
+        setTextoProj("");
+        setStatusProj("");
+      }
+    });
+  }
 
   function enviar() {
     setErro(null);
@@ -90,6 +111,62 @@ export function VinculoCard({
               </span>
             ) : null}
           </p>
+        </div>
+      ) : null}
+
+      {projeto ? (
+        <div className="space-y-1">
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <FolderKanban className="size-3.5 shrink-0" />
+            <Link href={"/projetos/" + projeto.id} className="font-semibold underline-offset-2 hover:underline">
+              {projeto.nome}
+            </Link>
+            <span className="rounded bg-muted px-1.5 py-0.5 font-medium text-foreground">{STATUS_PROJETO_ROTULO[projeto.status]}</span>
+            {projeto.responsavel_id ? <span className="opacity-90">Responsável: {nomes[projeto.responsavel_id] ?? "—"}</span> : null}
+          </p>
+          {projeto.ultima ? (
+            <p className="line-clamp-2 opacity-90">
+              Última atualização ({dataBr(projeto.ultima.quando)}
+              {projeto.ultima.autor_id ? " · " + (nomes[projeto.ultima.autor_id] ?? "") : ""}): {projeto.ultima.texto}
+            </p>
+          ) : null}
+          {atualizando ? (
+            <div className="space-y-1.5 rounded-md bg-muted/60 p-2 text-foreground">
+              <Input
+                value={textoProj}
+                onChange={(e) => setTextoProj(e.target.value)}
+                placeholder="O que mudou no projeto?"
+                maxLength={500}
+                className="h-8 text-xs"
+                aria-label="Atualização do projeto"
+              />
+              {d.podeMudarStatusProjeto ? (
+                <Select value={statusProj} onChange={(e) => setStatusProj(e.target.value)} className="h-8 text-xs" aria-label="Nova situação">
+                  <option value="">Manter situação ({STATUS_PROJETO_ROTULO[projeto.status]})</option>
+                  {Object.entries(STATUS_PROJETO_ROTULO)
+                    .filter(([k]) => k !== projeto.status)
+                    .map(([k, v]) => (
+                      <option key={k} value={k}>
+                        Mudar para: {v}
+                      </option>
+                    ))}
+                </Select>
+              ) : null}
+              {erro ? <p className="text-destructive">{erro}</p> : null}
+              <div className="flex gap-2">
+                <Button type="button" size="sm" onClick={atualizarProjeto} disabled={pendente || !textoProj.trim()}>
+                  {pendente ? <Loader2 className="size-3.5 animate-spin" /> : <CheckCircle2 className="size-3.5" />} Registrar
+                </Button>
+                <Button type="button" size="sm" variant="ghost" onClick={() => setAtualizando(false)}>
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button type="button" size="sm" variant="outline" className="h-7 text-xs text-foreground" onClick={() => setAtualizando(true)}>
+              <Pencil className="size-3.5" /> Atualizar projeto
+            </Button>
+          )}
         </div>
       ) : null}
 

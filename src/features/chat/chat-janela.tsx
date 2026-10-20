@@ -19,6 +19,13 @@ export interface MensagemView {
   created_at: string;
   tarefa_id?: string | null;
   estoque_item_id?: string | null;
+  projeto_id?: string | null;
+}
+
+export interface ProjetoOpcao {
+  id: string;
+  nome: string;
+  status: string;
 }
 
 function hora(iso: string): string {
@@ -34,6 +41,7 @@ export function ChatJanela({
   mensagensIniciais,
   nomes,
   itens,
+  projetos,
   pessoas,
   podeCriarTarefa,
   outroId,
@@ -43,6 +51,7 @@ export function ChatJanela({
   mensagensIniciais: MensagemView[];
   nomes: Record<string, string>;
   itens: ItemEstoqueChat[];
+  projetos: ProjetoOpcao[];
   pessoas: { id: string; nome: string }[];
   podeCriarTarefa: boolean;
   /** Na conversa direta, a outra pessoa (responsável sugerido). */
@@ -57,6 +66,9 @@ export function ChatJanela({
   // Vínculos (estoque / tarefa) da próxima mensagem.
   const [vincular, setVincular] = useState(false);
   const [itemId, setItemId] = useState("");
+  const [projetoId, setProjetoId] = useState("");
+  const [registrarProjeto, setRegistrarProjeto] = useState(true);
+  const [statusProjeto, setStatusProjeto] = useState("");
   const [criarTarefa, setCriarTarefa] = useState(false);
   const [responsavel, setResponsavel] = useState(outroId ?? "");
   const [prazo, setPrazo] = useState("");
@@ -109,11 +121,14 @@ export function ChatJanela({
   }, [mensagens]);
 
   const itemEscolhido = itens.find((i) => i.id === itemId);
-  const temVinculo = !!itemId || (criarTarefa && !!responsavel);
+  const temVinculo = !!itemId || !!projetoId || (criarTarefa && !!responsavel);
 
   function limparVinculo() {
     setVincular(false);
     setItemId("");
+    setProjetoId("");
+    setStatusProjeto("");
+    setRegistrarProjeto(true);
     setCriarTarefa(false);
     setPrazo("");
     setTituloTarefa("");
@@ -131,6 +146,13 @@ export function ChatJanela({
     startTransition(async () => {
       const res = temVinculo
         ? await enviarMensagemVinculada(conversaId, conteudo, {
+            projeto: projetoId
+              ? {
+                  id: projetoId,
+                  registrar: registrarProjeto,
+                  novoStatus: (statusProjeto || null) as "planejamento" | "em_andamento" | "concluido" | "cancelado" | null,
+                }
+              : null,
             itemId: itemId || null,
             tarefa: criarTarefa
               ? {
@@ -151,7 +173,13 @@ export function ChatJanela({
 
   // Quantas mensagens citam o mesmo vínculo (para recarregar os cartões).
   const versaoDe = (m: MensagemView) =>
-    mensagens.filter((x) => (m.tarefa_id ? x.tarefa_id === m.tarefa_id : x.estoque_item_id === m.estoque_item_id)).length;
+    mensagens.filter((x) =>
+      m.tarefa_id
+        ? x.tarefa_id === m.tarefa_id
+        : m.projeto_id
+          ? x.projeto_id === m.projeto_id
+          : x.estoque_item_id === m.estoque_item_id
+    ).length;
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -182,11 +210,12 @@ export function ChatJanela({
                     </p>
                   ) : null}
                   <p className="whitespace-pre-wrap break-words">{m.texto}</p>
-                  {m.tarefa_id || m.estoque_item_id ? (
+                  {m.tarefa_id || m.estoque_item_id || m.projeto_id ? (
                     <VinculoCard
                       conversaId={conversaId}
                       tarefaId={m.tarefa_id ?? null}
                       itemId={m.estoque_item_id ?? null}
+                      projetoId={m.projeto_id ?? null}
                       versao={versaoDe(m)}
                       nomes={nomes}
                       minha={minha}
@@ -224,6 +253,41 @@ export function ChatJanela({
                 ))}
               </Select>
             </label>
+
+            <label className="space-y-1">
+              <span className="text-xs font-medium text-muted-foreground">Projeto</span>
+              <Select value={projetoId} onChange={(e) => setProjetoId(e.target.value)} aria-label="Projeto">
+                <option value="">Nenhum</option>
+                {projetos.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nome}
+                  </option>
+                ))}
+              </Select>
+            </label>
+
+            {projetoId ? (
+              <div className="space-y-2 sm:col-span-2">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={registrarProjeto}
+                    onChange={(e) => setRegistrarProjeto(e.target.checked)}
+                    className="size-4 accent-primary"
+                  />
+                  Registrar a mensagem como atualização do projeto
+                </label>
+                {registrarProjeto && podeCriarTarefa ? (
+                  <Select value={statusProjeto} onChange={(e) => setStatusProjeto(e.target.value)} aria-label="Situação do projeto">
+                    <option value="">Manter a situação atual do projeto</option>
+                    <option value="planejamento">Mudar para: Planejamento</option>
+                    <option value="em_andamento">Mudar para: Em andamento</option>
+                    <option value="concluido">Mudar para: Concluído</option>
+                    <option value="cancelado">Mudar para: Cancelado</option>
+                  </Select>
+                ) : null}
+              </div>
+            ) : null}
 
             {podeCriarTarefa ? (
               <div className="space-y-2 sm:col-span-2">

@@ -18,6 +18,7 @@ import {
   listarEtapas,
   listarDocumentos,
   listarComparativos,
+  listarAtualizacoes,
 } from "@/features/projetos/data";
 import { mapaDePerfis } from "@/features/chamados/data";
 import { listarColaboradores } from "@/features/desenvolvimento/data";
@@ -28,6 +29,7 @@ import {
   removerDocumento,
   adicionarComparativo,
   removerComparativo,
+  adicionarAtualizacaoProjeto,
 } from "@/features/projetos/actions";
 import { EtapaStatusControl } from "@/features/projetos/etapa-status-control";
 import { ProjetoStatusControl } from "@/features/projetos/projeto-status-control";
@@ -49,7 +51,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DateInputBR } from "@/components/ui/date-input-br";
 import { FileInputBR } from "@/components/ui/file-input-br";
-import { formatarData, formatarMoeda, cn } from "@/lib/utils";
+import { formatarData, formatarDataHora, formatarMoeda, cn } from "@/lib/utils";
 import { PROJETO_STATUS_META } from "@/types";
 
 export const dynamic = "force-dynamic";
@@ -65,10 +67,11 @@ export default async function ProjetoDetalhePage({
   if (!projeto) notFound();
 
   const lideranca = ehLideranca(usuario.role);
-  const [etapas, documentos, comparativos, perfis, pessoas] = await Promise.all([
+  const [etapas, documentos, comparativos, atualizacoes, perfis, pessoas] = await Promise.all([
     listarEtapas(id),
     listarDocumentos(id),
     listarComparativos(id),
+    listarAtualizacoes(id),
     mapaDePerfis(),
     lideranca ? listarColaboradores() : Promise.resolve([]),
   ]);
@@ -117,6 +120,7 @@ export default async function ProjetoDetalhePage({
               <TabsTrigger value="etapas">Etapas</TabsTrigger>
               <TabsTrigger value="documentos">Documentos</TabsTrigger>
               <TabsTrigger value="comparativos">Comparativos</TabsTrigger>
+              <TabsTrigger value="atualizacoes">Atualizações</TabsTrigger>
             </TabsList>
 
             <TabsContent value="etapas">
@@ -299,6 +303,37 @@ export default async function ProjetoDetalhePage({
                       </div>
                     </form>
                   ) : null}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Atualizações */}
+            <TabsContent value="atualizacoes">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Atualizações do projeto</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <form action={adicionarAtualizacaoProjeto.bind(null, id)} className="flex gap-2">
+                    <Input name="texto" placeholder="Registrar uma atualização…" required maxLength={2000} />
+                    <Button type="submit">Registrar</Button>
+                  </form>
+                  {atualizacoes.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Nenhuma atualização ainda.</p>
+                  ) : (
+                    <ul className="space-y-3">
+                      {atualizacoes.map((a) => (
+                        <li key={a.id} className="rounded-lg border p-3 text-sm">
+                          <p className="whitespace-pre-wrap">{a.texto}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {(a.autor_id ? perfis.get(a.autor_id)?.nome : null) ?? "—"} · {formatarDataHora(a.created_at)}
+                            {a.origem === "chat" ? " · pelo chat" : ""}
+                            {a.status_novo ? " · situação: " + (PROJETO_STATUS_META[a.status_novo as keyof typeof PROJETO_STATUS_META]?.label ?? a.status_novo) : ""}
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

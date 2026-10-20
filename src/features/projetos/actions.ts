@@ -226,3 +226,16 @@ export async function removerComparativo(
   await supabase.from("projeto_comparativos").delete().eq("id", compId);
   revalidatePath(`/projetos/${projetoId}`);
 }
+
+/** Registra uma atualização na linha do tempo do projeto (qualquer pessoa logada). */
+export async function adicionarAtualizacaoProjeto(projetoId: string, formData: FormData) {
+  const supabase = await criarClienteServidor();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+  const texto = String(formData.get("texto") ?? "").trim().slice(0, 2000);
+  if (!texto) return;
+  await supabase.from("projeto_atualizacoes").insert({ projeto_id: projetoId, autor_id: user.id, texto, origem: "manual" });
+  revalidatePath(`/projetos/${projetoId}`);
+}

@@ -62,3 +62,24 @@ export async function listarComparativos(
   return (data as ProjetoComparativo[] | null) ?? [];
 }
 
+
+export interface AtualizacaoProjeto {
+  id: string;
+  autor_id: string | null;
+  texto: string;
+  status_novo: string | null;
+  origem: string;
+  created_at: string;
+}
+
+/** Linha do tempo de atualizações (vazia se a migration 0050 ainda não foi aplicada). */
+export async function listarAtualizacoes(projetoId: string): Promise<AtualizacaoProjeto[]> {
+  const supabase = await criarClienteServidor();
+  const { data } = await supabase
+    .from("projeto_atualizacoes")
+    .select("id, autor_id, texto, status_novo, origem, created_at")
+    .eq("projeto_id", projetoId)
+    .order("created_at", { ascending: false })
+    .limit(200);
+  return (data as AtualizacaoProjeto[] | null) ?? [];
+}

@@ -6,7 +6,7 @@ import { criarClienteServidor } from "@/lib/supabase/server";
 import { obterDiretorio } from "@/features/equipe/diretorio";
 import { abrirConversaDireta } from "@/features/chat/actions";
 import { CONVERSA_GERAL } from "@/features/chat/constantes";
-import { ChatJanela, type MensagemView } from "@/features/chat/chat-janela";
+import { ChatJanela, type MensagemView, type ProjetoOpcao } from "@/features/chat/chat-janela";
 import type { ItemEstoqueChat } from "@/features/chat/vinculo-tipos";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card } from "@/components/ui/card";
@@ -87,6 +87,15 @@ export default async function ChatPage({
     .order("nome");
   const itens = (itensData as ItemEstoqueChat[] | null) ?? [];
 
+  // Projetos que podem ser citados (os já encerrados ficam de fora da lista).
+  const { data: projetosData } = await supabase
+    .from("projetos")
+    .select("id, nome, status")
+    .not("status", "in", "(concluido,cancelado)")
+    .order("nome")
+    .limit(300);
+  const projetos = (projetosData as ProjetoOpcao[] | null) ?? [];
+
   return (
     <div className="space-y-4">
       <PageHeader
@@ -163,6 +172,7 @@ export default async function ChatPage({
               mensagensIniciais={mensagens}
               nomes={nomes}
               itens={itens}
+              projetos={projetos}
               pessoas={pessoas}
               podeCriarTarefa={ehLideranca(usuario.role)}
               outroId={ehGeral ? null : diretas.get(conversaId) ?? null}

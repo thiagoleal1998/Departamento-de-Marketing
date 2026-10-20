@@ -5,11 +5,21 @@ import { criarClienteServidor } from "@/lib/supabase/server";
 import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { ehLideranca } from "@/lib/permissions";
 import { avisarNovaMensagem } from "./aviso";
-import type { DadosVinculo, ItemEstoqueChat, NovoVinculo, TarefaChat } from "./vinculo-tipos";
+import {
+  STATUS_PROJETO_ROTULO,
+  type DadosVinculo,
+  type ItemEstoqueChat,
+  type NovoVinculo,
+  type ProjetoChat,
+  type TarefaChat,
+} from "./vinculo-tipos";
+
+const STATUS_PROJETO = ["planejamento", "em_andamento", "concluido", "cancelado"];
 
 type Resultado = { ok?: boolean; erro?: string };
 
 const MIGRACAO = "O recurso de vínculos ainda não foi ativado no banco (migration 0049).";
+const MIGRACAO_PROJETOS = "As atualizações de projeto ainda não foram ativadas no banco (migration 0050).";
 const colunaAusente = (c?: string) => c === "42703" || c === "PGRST204" || c === "42P01" || c === "PGRST205";
 
 async function usuarioAtual() {
@@ -75,14 +85,41 @@ export async function enviarMensagemVinculada(
     }
   }
 
+  let projetoId: string | null = null;
+  if (vinculo.projeto) {
+    const { data: pj } = await supabase.from("projetos").select("id").eq("id", vinculo.projeto.id).maybeSingle();
+    if (!pj) return { erro: "Projeto não encontrado." };
+    projetoId = vinculo.projeto.id;
+    if (vinculo.projeto.registrar) {
+      const novo =
+        ehLideranca(papel as never) && vinculo.projeto.novoStatus && STATUS_PROJETO.includes(vinculo.projeto.novoStatus)
+          ? vinculo.projeto.novoStatus
+          : null;
+      const { error: errAt } = await supabase
+        .from("projeto_atualizacoes")
+        .insert({ projeto_id: projetoId, autor_id: user.id, texto: limpo, status_novo: novo, origem: "chat" });
+      if (errAt) {
+        return { erro: colunaAusente(errAt.code) ? MIGRACAO_PROJETOS : "Não foi possível registrar a atualização do projeto." };
+      }
+      if (novo) await supabase.from("projetos").update({ status: novo }).eq("id", projetoId);
+      revalidatePath(`/projetos/${projetoId}`);
+      revalidatePath("/projetos");
+    }
+  }
+
   const { error } = await supabase.from("chat_mensagens").insert({
     conversa_id: conversaId,
     autor_id: user.id,
     texto: limpo,
     tarefa_id: tarefaId,
     estoque_item_id: vinculo.itemId,
+    ...(projetoId ? { projeto_id: projetoId } : {}),
   });
-  if (error) return { erro: colunaAusente(error.code) ? MIGRACAO : "Não foi possível enviar. Tente novamente." };
+  if (error) {
+    return {
+      erro: colunaAusente(error.code) ? (projetoId ? MIGRACAO_PROJETOS : MIGRACAO) : "Não foi possível enviar. Tente novamente.",
+    };
+  }
 
   await avisarNovaMensagem(supabase, user.id, conversaId, limpo);
   revalidatePath("/operacional");
@@ -90,9 +127,13 @@ export async function enviarMensagemVinculada(
 }
 
 /** Dados atuais da tarefa e do item vinculados a uma mensagem. */
-export async function dadosVinculo(tarefaId: string | null, itemId: string | null): Promise<DadosVinculo> {
+export async function dadosVinculo(
+  tarefaId: string | null,
+  itemId: string | null,
+  projetoId: string | null = null
+): Promise<DadosVinculo> {
   const { supabase, user, papel } = await usuarioAtual();
-  if (!user) return { tarefa: null, item: null, podeResponder: false };
+  if (!user) return { tarefa: null, item: null, projeto: null, podeMudarStatusProjeto: false, podeResponder: false };
 
   let tarefa: TarefaChat | null = null;
   if (tarefaId) {
@@ -113,8 +154,30 @@ export async function dadosVinculo(tarefaId: string | null, itemId: string | nul
       .maybeSingle();
     item = (data as ItemEstoqueChat | null) ?? null;
   }
+  let projeto: ProjetoChat | null = null;
+  if (projetoId) {
+    const { data } = await supabase
+      .from("projetos")
+      .select("id, nome, status, responsavel_id")
+      .eq("id", projetoId)
+      .maybeSingle();
+    if (data) {
+      const { data: ult } = await supabase
+        .from("projeto_atualizacoes")
+        .select("texto, created_at, autor_id")
+        .eq("projeto_id", projetoId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const u = ult as { texto: string; created_at: string; autor_id: string | null } | null;
+      projeto = {
+        ...(data as Omit<ProjetoChat, "ultima">),
+        ultima: u ? { texto: u.texto, quando: u.created_at, autor_id: u.autor_id } : null,
+      };
+    }
+  }
   const podeResponder = !!tarefa && (tarefa.responsavel_id === user.id || ehLideranca(papel as never));
-  return { tarefa, item, podeResponder };
+  return { tarefa, item, projeto, podeMudarStatusProjeto: ehLideranca(papel as never), podeResponder };
 }
 
 /**
@@ -179,5 +242,46 @@ export async function responderVinculo(
   await avisarNovaMensagem(supabase, user.id, conversaId, mensagem);
   revalidatePath("/estoque");
   revalidatePath("/operacional");
+  return { ok: true };
+}
+
+/** Registra uma atualização num projeto (e, se for liderança, muda a situação) e avisa na conversa. */
+export async function atualizarProjetoPeloChat(
+  conversaId: string,
+  projetoId: string,
+  texto: string,
+  novoStatus: string | null
+): Promise<Resultado> {
+  const { supabase, user, papel } = await usuarioAtual();
+  if (!user) return { erro: "Sessão expirada. Entre novamente." };
+  const limpo = texto.trim();
+  if (!limpo) return { erro: "Escreva a atualização." };
+
+  const { data: pj } = await supabase.from("projetos").select("id, nome").eq("id", projetoId).maybeSingle();
+  if (!pj) return { erro: "Projeto não encontrado." };
+  const nome = (pj as { nome: string }).nome;
+
+  const status = ehLideranca(papel as never) && novoStatus && STATUS_PROJETO.includes(novoStatus) ? novoStatus : null;
+  const { error } = await supabase
+    .from("projeto_atualizacoes")
+    .insert({ projeto_id: projetoId, autor_id: user.id, texto: limpo.slice(0, 2000), status_novo: status, origem: "chat" });
+  if (error) return { erro: colunaAusente(error.code) ? MIGRACAO_PROJETOS : "Não foi possível registrar a atualização." };
+  if (status) await supabase.from("projetos").update({ status }).eq("id", projetoId);
+
+  const rotulo = status ? STATUS_PROJETO_ROTULO[status as keyof typeof STATUS_PROJETO_ROTULO] : null;
+  const mensagem = `🗂️ Atualização — ${nome}: ${limpo}${rotulo ? `\nSituação: ${rotulo}` : ""}`;
+  const { error: errMsg } = await supabase.from("chat_mensagens").insert({
+    conversa_id: conversaId,
+    autor_id: user.id,
+    texto: mensagem.slice(0, 2000),
+    projeto_id: projetoId,
+  });
+  if (errMsg) {
+    return { erro: colunaAusente(errMsg.code) ? MIGRACAO_PROJETOS : "Atualização salva, mas não foi possível avisar na conversa." };
+  }
+
+  await avisarNovaMensagem(supabase, user.id, conversaId, mensagem);
+  revalidatePath(`/projetos/${projetoId}`);
+  revalidatePath("/projetos");
   return { ok: true };
 }
