@@ -6,7 +6,7 @@ import { criarClienteBrowser } from "@/lib/supabase/client";
 import { enviarMensagem, marcarConversaLida } from "./actions";
 import { enviarMensagemVinculada } from "./vinculos-actions";
 import { VinculoCard } from "./vinculo-card";
-import type { ItemEstoqueChat } from "./vinculo-tipos";
+import { refsDe, type ItemEstoqueChat, type RefItem } from "./vinculo-tipos";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,7 @@ export interface MensagemView {
   created_at: string;
   tarefa_id?: string | null;
   estoque_item_id?: string | null;
+  estoque_itens?: RefItem[] | null;
   projeto_id?: string | null;
 }
 
@@ -65,7 +66,8 @@ export function ChatJanela({
 
   // Vínculos (estoque / tarefa) da próxima mensagem.
   const [vincular, setVincular] = useState(false);
-  const [itemId, setItemId] = useState("");
+  // Itens do estoque escolhidos (vários), cada um com a quantidade pedida.
+  const [itensSel, setItensSel] = useState<{ id: string; qtd: string }[]>([]);
   const [projetoId, setProjetoId] = useState("");
   const [registrarProjeto, setRegistrarProjeto] = useState(true);
   const [statusProjeto, setStatusProjeto] = useState("");
@@ -120,12 +122,18 @@ export function ChatJanela({
     fimRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [mensagens]);
 
-  const itemEscolhido = itens.find((i) => i.id === itemId);
-  const temVinculo = !!itemId || !!projetoId || (criarTarefa && !!responsavel);
+  const nomeItem = (id: string) => itens.find((i) => i.id === id)?.nome ?? "item";
+  const sugestaoTitulo =
+    itensSel.length === 1
+      ? `Repor: ${nomeItem(itensSel[0].id)}`
+      : itensSel.length > 1
+        ? `Repor ${itensSel.length} itens do estoque`
+        : "";
+  const temVinculo = itensSel.length > 0 || !!projetoId || (criarTarefa && !!responsavel);
 
   function limparVinculo() {
     setVincular(false);
-    setItemId("");
+    setItensSel([]);
     setProjetoId("");
     setStatusProjeto("");
     setRegistrarProjeto(true);
@@ -153,10 +161,10 @@ export function ChatJanela({
                   novoStatus: (statusProjeto || null) as "planejamento" | "em_andamento" | "concluido" | "cancelado" | null,
                 }
               : null,
-            itemId: itemId || null,
+            itens: itensSel.map((i) => ({ id: i.id, qtd: Number(i.qtd) > 0 ? Math.floor(Number(i.qtd)) : null })),
             tarefa: criarTarefa
               ? {
-                  titulo: tituloTarefa || (itemEscolhido ? `Repor: ${itemEscolhido.nome}` : conteudo.slice(0, 80)),
+                  titulo: tituloTarefa || sugestaoTitulo || conteudo.slice(0, 80),
                   responsavelId: responsavel,
                   prazo: prazo || null,
                 }
@@ -178,7 +186,7 @@ export function ChatJanela({
         ? x.tarefa_id === m.tarefa_id
         : m.projeto_id
           ? x.projeto_id === m.projeto_id
-          : x.estoque_item_id === m.estoque_item_id
+          : (x.estoque_item_id ?? "") === (m.estoque_item_id ?? "")
     ).length;
 
   return (
@@ -210,11 +218,11 @@ export function ChatJanela({
                     </p>
                   ) : null}
                   <p className="whitespace-pre-wrap break-words">{m.texto}</p>
-                  {m.tarefa_id || m.estoque_item_id || m.projeto_id ? (
+                  {m.tarefa_id || m.estoque_item_id || m.projeto_id || (m.estoque_itens?.length ?? 0) > 0 ? (
                     <VinculoCard
                       conversaId={conversaId}
                       tarefaId={m.tarefa_id ?? null}
-                      itemId={m.estoque_item_id ?? null}
+                      itens={refsDe(m.estoque_itens, m.estoque_item_id)}
                       projetoId={m.projeto_id ?? null}
                       versao={versaoDe(m)}
                       nomes={nomes}
@@ -242,17 +250,57 @@ export function ChatJanela({
 
         {vincular ? (
           <div className="mb-2 grid gap-2 rounded-lg border bg-muted/40 p-3 text-sm sm:grid-cols-2">
-            <label className="space-y-1">
-              <span className="text-xs font-medium text-muted-foreground">Item do estoque</span>
-              <Select value={itemId} onChange={(e) => setItemId(e.target.value)} aria-label="Item do estoque">
-                <option value="">Nenhum</option>
-                {itens.map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.nome} (estoque: {i.quantidade})
-                  </option>
-                ))}
+            <div className="space-y-1.5 sm:col-span-2">
+              <span className="text-xs font-medium text-muted-foreground">Itens do estoque (pode adicionar vários)</span>
+              <Select
+                value=""
+                onChange={(e) => {
+                  const id = e.target.value;
+                  if (id && !itensSel.some((x) => x.id === id)) setItensSel((l) => [...l, { id, qtd: "" }]);
+                }}
+                aria-label="Adicionar item do estoque"
+              >
+                <option value="">Adicionar item…</option>
+                {itens
+                  .filter((i) => !itensSel.some((x) => x.id === i.id))
+                  .map((i) => (
+                    <option key={i.id} value={i.id}>
+                      {i.nome} (estoque: {i.quantidade})
+                    </option>
+                  ))}
               </Select>
-            </label>
+              {itensSel.length > 0 ? (
+                <ul className="space-y-1">
+                  {itensSel.map((s) => {
+                    const it = itens.find((i) => i.id === s.id);
+                    return (
+                      <li key={s.id} className="flex items-center gap-2 rounded-md border bg-background px-2 py-1">
+                        <span className="min-w-0 flex-1 truncate">
+                          {it?.nome ?? "Item"} <span className="text-xs text-muted-foreground">(estoque: {it?.quantidade ?? "—"})</span>
+                        </span>
+                        <Input
+                          type="number"
+                          min={1}
+                          value={s.qtd}
+                          onChange={(e) => setItensSel((l) => l.map((x) => (x.id === s.id ? { ...x, qtd: e.target.value } : x)))}
+                          placeholder="qtd"
+                          className="h-8 w-20"
+                          aria-label={"Quantidade pedida de " + (it?.nome ?? "item")}
+                        />
+                        <button
+                          type="button"
+                          aria-label={"Remover " + (it?.nome ?? "item")}
+                          onClick={() => setItensSel((l) => l.filter((x) => x.id !== s.id))}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          ✕
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : null}
+            </div>
 
             <label className="space-y-1">
               <span className="text-xs font-medium text-muted-foreground">Projeto</span>
@@ -316,7 +364,7 @@ export function ChatJanela({
                     <Input
                       value={tituloTarefa}
                       onChange={(e) => setTituloTarefa(e.target.value)}
-                      placeholder={itemEscolhido ? `Repor: ${itemEscolhido.nome}` : "Título da tarefa"}
+                      placeholder={sugestaoTitulo || "Título da tarefa"}
                       maxLength={200}
                       aria-label="Título da tarefa"
                     />

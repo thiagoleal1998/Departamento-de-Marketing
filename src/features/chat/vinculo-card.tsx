@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { CalendarClock, CheckCircle2, ClipboardList, FolderKanban, Loader2, Package, Pencil, Reply } from "lucide-react";
 import Link from "next/link";
 import { atualizarProjetoPeloChat, dadosVinculo, responderVinculo } from "./vinculos-actions";
-import { STATUS_PROJETO_ROTULO, STATUS_TAREFA_ROTULO, type DadosVinculo } from "./vinculo-tipos";
+import { STATUS_PROJETO_ROTULO, STATUS_TAREFA_ROTULO, type DadosVinculo, type RefItem } from "./vinculo-tipos";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,11 +13,11 @@ import { cn } from "@/lib/utils";
 const dataBr = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" }) : null;
 
-/** Cartão de tarefa/estoque dentro da mensagem, com resposta rápida (dar entrada e concluir). */
+/** Cartão de tarefa / itens do estoque / projeto dentro da mensagem, com resposta rápida. */
 export function VinculoCard({
   conversaId,
   tarefaId,
-  itemId,
+  itens: itensRef,
   projetoId,
   versao,
   nomes,
@@ -25,7 +25,7 @@ export function VinculoCard({
 }: {
   conversaId: string;
   tarefaId: string | null;
-  itemId: string | null;
+  itens: RefItem[];
   projetoId: string | null;
   /** Muda quando chega nova mensagem ligada ao mesmo vínculo (recarrega os dados). */
   versao: number;
@@ -35,7 +35,7 @@ export function VinculoCard({
   const [d, setD] = useState<DadosVinculo | null>(null);
   const [aberto, setAberto] = useState(false);
   const [texto, setTexto] = useState("");
-  const [entrada, setEntrada] = useState("");
+  const [entradas, setEntradas] = useState<Record<string, string>>({});
   const [concluir, setConcluir] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, startTransition] = useTransition();
@@ -43,18 +43,21 @@ export function VinculoCard({
   const [textoProj, setTextoProj] = useState("");
   const [statusProj, setStatusProj] = useState("");
 
+  const chaveItens = itensRef.map((r) => r.id + ":" + (r.qtd ?? "")).join(",");
+
   useEffect(() => {
     let vivo = true;
-    void dadosVinculo(tarefaId, itemId, projetoId).then((r) => vivo && setD(r));
+    void dadosVinculo(tarefaId, itensRef, projetoId).then((r) => vivo && setD(r));
     return () => {
       vivo = false;
     };
-  }, [tarefaId, itemId, projetoId, versao]);
+    // itensRef muda de identidade a cada render; a chave textual representa o conteúdo
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tarefaId, chaveItens, projetoId, versao]);
 
-  if (!d || (!d.tarefa && !d.item && !d.projeto)) return null;
-  const { tarefa, item, projeto } = d;
+  if (!d || (!d.tarefa && d.itens.length === 0 && !d.projeto)) return null;
+  const { tarefa, itens, projeto } = d;
   const concluida = tarefa?.status === "concluida";
-  const baixo = item ? item.quantidade <= item.estoque_minimo : false;
 
   function atualizarProjeto() {
     if (!projeto) return;
@@ -73,9 +76,9 @@ export function VinculoCard({
   function enviar() {
     setErro(null);
     startTransition(async () => {
-      const r = await responderVinculo(conversaId, tarefaId, itemId, {
+      const r = await responderVinculo(conversaId, tarefaId, itensRef, {
         texto,
-        entrada: Number(entrada) || 0,
+        entradas: Object.entries(entradas).map(([itemId, q]) => ({ itemId, qtd: Number(q) || 0 })),
         concluir: !!tarefa && concluir,
         andamento: false,
       });
@@ -83,7 +86,7 @@ export function VinculoCard({
       else {
         setAberto(false);
         setTexto("");
-        setEntrada("");
+        setEntradas({});
       }
     });
   }
@@ -170,14 +173,22 @@ export function VinculoCard({
         </div>
       ) : null}
 
-      {item ? (
-        <p className="flex items-center gap-1.5">
-          <Package className="size-3.5 shrink-0" />
-          <span className="font-medium">{item.nome}</span>
-          <span className={cn("rounded px-1.5 py-0.5", baixo ? "bg-red-100 text-red-800" : "bg-muted text-foreground")}>
-            estoque: {item.quantidade} (mín. {item.estoque_minimo})
-          </span>
-        </p>
+      {itens.length > 0 ? (
+        <ul className="space-y-1">
+          {itens.map((item) => {
+            const baixo = item.quantidade <= item.estoque_minimo;
+            return (
+              <li key={item.id} className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                <Package className="size-3.5 shrink-0" />
+                <span className="font-medium">{item.nome}</span>
+                {item.pedido ? <span className="rounded bg-primary/15 px-1.5 py-0.5">pedido: {item.pedido} un.</span> : null}
+                <span className={cn("rounded px-1.5 py-0.5", baixo ? "bg-red-100 text-red-800" : "bg-muted text-foreground")}>
+                  estoque: {item.quantidade} (mín. {item.estoque_minimo})
+                </span>
+              </li>
+            );
+          })}
+        </ul>
       ) : null}
 
       {d.podeResponder && !concluida ? (
@@ -191,20 +202,25 @@ export function VinculoCard({
               className="h-8 text-xs"
               aria-label="Resposta"
             />
-            {item ? (
-              <label className="flex items-center gap-2">
-                <span className="shrink-0">Entrada no estoque:</span>
-                <Input
-                  type="number"
-                  min={0}
-                  value={entrada}
-                  onChange={(e) => setEntrada(e.target.value)}
-                  placeholder="qtd"
-                  className="h-8 w-20 text-xs"
-                  aria-label="Quantidade que entrou no estoque"
-                />
-                <span className="text-muted-foreground">un.</span>
-              </label>
+            {itens.length > 0 ? (
+              <div className="space-y-1">
+                <p className="font-medium">Entrada no estoque (quantas chegaram de cada item)</p>
+                {itens.map((item) => (
+                  <label key={item.id} className="flex items-center gap-2">
+                    <span className="min-w-0 flex-1 truncate">{item.nome}</span>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={entradas[item.id] ?? ""}
+                      onChange={(e) => setEntradas((x) => ({ ...x, [item.id]: e.target.value }))}
+                      placeholder={item.pedido ? String(item.pedido) : "qtd"}
+                      className="h-8 w-20 text-xs"
+                      aria-label={`Quantidade que entrou de ${item.nome}`}
+                    />
+                    <span className="text-muted-foreground">un.</span>
+                  </label>
+                ))}
+              </div>
             ) : null}
             {tarefa ? (
               <label className="flex items-center gap-2">
@@ -212,7 +228,7 @@ export function VinculoCard({
                 Concluir a tarefa
               </label>
             ) : null}
-            {erro ? <p className="text-destructive">{erro}</p> : null}
+            {erro && !atualizando ? <p className="text-destructive">{erro}</p> : null}
             <div className="flex gap-2">
               <Button type="button" size="sm" onClick={enviar} disabled={pendente}>
                 {pendente ? <Loader2 className="size-3.5 animate-spin" /> : <CheckCircle2 className="size-3.5" />} Enviar
