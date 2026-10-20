@@ -5,6 +5,7 @@ import Link from "next/link";
 import { X, Loader2, Save, ExternalLink, Check } from "lucide-react";
 import { salvarTarefa } from "./actions";
 import { ConteudoCard } from "./conteudo-card";
+import { ItensEstoqueTarefa } from "./itens-estoque-tarefa";
 import type { TarefaView, PessoaOpcao } from "./kanban-tarefas";
 import { TAREFA_STATUS_META, type TarefaStatus } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -136,6 +137,8 @@ export function TarefaDetalhe({
         </div>
 
         <div className="space-y-6 p-5">
+          <ItensEstoqueTarefa tarefaId={tarefa.id} />
+
           {/* Propriedades */}
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">

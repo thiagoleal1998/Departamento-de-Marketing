@@ -49,6 +49,8 @@ export interface DadosVinculo {
   projeto: ProjetoChat | null;
   /** Só a liderança muda a situação do projeto. */
   podeMudarStatusProjeto: boolean;
+  /** Só o gerente renomeia itens do estoque. */
+  podeRenomearItens: boolean;
   /** Pode responder (dar baixa/concluir): responsável da tarefa ou liderança. */
   podeResponder: boolean;
 }

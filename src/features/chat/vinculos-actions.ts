@@ -163,7 +163,7 @@ export async function dadosVinculo(
   projetoId: string | null = null
 ): Promise<DadosVinculo> {
   const { supabase, user, papel } = await usuarioAtual();
-  if (!user) return { tarefa: null, itens: [], projeto: null, podeMudarStatusProjeto: false, podeResponder: false };
+  if (!user) return { tarefa: null, itens: [], projeto: null, podeMudarStatusProjeto: false, podeRenomearItens: false, podeResponder: false };
 
   let tarefa: TarefaChat | null = null;
   if (tarefaId) {
@@ -224,7 +224,7 @@ export async function dadosVinculo(
 
   const lider = ehLideranca(papel as never);
   const podeResponder = !!tarefa && (tarefa.responsavel_id === user.id || lider);
-  return { tarefa, itens, projeto, podeMudarStatusProjeto: lider, podeResponder };
+  return { tarefa, itens, projeto, podeMudarStatusProjeto: lider, podeRenomearItens: papel === "gerente", podeResponder };
 }
 
 /**

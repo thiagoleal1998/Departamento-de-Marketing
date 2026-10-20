@@ -6,6 +6,7 @@ import Link from "next/link";
 import { atualizarProjetoPeloChat, dadosVinculo, responderVinculo } from "./vinculos-actions";
 import { STATUS_PROJETO_ROTULO, STATUS_TAREFA_ROTULO, type DadosVinculo, type RefItem } from "./vinculo-tipos";
 import { Select } from "@/components/ui/select";
+import { NomeItemEditavel } from "@/features/estoque/nome-item-editavel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,7 @@ export function VinculoCard({
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, startTransition] = useTransition();
   const [atualizando, setAtualizando] = useState(false);
+  const [recarga, setRecarga] = useState(0);
   const [textoProj, setTextoProj] = useState("");
   const [statusProj, setStatusProj] = useState("");
 
@@ -53,7 +55,7 @@ export function VinculoCard({
     };
     // itensRef muda de identidade a cada render; a chave textual representa o conteúdo
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tarefaId, chaveItens, projetoId, versao]);
+  }, [tarefaId, chaveItens, projetoId, versao, recarga]);
 
   if (!d || (!d.tarefa && d.itens.length === 0 && !d.projeto)) return null;
   const { tarefa, itens, projeto } = d;
@@ -180,7 +182,12 @@ export function VinculoCard({
             return (
               <li key={item.id} className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
                 <Package className="size-3.5 shrink-0" />
-                <span className="font-medium">{item.nome}</span>
+                <NomeItemEditavel
+                  itemId={item.id}
+                  nome={item.nome}
+                  podeRenomear={d.podeRenomearItens}
+                  aoRenomear={() => setRecarga((n) => n + 1)}
+                />
                 {item.pedido ? <span className="rounded bg-primary/15 px-1.5 py-0.5">pedido: {item.pedido} un.</span> : null}
                 <span
                   className={cn(
