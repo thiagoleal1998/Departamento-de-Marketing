@@ -264,6 +264,7 @@ export default async function ComercialPage({
               produtos={todos}
               lpsAtivasSemProduto={lpsAtivasSemProduto}
               totalLpsAtivas={lpsAtivas.length}
+              lpsIgnoradas={((lpData as LpSistema[] | null) ?? []).length - lps.length}
             />
           ) : (
             <>

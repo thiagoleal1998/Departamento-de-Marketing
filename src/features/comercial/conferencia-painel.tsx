@@ -101,10 +101,13 @@ export function ConferenciaPainel({
   produtos,
   lpsAtivasSemProduto,
   totalLpsAtivas,
+  lpsIgnoradas = 0,
 }: {
   produtos: ProdutoView[];
   lpsAtivasSemProduto: LpSistema[];
   totalLpsAtivas: number;
+  /** LPs do grupo antigas, fora da conferência. */
+  lpsIgnoradas?: number;
 }) {
   const nasAtivas = produtos.filter((p) => !/inativ/i.test(p.secao));
   const comLpAtiva = produtos.filter((p) => p.conferencia.situacao === "ativa");
@@ -117,7 +120,7 @@ export function ConferenciaPainel({
       <p className="text-sm text-muted-foreground">
         O Comercial só considera um produto realmente ativo quando a landing page correspondente está com status de
         patrocínio <strong>Ativo</strong> em Operacional &gt; Landing Pages. A correspondência é feita pelo link da LP
-        e, na falta dele, pelo nome. As LPs do grupo &ldquo;antigas&rdquo; ficam fora da conferência.
+        e, na falta dele, pelo nome. As LPs do grupo &ldquo;antigas&rdquo; ficam fora da conferência{lpsIgnoradas > 0 ? " (" + lpsIgnoradas + " LPs ignoradas)" : ""}.
       </p>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
