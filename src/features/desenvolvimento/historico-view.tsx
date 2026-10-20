@@ -52,7 +52,9 @@ export function HistoricoView({
                   className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0">
-                    <p className="text-sm font-medium">{p.descricao}</p>
+                    <Link href={`/desenvolvimento/plano/${p.id}`} className="text-sm font-medium hover:underline">
+                      {p.titulo?.trim() || p.descricao}
+                    </Link>
                     {p.resultado_esperado ? (
                       <p className="text-xs text-muted-foreground">
                         Resultado esperado: {p.resultado_esperado}

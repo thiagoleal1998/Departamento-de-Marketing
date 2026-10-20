@@ -188,6 +188,11 @@ export interface PlanoAcao {
   prazo: string | null;
   status: PlanoAcaoStatus;
   proxima_conversa: string | null;
+  titulo?: string | null;
+  objetivos?: unknown[];
+  checklist?: unknown[];
+  anexos?: unknown[];
+  proficiencia?: unknown[];
   created_at: string;
 }
 

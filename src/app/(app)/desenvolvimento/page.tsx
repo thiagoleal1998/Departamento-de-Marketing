@@ -168,7 +168,9 @@ export default async function DesenvolvimentoPage() {
                 <Card key={p.id}>
                   <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium">{p.descricao}</p>
+                      <Link href={`/desenvolvimento/plano/${p.id}`} className="text-sm font-medium hover:underline">
+                        {p.titulo?.trim() || p.descricao}
+                      </Link>
                       <p className="text-xs text-muted-foreground">
                         {nomePorId.get(p.colaborador_id) ?? "—"}
                         {p.prazo ? ` · prazo ${formatarData(p.prazo)}` : ""}
