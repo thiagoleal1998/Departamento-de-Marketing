@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CheckCircle2, Loader2, Plus, Save, Trash2 } from "lucide-react";
 import {
   adicionarItem,
+  atualizarDataReuniao,
   concluirReuniao,
   removerItem,
   salvarItem,
@@ -206,12 +207,18 @@ function ItemEditor({
 export function EditorReuniao({
   reuniaoId,
   editavel,
+  podeConcluir,
+  data,
   itens,
   pessoas,
   presencas: presencasIniciais,
 }: {
   reuniaoId: string;
   editavel: boolean;
+  /** Reunião em andamento: mostra "Concluir reunião". */
+  podeConcluir: boolean;
+  /** Data da reunião (AAAA-MM-DD). */
+  data: string;
   itens: ItemAta[];
   pessoas: PessoaOpcao[];
   presencas: { nome: string; presenca: string; obs: string }[];
@@ -219,8 +226,18 @@ export function EditorReuniao({
   const router = useRouter();
   const [presencas, setPresencas] = useState(presencasIniciais);
   const [novo, setNovo] = useState("");
+  const [dataEdit, setDataEdit] = useState(data);
   const [msg, setMsg] = useState<string | null>(null);
   const [pendente, start] = useTransition();
+
+  function salvarData() {
+    setMsg(null);
+    start(async () => {
+      const r = await atualizarDataReuniao(reuniaoId, dataEdit);
+      setMsg(r.erro ?? "Data alterada.");
+      if (!r.erro) router.refresh();
+    });
+  }
 
   function salvarPresenca() {
     setMsg(null);
@@ -259,6 +276,21 @@ export function EditorReuniao({
 
   return (
     <div className="space-y-6">
+      {editavel ? (
+        <Card>
+          <CardContent className="flex flex-wrap items-end gap-3 p-4">
+            <div className="space-y-1">
+              <Label htmlFor="data-reuniao">Data da reunião</Label>
+              <Input id="data-reuniao" type="date" value={dataEdit} onChange={(e) => setDataEdit(e.target.value)} className="h-9 w-44" />
+            </div>
+            <Button type="button" size="sm" variant="outline" onClick={salvarData} disabled={pendente || dataEdit === data || !dataEdit}>
+              Salvar data
+            </Button>
+            {msg ? <span className="text-sm text-muted-foreground">{msg}</span> : null}
+          </CardContent>
+        </Card>
+      ) : null}
+
       <Card>
         <CardContent className="space-y-3 p-4">
           <h2 className="font-semibold">Lista de presença</h2>
@@ -326,7 +358,7 @@ export function EditorReuniao({
         ) : null}
       </section>
 
-      {editavel ? (
+      {editavel && podeConcluir ? (
         <div className="flex flex-wrap items-center justify-end gap-3 border-t pt-4">
           {msg ? <span className="text-sm text-muted-foreground">{msg}</span> : null}
           <Button type="button" onClick={concluir} disabled={pendente}>

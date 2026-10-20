@@ -126,7 +126,7 @@ export async function criarReuniao(formData: FormData) {
   }
 
   revalidatePath("/atas");
-  redirect(`/atas/${nova.id}`);
+  redirect(`/atas/${nova.id}?editar=1`);
 }
 
 export interface DadosItem {
@@ -145,9 +145,6 @@ export interface DadosItem {
 export async function salvarItem(itemId: string, reuniaoId: string, d: DadosItem): Promise<Resultado> {
   const { supabase, erro } = await exigirLideranca();
   if (erro) return { erro };
-  if (!(await reuniaoAberta(supabase, reuniaoId))) {
-    return { erro: "Esta reunião já foi concluída." };
-  }
   const titulo = d.titulo.trim();
   if (!titulo) return { erro: "O item precisa de um título." };
   if (!STATUS.includes(d.status)) return { erro: "Status inválido." };
@@ -175,14 +172,15 @@ export async function salvarItem(itemId: string, reuniaoId: string, d: DadosItem
     ({ error } = await supabase.from("reuniao_itens").update(base).eq("id", itemId));
   }
   if (error) return { erro: "Não foi possível salvar. Tente novamente." };
+  await refletirNaTarefa(supabase, itemId, reuniaoId);
   revalidatePath(`/atas/${reuniaoId}`);
+  revalidatePath("/atas");
   return { ok: true };
 }
 
 export async function adicionarItem(reuniaoId: string, titulo: string): Promise<Resultado> {
   const { supabase, erro } = await exigirLideranca();
   if (erro) return { erro };
-  if (!(await reuniaoAberta(supabase, reuniaoId))) return { erro: "Esta reunião já foi concluída." };
   const t = titulo.trim().slice(0, 300);
   if (!t) return { erro: "Informe o título do item." };
   const { data: ult } = await supabase
@@ -209,10 +207,10 @@ export async function adicionarItem(reuniaoId: string, titulo: string): Promise<
 export async function removerItem(itemId: string, reuniaoId: string): Promise<Resultado> {
   const { supabase, erro } = await exigirLideranca();
   if (erro) return { erro };
-  if (!(await reuniaoAberta(supabase, reuniaoId))) return { erro: "Esta reunião já foi concluída." };
   const { error } = await supabase.from("reuniao_itens").delete().eq("id", itemId);
   if (error) return { erro: "Não foi possível remover." };
   revalidatePath(`/atas/${reuniaoId}`);
+  revalidatePath("/atas");
   return { ok: true };
 }
 
@@ -222,14 +220,65 @@ export async function salvarPresencas(
 ): Promise<Resultado> {
   const { supabase, erro } = await exigirLideranca();
   if (erro) return { erro };
-  if (!(await reuniaoAberta(supabase, reuniaoId))) return { erro: "Esta reunião já foi concluída." };
   const limpas = presencas
     .slice(0, 30)
     .map((p) => ({ nome: p.nome.slice(0, 80), presenca: p.presenca.slice(0, 30), obs: p.obs.slice(0, 200) }));
   const { error } = await supabase.from("reunioes").update({ presencas: limpas }).eq("id", reuniaoId);
   if (error) return { erro: "Não foi possível salvar a presença." };
   revalidatePath(`/atas/${reuniaoId}`);
+  revalidatePath("/atas");
   return { ok: true };
+}
+
+/** Corrige a data da reunião (cada data só pode ter uma reunião). */
+export async function atualizarDataReuniao(reuniaoId: string, data: string): Promise<Resultado> {
+  const { supabase, erro } = await exigirLideranca();
+  if (erro) return { erro };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return { erro: "Data inválida." };
+  const { data: outra } = await supabase.from("reunioes").select("id").eq("data", data).neq("id", reuniaoId).maybeSingle();
+  if (outra) return { erro: "Já existe uma reunião nessa data." };
+  const { error } = await supabase.from("reunioes").update({ data }).eq("id", reuniaoId);
+  if (error) return { erro: "Não foi possível alterar a data." };
+  revalidatePath(`/atas/${reuniaoId}`);
+  revalidatePath("/atas");
+  return { ok: true };
+}
+
+/**
+ * Editar um item da ata mais recente (já concluída) mantém a tarefa do kanban em dia.
+ * Atas antigas só mudam o histórico.
+ */
+async function refletirNaTarefa(
+  supabase: Awaited<ReturnType<typeof criarClienteServidor>>,
+  itemId: string,
+  reuniaoId: string
+) {
+  try {
+    const { data: reu } = await supabase.from("reunioes").select("estado").eq("id", reuniaoId).maybeSingle();
+    if (!reu || reu.estado === "em_andamento") return; // em andamento: vira tarefa ao concluir
+    const { data: ultima } = await supabase.from("reunioes").select("id").order("data", { ascending: false }).limit(1).maybeSingle();
+    if (ultima?.id !== reuniaoId) return;
+    const { data: it } = await supabase.from("reuniao_itens").select("*").eq("id", itemId).maybeSingle();
+    if (!it) return;
+    const { data: t } = await supabase.from("tarefas").select("id").eq("ata_serie", it.serie).maybeSingle();
+    if (!t) return;
+    const descricao =
+      [it.detalhamento, it.plano_acao ? `Plano de ação: ${it.plano_acao}` : null].filter(Boolean).join("\n\n") || null;
+    await supabase
+      .from("tarefas")
+      .update({
+        titulo: it.titulo,
+        descricao,
+        status: itemParaTarefa(it.status),
+        responsavel_id: it.responsavel_id,
+        prazo: it.prazo,
+        prioridade: it.prioridade,
+        link: it.link,
+      })
+      .eq("id", t.id);
+  } catch {
+    // a ata já foi salva; a sincronização com o kanban é complementar
+  }
 }
 
 /**

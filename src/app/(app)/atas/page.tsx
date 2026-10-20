@@ -313,8 +313,8 @@ export default async function AtasPage({
                     >
                       <div className="flex items-center justify-between gap-2">
                         <h2 className="font-semibold">
-                          <Link href={`/atas/${r.id}`} className="hover:underline">
-                            {dataBR(r.data + "T12:00:00-03:00")}
+                          <Link href={`/atas/${r.id}`} className="hover:underline" title="Abrir a ata">
+                            {dataBR(r.data + "T12:00:00-03:00")} ↗
                           </Link>
                         </h2>
                         {vigente ? (
@@ -345,6 +345,12 @@ export default async function AtasPage({
                         />
                       ))}
                     </CardContent>
+                    <Link
+                      href={`/atas/${r.id}`}
+                      className="flex items-center justify-center gap-1.5 border-t bg-muted/40 px-4 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-accent"
+                    >
+                      Abrir ata completa →
+                    </Link>
                   </Card>
                 );
               })}
