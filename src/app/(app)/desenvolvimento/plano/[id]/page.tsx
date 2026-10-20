@@ -58,8 +58,16 @@ export default async function PlanoPage({ params }: { params: Promise<{ id: stri
     prazo: plano.prazo,
     proxima_conversa: plano.proxima_conversa,
     status: plano.status,
-    objetivos: (plano.objetivos as ObjetivoPlano[] | undefined) ?? [],
-    checklist: (plano.checklist as ItemChecklist[] | undefined) ?? [],
+    objetivos: ((plano.objetivos as ObjetivoPlano[] | undefined) ?? []).map((o) => ({
+      ...o,
+      nota: o.nota ?? null,
+      justificativa: o.justificativa ?? "",
+    })),
+    checklist: ((plano.checklist as ItemChecklist[] | undefined) ?? []).map((i) => ({
+      ...i,
+      nota: i.nota ?? null,
+      justificativa: i.justificativa ?? "",
+    })),
     anexos,
     proficiencia: (plano.proficiencia as Proficiencia[] | undefined) ?? [],
   };

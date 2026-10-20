@@ -30,12 +30,17 @@ export interface ObjetivoPlano {
   texto: string;
   prazo: string | null;
   feito: boolean;
+  /** Nota da liderança para esta etapa (0 a 10) e o porquê dela. */
+  nota: number | null;
+  justificativa: string;
 }
 
 export interface ItemChecklist {
   id: string;
   texto: string;
   feito: boolean;
+  nota: number | null;
+  justificativa: string;
 }
 
 export interface AnexoPlano {

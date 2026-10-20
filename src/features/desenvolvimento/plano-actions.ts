@@ -14,6 +14,8 @@ import {
 } from "./plano-tipos";
 
 const texto = (v: unknown, max = 5000) => String(v ?? "").slice(0, max);
+const notaOuNulo = (v: unknown) =>
+  v === null || v === undefined || v === "" ? null : Math.min(10, Math.max(0, Number(v) || 0));
 const dataOuNulo = (v: unknown) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v ?? "")) ? String(v) : null);
 
 /**
@@ -53,10 +55,18 @@ export async function salvarPlano(
           texto: texto(o.texto, 1000),
           prazo: dataOuNulo(o.prazo),
           feito: !!o.feito,
+          nota: notaOuNulo(o.nota),
+          justificativa: texto(o.justificativa, 2000),
         })),
       checklist: dados.checklist
         .filter((i) => i.texto.trim())
-        .map((i) => ({ id: texto(i.id, 40), texto: texto(i.texto, 500), feito: !!i.feito })),
+        .map((i) => ({
+          id: texto(i.id, 40),
+          texto: texto(i.texto, 500),
+          feito: !!i.feito,
+          nota: notaOuNulo(i.nota),
+          justificativa: texto(i.justificativa, 2000),
+        })),
       anexos: dados.anexos.slice(0, MAX_ANEXOS_PLANO).map((a) => ({
         caminho: texto(a.caminho, 300),
         nome: texto(a.nome, 200),
