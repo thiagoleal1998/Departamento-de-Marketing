@@ -78,11 +78,11 @@ export async function sincronizarDiscRh(): Promise<EstadoSync> {
     if (emails.length === 0) return { ok: true, novos: 0, atualizados: 0, pesquisas: pesquisas.length };
 
     const [{ data: existentes }, { data: usuarios }] = await Promise.all([
-      supabase.from("perfis_comportamentais").select("id, email, dados"),
+      supabase.from("perfis_comportamentais").select("id, email, dados, profile_id"),
       supabase.from("profiles").select("id, email"),
     ]);
     const linhas = new Map(
-      ((existentes as { id: string; email: string; dados: Record<string, unknown> }[] | null) ?? []).map(
+      ((existentes as { id: string; email: string; dados: Record<string, unknown>; profile_id: string | null }[] | null) ?? []).map(
         (r) => [r.email.trim().toLowerCase(), r]
       )
     );
@@ -108,6 +108,9 @@ export async function sincronizarDiscRh(): Promise<EstadoSync> {
         const { error } = await supabase
           .from("perfis_comportamentais")
           .update({
+            // Mantém o nome e o vínculo em dia (ex.: e-mail reaproveitado por outra pessoa).
+            ...(p.name?.trim() ? { nome: p.name.trim() } : {}),
+            ...(!existente.profile_id && idUsuario.get(email) ? { profile_id: idUsuario.get(email) } : {}),
             perfil_primario: perfil.primario,
             perfil_secundario: perfil.secundario,
             pesquisa,
