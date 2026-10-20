@@ -95,6 +95,25 @@ export function acharLps(
   return { achadas: [...achadas.values()], aproximado };
 }
 
+/**
+ * Produtos que a liderança pediu para tirar da lista de divergências da conferência
+ * (a situação da LP continua valendo; só deixam de aparecer como alerta).
+ */
+const SEM_ALERTA = new Set(
+  [
+    "Iberostar Selection Cancún",
+    "Iberostar Selection Paraíso Maya Suites",
+    "Iberostar Waves Dominicana",
+    "Iberostar Waves Punta Cana",
+    "Grand Palladium Costa Mujeres Resort & Spa",
+    "Grand Palladium Colonial Resort & Spa",
+    "Grand Palladium Punta Cana Resort & Spa",
+    "Ipioca Beach Resort",
+    "Mavsa Resort",
+    "Salinas Maragogi",
+  ].map(norm)
+);
+
 export function conferir(
   secao: string,
   nome: string,
@@ -120,6 +139,7 @@ export function conferir(
   let divergencia: ConferenciaProduto["divergencia"] = null;
   if (naPlanilha && situacao === "inativa") divergencia = "planilha_ativa_lp_inativa";
   else if (!naPlanilha && situacao === "ativa") divergencia = "planilha_inativa_lp_ativa";
+  if (SEM_ALERTA.has(norm(nome))) divergencia = null;
   return { situacao, lps: lista, aproximado, divergencia };
 }
 
