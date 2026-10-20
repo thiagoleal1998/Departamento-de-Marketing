@@ -6,6 +6,7 @@ import { ehLideranca } from "@/lib/permissions";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { obterPerfil } from "@/features/desenvolvimento/data";
+import { PerfilNoPlano } from "@/features/desenvolvimento/perfil-no-plano";
 import { PlanoEditor } from "@/features/desenvolvimento/plano-editor";
 import {
   BUCKET_PLANOS,
@@ -95,6 +96,8 @@ export default async function PlanoPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
       ) : null}
+
+      {lideranca ? <PerfilNoPlano colaboradorId={plano.colaborador_id} email={colaborador?.email ?? null} /> : null}
 
       <PlanoEditor planoId={plano.id} inicial={inicial} anexosVisiveis={visiveis} podeEditar={lideranca} />
     </div>
