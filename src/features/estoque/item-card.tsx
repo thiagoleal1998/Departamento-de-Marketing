@@ -9,9 +9,10 @@ import {
   Loader2,
   MapPin,
   Package,
+  Pencil,
   Trash2,
 } from "lucide-react";
-import { arquivarItemEstoque, registrarMovimento } from "./actions";
+import { arquivarItemEstoque, atualizarMinimoEstoque, registrarMovimento } from "./actions";
 import type { OpcaoVinculo } from "./data";
 import type { EstoqueItem } from "@/types/database";
 import { Card, CardContent } from "@/components/ui/card";
@@ -45,8 +46,20 @@ export function ItemCard({
   const [projeto, setProjeto] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, startTransition] = useTransition();
+  const [editandoMinimo, setEditandoMinimo] = useState(false);
+  const [minimo, setMinimo] = useState(String(item.estoque_minimo));
+  const [erroMinimo, setErroMinimo] = useState<string | null>(null);
 
   const baixo = item.quantidade <= item.estoque_minimo;
+
+  function salvarMinimo() {
+    setErroMinimo(null);
+    startTransition(async () => {
+      const res = await atualizarMinimoEstoque(item.id, parseInt(minimo, 10));
+      if (res.erro) setErroMinimo(res.erro);
+      else setEditandoMinimo(false);
+    });
+  }
 
   function confirmar() {
     if (!modo) return;
@@ -110,14 +123,52 @@ export function ItemCard({
                 <MapPin className="size-3" /> {item.local}
               </p>
             ) : null}
-            <p className="mt-1 text-xs text-muted-foreground">
-              Mínimo: {item.estoque_minimo}
+            <div className="mt-1 flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+              {editandoMinimo ? (
+                <span className="flex items-center gap-1">
+                  Mínimo:
+                  <Input
+                    type="number"
+                    min={0}
+                    value={minimo}
+                    onChange={(e) => setMinimo(e.target.value)}
+                    className="h-7 w-20 text-xs"
+                    aria-label="Estoque mínimo"
+                    autoFocus
+                  />
+                  <Button type="button" size="sm" className="h-7 px-2 text-xs" onClick={salvarMinimo} disabled={pendente}>
+                    {pendente ? <Loader2 className="size-3 animate-spin" /> : "Salvar"}
+                  </Button>
+                  <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setEditandoMinimo(false)}>
+                    Cancelar
+                  </Button>
+                </span>
+              ) : (
+                <span className="flex items-center gap-1">
+                  Mínimo: {item.estoque_minimo}
+                  {ehGerente ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMinimo(String(item.estoque_minimo));
+                        setEditandoMinimo(true);
+                      }}
+                      className="rounded p-0.5 hover:bg-accent hover:text-foreground"
+                      title="Editar estoque mínimo"
+                      aria-label={`Editar o estoque mínimo de ${item.nome}`}
+                    >
+                      <Pencil className="size-3" />
+                    </button>
+                  ) : null}
+                </span>
+              )}
+              {erroMinimo ? <span className="text-destructive">{erroMinimo}</span> : null}
               {item.danificados > 0 ? (
                 <span className="ml-2 text-amber-600">
                   · {item.danificados} danificado(s)
                 </span>
               ) : null}
-            </p>
+            </div>
             {item.observacoes ? (
               <p className="mt-0.5 line-clamp-2 text-xs italic text-muted-foreground">
                 {item.observacoes}

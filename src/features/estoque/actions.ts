@@ -115,3 +115,21 @@ export async function arquivarItemEstoque(id: string): Promise<EstadoEstoque> {
   revalidatePath("/estoque");
   return { ok: true };
 }
+
+/** Altera o estoque mínimo de um item (só gerente; o aviso de baixo estoque usa esse valor). */
+export async function atualizarMinimoEstoque(id: string, minimo: number): Promise<EstadoEstoque> {
+  const supabase = await criarClienteServidor();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { erro: "Sessão expirada. Entre novamente." };
+  const { data: perfil } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  if (perfil?.role !== "gerente") return { erro: "Apenas gerentes alteram o estoque mínimo." };
+  if (!Number.isInteger(minimo) || minimo < 0) return { erro: "Informe um número inteiro, zero ou maior." };
+
+  const { data, error } = await supabase.from("estoque_itens").update({ estoque_minimo: minimo }).eq("id", id).select("id");
+  if (error || !data || data.length === 0) return { erro: "Não foi possível salvar o mínimo." };
+  revalidatePath("/estoque");
+  revalidatePath("/chat");
+  return { ok: true };
+}

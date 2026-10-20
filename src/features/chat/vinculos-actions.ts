@@ -345,3 +345,36 @@ export async function atualizarProjetoPeloChat(
   revalidatePath("/projetos");
   return { ok: true };
 }
+
+export interface TarefaParaResponder {
+  id: string;
+  titulo: string;
+  status: string;
+  prazo: string | null;
+}
+
+/** Tarefas abertas citadas nesta conversa em que a pessoa pode responder (responsável ou liderança). */
+export async function tarefasParaResponder(conversaId: string): Promise<TarefaParaResponder[]> {
+  const { supabase, user, papel } = await usuarioAtual();
+  if (!user) return [];
+
+  const { data: msgs } = await supabase
+    .from("chat_mensagens")
+    .select("tarefa_id")
+    .eq("conversa_id", conversaId)
+    .not("tarefa_id", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(300);
+  const ids = Array.from(new Set(((msgs as { tarefa_id: string }[] | null) ?? []).map((m) => m.tarefa_id)));
+  if (ids.length === 0) return [];
+
+  const { data } = await supabase
+    .from("tarefas")
+    .select("id, titulo, status, prazo, responsavel_id")
+    .in("id", ids)
+    .neq("status", "concluida");
+  const lider = ehLideranca(papel as never);
+  return ((data as (TarefaParaResponder & { responsavel_id: string | null })[] | null) ?? [])
+    .filter((t) => lider || t.responsavel_id === user.id)
+    .map(({ id, titulo, status, prazo }) => ({ id, titulo, status, prazo }));
+}
