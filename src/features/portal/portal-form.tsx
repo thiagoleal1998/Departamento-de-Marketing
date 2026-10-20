@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { CheckCircle2, Send, Loader2, Ticket } from "lucide-react";
 import { abrirChamadoPublico, type EstadoPortal } from "./actions";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,6 +12,11 @@ import { Select } from "@/components/ui/select";
 import { SelectMenu } from "@/components/ui/select-menu";
 import { DateInputBR } from "@/components/ui/date-input-br";
 import { CamposPecaChamado } from "@/features/chamados/campos-peca";
+import {
+  FormularioComRascunho,
+  limparRascunhoFormulario,
+  reativarRascunhoFormulario,
+} from "@/components/shared/formulario-com-rascunho";
 
 const estadoInicial: EstadoPortal = {};
 
@@ -30,6 +35,12 @@ export function PortalForm({
     abrirChamadoPublico,
     estadoInicial
   );
+
+  // Enviado com sucesso: o rascunho não serve mais. Falhou: o rascunho volta a valer.
+  useEffect(() => {
+    if (estado.numero) limparRascunhoFormulario("chamado-portal");
+    else if (estado.erro) reativarRascunhoFormulario("chamado-portal");
+  }, [estado.numero, estado.erro]);
 
   if (estado.numero) {
     return (
@@ -66,7 +77,7 @@ export function PortalForm({
     <Card>
       <CardContent className="pt-6">
         <h2 className="mb-4 text-lg font-semibold">{titulo}</h2>
-        <form action={formAction} className="space-y-4">
+        <FormularioComRascunho chave="chamado-portal" action={formAction} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="nome">Seu nome *</Label>
@@ -163,7 +174,7 @@ export function PortalForm({
             {pendente ? <Loader2 className="animate-spin" /> : <Send />}
             Enviar chamado
           </Button>
-        </form>
+        </FormularioComRascunho>
       </CardContent>
     </Card>
   );

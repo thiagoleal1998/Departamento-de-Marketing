@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import { obterConfig } from "@/lib/config";
 import { abrirChamado } from "@/features/chamados/actions";
+import { FormularioComRascunho } from "@/components/shared/formulario-com-rascunho";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,7 @@ export default async function NovoChamadoPage() {
 
       <Card>
         <CardContent className="pt-6">
-          <form action={abrirChamado} className="space-y-5">
+          <FormularioComRascunho chave="chamado-novo" action={abrirChamado} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="titulo">Título *</Label>
               <Input
@@ -118,7 +119,7 @@ export default async function NovoChamadoPage() {
               </Button>
               <Button type="submit">Abrir chamado</Button>
             </div>
-          </form>
+          </FormularioComRascunho>
         </CardContent>
       </Card>
     </div>
