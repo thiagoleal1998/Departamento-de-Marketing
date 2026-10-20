@@ -95,7 +95,7 @@ export const NAVEGACAO: ItemNav[] = [
     label: "Operacional",
     icone: KanbanSquare,
     gradiente: "from-amber-500 to-orange-600",
-    descricao: "Tarefas, LPs, conteúdos e senhas",
+    descricao: "Tarefas, LPs, conteúdos, calendário e senhas",
     filhos: [
       { href: "/operacional", label: "Tarefas", icone: ListChecks, exato: true },
       {
@@ -112,6 +112,11 @@ export const NAVEGACAO: ItemNav[] = [
         href: "/operacional/controle-lps",
         label: "Controle de conteúdo das LPs",
         icone: ClipboardList,
+      },
+      {
+        href: "/operacional/calendario",
+        label: "Calendário de conteúdo",
+        icone: CalendarRange,
       },
       { href: "/operacional/senhas", label: "Senhas", icone: KeyRound },
     ],
@@ -163,13 +168,6 @@ export const NAVEGACAO: ItemNav[] = [
     icone: Handshake,
     gradiente: "from-emerald-500 to-green-600",
     descricao: "Condições e disponibilidades",
-  },
-  {
-    href: "/calendario",
-    label: "Calendário",
-    icone: CalendarRange,
-    gradiente: "from-violet-500 to-purple-600",
-    descricao: "Posts, e-mails e ofertas",
   },
   {
     href: "/documentos",
