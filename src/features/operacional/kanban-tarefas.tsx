@@ -67,6 +67,14 @@ export function KanbanTarefas({
   const [aberta, setAberta] = useState<string | null>(abrirId);
   const [busca, setBusca] = useState("");
   const [filtroResp, setFiltroResp] = useState("");
+  // A coluna "Concluído" mostra as mais recentes; o botão abre todas.
+  const LIMITE_CONCLUIDAS = 30;
+  const [todasConcluidas, setTodasConcluidas] = useState(() => {
+    const alvo = abrirId ? tarefas.find((t) => t.id === abrirId) : null;
+    if (!alvo || alvo.status !== "concluida") return false;
+    const recentes = tarefas.filter((t) => t.status === "concluida").slice(0, LIMITE_CONCLUIDAS);
+    return !recentes.some((t) => t.id === alvo.id);
+  });
   const [, startTransition] = useTransition();
   const trilho = useRef<HTMLDivElement>(null);
 
@@ -178,7 +186,9 @@ export function KanbanTarefas({
 
       <div ref={trilho} className="flex gap-4 overflow-x-auto pb-3">
         {colunas.map((coluna) => {
-          const daColuna = visiveis.filter((t) => t.status === coluna);
+          const todasDaColuna = visiveis.filter((t) => t.status === coluna);
+          const limitada = coluna === "concluida" && !todasConcluidas && todasDaColuna.length > LIMITE_CONCLUIDAS;
+          const daColuna = limitada ? todasDaColuna.slice(0, LIMITE_CONCLUIDAS) : todasDaColuna;
           return (
             <div
               key={coluna}
@@ -195,7 +205,7 @@ export function KanbanTarefas({
                   {TAREFA_STATUS_META[coluna].label}
                 </Badge>
                 <span className="text-xs text-muted-foreground">
-                  {daColuna.length}
+                  {todasDaColuna.length}
                 </span>
               </div>
               <div
@@ -252,6 +262,19 @@ export function KanbanTarefas({
                     </div>
                   </div>
                 ))}
+                {coluna === "concluida" && todasDaColuna.length > LIMITE_CONCLUIDAS ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => setTodasConcluidas((v) => !v)}
+                  >
+                    {todasConcluidas
+                      ? "Mostrar só as " + LIMITE_CONCLUIDAS + " mais recentes"
+                      : "Mostrar todas as " + todasDaColuna.length + " concluídas"}
+                  </Button>
+                ) : null}
               </div>
             </div>
           );

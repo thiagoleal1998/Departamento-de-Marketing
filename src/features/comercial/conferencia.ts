@@ -44,6 +44,8 @@ export const statusDaPlanilha = (campos: CampoProduto[]): string | null =>
 
 /** A planilha trata o produto como ativo? (aba "ATIVAS"/exclusivos ou status "Ativa"). */
 export function ativoNaPlanilha(secao: string, campos: CampoProduto[]): boolean {
+  // Produto numa aba de inativos é inativo, mesmo que a coluna de status diga "Ativa".
+  if (/inativ/i.test(secao)) return false;
   const st = statusDaPlanilha(campos);
   if (st) return /^ativ/i.test(st);
   return !/inativ/i.test(secao);

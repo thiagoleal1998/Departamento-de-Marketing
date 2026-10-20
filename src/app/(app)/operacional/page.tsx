@@ -28,20 +28,9 @@ export default async function OperacionalPage({
     (a, b) => a.ordem - b.ordem || b.created_at.localeCompare(a.created_at)
   );
 
-  // Coluna "Concluída": só as 30 mais recentes (o histórico importado é grande).
-  const LIMITE_CONCLUIDAS = 30;
-  const concluidas = todas
-    .filter((t) => t.status === "concluida")
-    .sort((a, b) => b.created_at.localeCompare(a.created_at));
-  const idsConcluidasVisiveis = new Set(
-    concluidas.slice(0, LIMITE_CONCLUIDAS).map((t) => t.id)
-  );
-  // A tarefa pedida pelo link (ex.: vinda do chat) sempre aparece, mesmo que seja antiga.
-  if (abrirId) idsConcluidasVisiveis.add(abrirId);
-  const tarefas = todas.filter(
-    (t) => t.status !== "concluida" || idsConcluidasVisiveis.has(t.id)
-  );
-  const concluidasOcultas = concluidas.length - idsConcluidasVisiveis.size;
+  // Todas as tarefas vão para o quadro; a coluna "Concluído" mostra as mais recentes primeiro
+  // e o quadro oferece o botão para ver todas (o histórico importado é grande).
+  const tarefas = todas;
 
   // Mapa etapa_id -> projeto_id (para o link dos cards de projeto).
   const etapaIds = tarefas
@@ -95,12 +84,6 @@ export default async function OperacionalPage({
         titulo="Operacional · Tarefas"
         descricao="Quadro de tarefas — arraste para mudar de coluna e clique no card para editar."
       />
-      {concluidasOcultas > 0 ? (
-        <p className="text-sm text-muted-foreground">
-          Mostrando as {LIMITE_CONCLUIDAS} tarefas concluídas mais recentes;{" "}
-          {concluidasOcultas} mais antigas ficam guardadas no histórico.
-        </p>
-      ) : null}
       <KanbanTarefas
         abrirId={abrirId ?? null}
         tarefas={view}
