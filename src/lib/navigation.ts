@@ -8,7 +8,6 @@ import {
   FolderKanban,
   Boxes,
   Megaphone,
-  MessagesSquare,
   CalendarClock,
   Lightbulb,
   ListChecks,
@@ -189,13 +188,6 @@ export const NAVEGACAO: ItemNav[] = [
     icone: Megaphone,
     gradiente: "from-rose-500 to-pink-600",
     descricao: "Avisos para todo o time",
-  },
-  {
-    href: "/chat",
-    label: "Chat",
-    icone: MessagesSquare,
-    gradiente: "from-teal-500 to-cyan-600",
-    descricao: "Conversas ao vivo com o time",
   },
   {
     href: "/solicitacoes",

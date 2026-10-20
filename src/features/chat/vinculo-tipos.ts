@@ -14,6 +14,8 @@ export interface RefItem {
 /** Item com os dados atuais do estoque, para exibir no cartão. */
 export interface ItemVinculado extends ItemEstoqueChat {
   pedido: number | null;
+  /** Última troca de nome do item (se houver): quem trocou, quando e de/para. */
+  renomeado?: { de: string; para: string; porNome: string | null; quando: string } | null;
 }
 
 export interface TarefaChat {

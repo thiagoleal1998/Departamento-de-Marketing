@@ -32,7 +32,7 @@ export default async function AppLayout({
         contagens={contagens}
       />
       <div className="flex min-w-0 flex-1 flex-col">
-        <Topbar usuario={usuario} nomePainel={textos.painel_nome} />
+        <Topbar usuario={usuario} nomePainel={textos.painel_nome} chatNaoLidas={contagens["/chat"] ?? 0} />
         <MobileNav papel={usuario.role} contagens={contagens} />
         <main className="flex-1 overflow-y-auto">
           <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">

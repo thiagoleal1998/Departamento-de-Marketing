@@ -36,6 +36,13 @@ export function ItensEstoqueTarefa({ tarefaId }: { tarefaId: string }) {
               podeRenomear={d.podeRenomearItens}
               aoRenomear={() => setRecarga((n) => n + 1)}
             />
+            {item.renomeado ? (
+              <span className="basis-full text-xs text-muted-foreground">
+                ✏️ Nome trocado{item.renomeado.porNome ? " por " + item.renomeado.porNome : ""} em{" "}
+                {new Date(item.renomeado.quando).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" })}
+                {": “" + item.renomeado.de + "” → “" + item.renomeado.para + "”"}
+              </span>
+            ) : null}
             {item.pedido ? <span className="rounded bg-primary/15 px-1.5 py-0.5 text-xs">pedido: {item.pedido} un.</span> : null}
             <span
               className={cn(

@@ -15,12 +15,15 @@ export function NomeItemEditavel({
   nome,
   podeRenomear,
   aoRenomear,
+  conversaId,
   className,
 }: {
   itemId: string;
   nome: string;
   podeRenomear: boolean;
   aoRenomear?: () => void;
+  /** Conversa do chat de onde se está renomeando (a troca é avisada nela). */
+  conversaId?: string;
   className?: string;
 }) {
   const [editando, setEditando] = useState(false);
@@ -31,7 +34,7 @@ export function NomeItemEditavel({
   function salvar() {
     setErro(null);
     start(async () => {
-      const r = await renomearItemEstoque(itemId, novo);
+      const r = await renomearItemEstoque(itemId, novo, conversaId);
       if (r.erro) setErro(r.erro);
       else {
         setEditando(false);

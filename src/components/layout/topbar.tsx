@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LogOut } from "lucide-react";
+import { LogOut, MessagesSquare } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,9 +14,11 @@ import type { Profile } from "@/types/database";
 export async function Topbar({
   usuario,
   nomePainel,
+  chatNaoLidas = 0,
 }: {
   usuario: Profile;
   nomePainel: string;
+  chatNaoLidas?: number;
 }) {
   const { itens, naoLidas } = await obterNotificacoes();
 
@@ -30,6 +32,19 @@ export async function Topbar({
       <div className="flex items-center gap-2 sm:gap-3">
         <AtivarPush />
         <ThemeToggle />
+        <Link
+          href="/chat"
+          title="Chat do time"
+          aria-label={chatNaoLidas > 0 ? "Chat do time, " + chatNaoLidas + " mensagens não lidas" : "Chat do time"}
+          className="relative inline-flex size-9 items-center justify-center rounded-md text-foreground transition-colors hover:bg-accent"
+        >
+          <MessagesSquare className="size-4" />
+          {chatNaoLidas > 0 ? (
+            <span className="absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold leading-4 text-destructive-foreground">
+              {chatNaoLidas > 99 ? "99+" : chatNaoLidas}
+            </span>
+          ) : null}
+        </Link>
         <NotificacoesBell itens={itens} naoLidas={naoLidas} />
         <Badge variant="secondary" className="hidden sm:inline-flex">
           {PAPEL_LABEL[usuario.role]}

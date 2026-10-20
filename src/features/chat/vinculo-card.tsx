@@ -186,8 +186,15 @@ export function VinculoCard({
                   itemId={item.id}
                   nome={item.nome}
                   podeRenomear={d.podeRenomearItens}
+                  conversaId={conversaId}
                   aoRenomear={() => setRecarga((n) => n + 1)}
                 />
+                {item.renomeado ? (
+                  <span className="basis-full text-[11px] opacity-90">
+                    ✏️ Nome trocado{item.renomeado.porNome ? " por " + item.renomeado.porNome : ""} em {dataBr(item.renomeado.quando)}
+                    {": “" + item.renomeado.de + "” → “" + item.renomeado.para + "”"}
+                  </span>
+                ) : null}
                 {item.pedido ? <span className="rounded bg-primary/15 px-1.5 py-0.5">pedido: {item.pedido} un.</span> : null}
                 <span
                   className={cn(

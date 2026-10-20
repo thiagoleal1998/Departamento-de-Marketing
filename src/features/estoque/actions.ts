@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { avisarNovaMensagem } from "@/features/chat/aviso";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import type { EstoqueCategoria } from "@/types/database";
 
@@ -149,7 +150,12 @@ export async function atualizarMinimoEstoque(id: string, minimo: number): Promis
  * Renomeia um item do estoque (qualquer pessoa logada do time). A troca e o registro (quem, quando,
  * nome anterior e novo) acontecem juntos no banco: não existe troca sem registro.
  */
-export async function renomearItemEstoque(id: string, novoNome: string): Promise<EstadoEstoque> {
+export async function renomearItemEstoque(
+  id: string,
+  novoNome: string,
+  /** Se vier de uma conversa do chat, a troca também é avisada nela. */
+  conversaId?: string
+): Promise<EstadoEstoque> {
   const supabase = await criarClienteServidor();
   const {
     data: { user },
@@ -159,6 +165,7 @@ export async function renomearItemEstoque(id: string, novoNome: string): Promise
   const nome = novoNome.trim().replace(/\s+/g, " ").slice(0, 120);
   if (!nome) return { erro: "Informe o novo nome." };
 
+  const { data: antes } = await supabase.from("estoque_itens").select("nome").eq("id", id).maybeSingle();
   const { error } = await supabase.rpc("renomear_item_estoque", { p_item: id, p_nome: nome });
   if (error) {
     if (error.code === "42883" || error.code === "PGRST202") {
@@ -168,6 +175,21 @@ export async function renomearItemEstoque(id: string, novoNome: string): Promise
       return { erro: "O registro de alterações ainda não foi ativado no banco (migration 0052)." };
     }
     return { erro: error.message || "Não foi possível renomear o item." };
+  }
+
+  // Avisa na conversa de onde a troca partiu (complementar: não desfaz a troca se falhar).
+  if (conversaId && antes?.nome) {
+    try {
+      const { data: eu } = await supabase.from("profiles").select("nome").eq("id", user.id).single();
+      const quem = (eu as { nome: string } | null)?.nome ?? "Alguém";
+      const texto = `✏️ ${quem} trocou o nome do produto “${antes.nome}” para “${nome}”.`;
+      const { error: errMsg } = await supabase
+        .from("chat_mensagens")
+        .insert({ conversa_id: conversaId, autor_id: user.id, texto, estoque_item_id: id });
+      if (!errMsg) await avisarNovaMensagem(supabase, user.id, conversaId, texto);
+    } catch {
+      // aviso é opcional
+    }
   }
 
   revalidatePath("/estoque");

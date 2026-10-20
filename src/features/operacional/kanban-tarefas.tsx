@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { ChevronLeft, ChevronRight, GripVertical, Link2 } from "lucide-react";
 import { KanbanSquare } from "lucide-react";
 import { moverTarefa } from "./actions";
@@ -53,6 +53,10 @@ export function KanbanTarefas({
   pessoas: PessoaOpcao[];
 }) {
   const [lista, setLista] = useState(tarefas);
+  // Tarefas criadas por outros caminhos (chat, ata) aparecem assim que a página atualiza.
+  useEffect(() => {
+    setLista(tarefas);
+  }, [tarefas]);
   const [arrastando, setArrastando] = useState<string | null>(null);
   const [sobre, setSobre] = useState<TarefaStatus | null>(null);
   const [aberta, setAberta] = useState<string | null>(null);

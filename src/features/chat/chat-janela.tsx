@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 export interface MensagemView {
   id: string;
@@ -85,6 +86,8 @@ export function ChatJanela({
   const [registrarProjeto, setRegistrarProjeto] = useState(true);
   const [statusProjeto, setStatusProjeto] = useState("");
   const [criarTarefa, setCriarTarefa] = useState(false);
+  // Se a pessoa mexeu na caixa "Criar tarefa", não a marcamos mais sozinhos.
+  const [tarefaTocada, setTarefaTocada] = useState(false);
   const [responsavel, setResponsavel] = useState(outroId ?? "");
   const [prazo, setPrazo] = useState("");
   const [tituloTarefa, setTituloTarefa] = useState("");
@@ -187,6 +190,7 @@ export function ChatJanela({
     setStatusProjeto("");
     setRegistrarProjeto(true);
     setCriarTarefa(false);
+    setTarefaTocada(false);
     setPrazo("");
     setTituloTarefa("");
   }
@@ -231,6 +235,7 @@ export function ChatJanela({
       else {
         setTexto("");
         limparVinculo();
+        document.querySelectorAll<HTMLTextAreaElement>("form textarea").forEach((t) => (t.style.height = "auto"));
       }
     });
   }
@@ -386,6 +391,8 @@ export function ChatJanela({
                 onChange={(e) => {
                   const id = e.target.value;
                   if (id && !itensSel.some((x) => x.id === id)) setItensSel((l) => [...l, { id, qtd: "" }]);
+                  // Pedido de item para a pessoa da conversa: já sugere criar a tarefa.
+                  if (id && podeCriarTarefa && outroId && !tarefaTocada) setCriarTarefa(true);
                 }}
                 aria-label="Adicionar item do estoque"
               >
@@ -481,7 +488,10 @@ export function ChatJanela({
                   <input
                     type="checkbox"
                     checked={criarTarefa}
-                    onChange={(e) => setCriarTarefa(e.target.checked)}
+                    onChange={(e) => {
+                      setTarefaTocada(true);
+                      setCriarTarefa(e.target.checked);
+                    }}
                     className="size-4 accent-primary"
                   />
                   Criar tarefa a partir desta mensagem
@@ -524,12 +534,32 @@ export function ChatJanela({
           >
             <Link2 className="size-4" />
           </Button>
-          <Input
+          <Textarea
             value={texto}
-            onChange={(e) => setTexto(e.target.value)}
-            placeholder={respondendo ? "Sua resposta sobre a tarefa…" : temVinculo ? "Descreva o pedido…" : "Escreva uma mensagem…"}
+            onChange={(e) => {
+              setTexto(e.target.value);
+              // cresce com o texto (até um limite)
+              e.target.style.height = "auto";
+              e.target.style.height = Math.min(e.target.scrollHeight, 160) + "px";
+            }}
+            onKeyDown={(e) => {
+              // Enter envia; Shift+Enter quebra a linha.
+              if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                e.currentTarget.form?.requestSubmit();
+              }
+            }}
+            rows={1}
+            placeholder={
+              respondendo
+                ? "Sua resposta sobre a tarefa…  (Shift+Enter quebra a linha)"
+                : temVinculo
+                  ? "Descreva o pedido…  (Shift+Enter quebra a linha)"
+                  : "Escreva uma mensagem…  (Shift+Enter quebra a linha)"
+            }
             maxLength={2000}
             autoComplete="off"
+            className="max-h-40 min-h-10 resize-none py-2"
           />
           <Button type="submit" disabled={pendente || (!texto.trim() && !respondendo)}>
             {pendente ? (

@@ -197,6 +197,42 @@ export async function dadosVinculo(
       const i = porId.get(r.id);
       return i ? [{ ...i, pedido: r.qtd }] : [];
     });
+
+    // Troca de nome mais recente de cada item (registro do estoque; ignora se a tabela não existe).
+    const { data: trocas } = await supabase
+      .from("estoque_alteracoes")
+      .select("item_id, valor_anterior, valor_novo, usuario_id, created_at")
+      .eq("campo", "nome")
+      .in("item_id", itens.map((i) => i.id))
+      .order("created_at", { ascending: false })
+      .limit(100);
+    const ultimas = new Map<string, { valor_anterior: string | null; valor_novo: string | null; usuario_id: string | null; created_at: string }>();
+    for (const t of (trocas as { item_id: string; valor_anterior: string | null; valor_novo: string | null; usuario_id: string | null; created_at: string }[] | null) ?? []) {
+      if (!ultimas.has(t.item_id)) ultimas.set(t.item_id, t);
+    }
+    if (ultimas.size > 0) {
+      const ids = Array.from(new Set(Array.from(ultimas.values()).map((t) => t.usuario_id).filter((x): x is string => !!x)));
+      const nomesPorId = new Map<string, string>();
+      if (ids.length > 0 && servicoDisponivel()) {
+        // Service role: o colaborador não lê o perfil dos colegas pela RLS.
+        const { data: ps } = await criarClienteAdmin().from("profiles").select("id, nome").in("id", ids);
+        for (const p of (ps as { id: string; nome: string }[] | null) ?? []) nomesPorId.set(p.id, p.nome);
+      }
+      itens = itens.map((i) => {
+        const t = ultimas.get(i.id);
+        return t
+          ? {
+              ...i,
+              renomeado: {
+                de: t.valor_anterior ?? "",
+                para: t.valor_novo ?? i.nome,
+                porNome: t.usuario_id ? nomesPorId.get(t.usuario_id) ?? null : null,
+                quando: t.created_at,
+              },
+            }
+          : i;
+      });
+    }
   }
 
   let projeto: ProjetoChat | null = null;
