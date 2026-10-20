@@ -414,3 +414,47 @@ export async function tarefasParaResponder(conversaId: string): Promise<TarefaPa
     .filter((t) => lider || t.responsavel_id === user.id)
     .map(({ id, titulo, status, prazo }) => ({ id, titulo, status, prazo }));
 }
+
+export interface MensagemDaTarefa {
+  id: string;
+  autor: string;
+  texto: string;
+  quando: string;
+}
+
+/** Histórico do chat ligado a uma tarefa (só aparece para quem participa da conversa). */
+export async function historicoChatTarefa(
+  tarefaId: string
+): Promise<{ conversaId: string | null; mensagens: MensagemDaTarefa[] }> {
+  const { supabase, user } = await usuarioAtual();
+  if (!user) return { conversaId: null, mensagens: [] };
+
+  const { data } = await supabase
+    .from("chat_mensagens")
+    .select("id, conversa_id, autor_id, texto, created_at")
+    .eq("tarefa_id", tarefaId)
+    .order("created_at", { ascending: true })
+    .limit(200);
+  const linhas =
+    (data as { id: string; conversa_id: string; autor_id: string; texto: string; created_at: string }[] | null) ?? [];
+  if (linhas.length === 0) return { conversaId: null, mensagens: [] };
+
+  // Nomes: o colaborador não lê o perfil dos colegas pela RLS.
+  const nomes = new Map<string, string>();
+  const ids = Array.from(new Set(linhas.map((m) => m.autor_id)));
+  const { data: ps } = await (servicoDisponivel() ? criarClienteAdmin() : supabase)
+    .from("profiles")
+    .select("id, nome")
+    .in("id", ids);
+  for (const p of (ps as { id: string; nome: string }[] | null) ?? []) nomes.set(p.id, p.nome);
+
+  return {
+    conversaId: linhas[0].conversa_id,
+    mensagens: linhas.map((m) => ({
+      id: m.id,
+      autor: nomes.get(m.autor_id) ?? "—",
+      texto: m.texto,
+      quando: m.created_at,
+    })),
+  };
+}

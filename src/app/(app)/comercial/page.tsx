@@ -71,7 +71,8 @@ export default async function ComercialPage({
     supabase.from("comercial_sync").select("*").eq("id", 1).maybeSingle(),
     supabase.from("landing_pages").select("id, nome, grupo, status_patrocinio, url").limit(3000),
   ]);
-  const lps = (lpData as LpSistema[] | null) ?? [];
+  // A conferência ignora as LPs do grupo "antigas" (aba LP's antigas da planilha de LPs).
+  const lps = ((lpData as LpSistema[] | null) ?? []).filter((l) => (l.grupo ?? "").trim().toLowerCase() !== "antigas");
   const linhas = (prodData as Linha[] | null) ?? [];
   const alteracoes = (altData as AlteracaoComercial[] | null) ?? [];
   const info = (infoData as InfoSincronizacao | null) ?? null;

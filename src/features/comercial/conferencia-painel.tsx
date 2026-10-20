@@ -117,7 +117,7 @@ export function ConferenciaPainel({
       <p className="text-sm text-muted-foreground">
         O Comercial só considera um produto realmente ativo quando a landing page correspondente está com status de
         patrocínio <strong>Ativo</strong> em Operacional &gt; Landing Pages. A correspondência é feita pelo link da LP
-        e, na falta dele, pelo nome.
+        e, na falta dele, pelo nome. As LPs do grupo "antigas" ficam fora da conferência.
       </p>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
