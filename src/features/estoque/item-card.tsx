@@ -150,7 +150,7 @@ export function ItemCard({
               ) : (
                 <h3 className="flex min-w-0 items-center gap-1 font-semibold leading-tight">
                   <span className="truncate">{item.nome}</span>
-                  {ehGerente ? (
+                  {true ? (
                     <button
                       type="button"
                       onClick={() => {

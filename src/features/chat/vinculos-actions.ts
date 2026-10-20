@@ -224,7 +224,7 @@ export async function dadosVinculo(
 
   const lider = ehLideranca(papel as never);
   const podeResponder = !!tarefa && (tarefa.responsavel_id === user.id || lider);
-  return { tarefa, itens, projeto, podeMudarStatusProjeto: lider, podeRenomearItens: papel === "gerente", podeResponder };
+  return { tarefa, itens, projeto, podeMudarStatusProjeto: lider, podeRenomearItens: true, podeResponder };
 }
 
 /**

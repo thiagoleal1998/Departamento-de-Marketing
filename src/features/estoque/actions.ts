@@ -145,41 +145,33 @@ export async function atualizarMinimoEstoque(id: string, minimo: number): Promis
   return { ok: true };
 }
 
-/** Renomeia um item do estoque (só gerente). A troca fica registrada: quem, quando, nome anterior e novo. */
+/**
+ * Renomeia um item do estoque (qualquer pessoa logada do time). A troca e o registro (quem, quando,
+ * nome anterior e novo) acontecem juntos no banco: não existe troca sem registro.
+ */
 export async function renomearItemEstoque(id: string, novoNome: string): Promise<EstadoEstoque> {
   const supabase = await criarClienteServidor();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { erro: "Sessão expirada. Entre novamente." };
-  const { data: perfil } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (perfil?.role !== "gerente") return { erro: "Apenas gerentes renomeiam itens do estoque." };
 
   const nome = novoNome.trim().replace(/s+/g, " ").slice(0, 120);
   if (!nome) return { erro: "Informe o novo nome." };
 
-  const { data: atual } = await supabase.from("estoque_itens").select("nome").eq("id", id).maybeSingle();
-  if (!atual) return { erro: "Item não encontrado." };
-  if (atual.nome === nome) return { erro: "O nome é o mesmo que o atual." };
-
-  const { data, error } = await supabase.from("estoque_itens").update({ nome }).eq("id", id).select("id");
-  if (error || !data || data.length === 0) return { erro: "Não foi possível renomear o item." };
-
-  // A troca precisa constar no registro: se não for possível registrar, o nome volta ao anterior.
-  const { error: erroLog } = await supabase
-    .from("estoque_alteracoes")
-    .insert({ item_id: id, campo: "nome", valor_anterior: atual.nome, valor_novo: nome, usuario_id: user.id });
-  if (erroLog) {
-    await supabase.from("estoque_itens").update({ nome: atual.nome }).eq("id", id);
-    return {
-      erro:
-        erroLog.code === "42P01" || erroLog.code === "PGRST205"
-          ? "O registro de alterações ainda não foi ativado no banco (migration 0052). O nome não foi alterado."
-          : "Não foi possível registrar a troca de nome. O nome não foi alterado.",
-    };
+  const { error } = await supabase.rpc("renomear_item_estoque", { p_item: id, p_nome: nome });
+  if (error) {
+    if (error.code === "42883" || error.code === "PGRST202") {
+      return { erro: "A renomeação pela equipe ainda não foi ativada no banco (migration 0053)." };
+    }
+    if (error.code === "42P01" || error.code === "PGRST205") {
+      return { erro: "O registro de alterações ainda não foi ativado no banco (migration 0052)." };
+    }
+    return { erro: error.message || "Não foi possível renomear o item." };
   }
 
   revalidatePath("/estoque");
   revalidatePath("/chat");
+  revalidatePath("/operacional");
   return { ok: true };
 }
