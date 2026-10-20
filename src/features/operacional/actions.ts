@@ -3,12 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
+import { avisarDiretoria } from "@/features/executivo/avisos";
 import { tarefaParaEtapaStatus } from "@/features/projetos/tarefa";
 import type { TarefaStatus } from "@/types";
 
 /** Move uma tarefa para outra coluna do kanban (novo status). */
 export async function moverTarefa(tarefaId: string, novoStatus: TarefaStatus) {
   const supabase = await criarClienteServidor();
+  const { data: antes } = await supabase.from("tarefas").select("status, titulo").eq("id", tarefaId).maybeSingle();
   const { data } = await supabase
     .from("tarefas")
     .update({ status: novoStatus })
@@ -23,6 +25,9 @@ export async function moverTarefa(tarefaId: string, novoStatus: TarefaStatus) {
       .update({ status: tarefaParaEtapaStatus(novoStatus) })
       .eq("id", data.etapa_id);
     revalidatePath("/projetos");
+  }
+  if (novoStatus === "aprovacao_marco" && antes && antes.status !== novoStatus) {
+    await avisarDiretoria({ titulo: "Para aprovar: " + antes.titulo, link: "/executivo" });
   }
   revalidatePath("/operacional");
 }
@@ -71,6 +76,7 @@ export async function salvarTarefa(
     return { erro: "O conteúdo está muito grande." };
   }
 
+  const { data: antes } = await supabase.from("tarefas").select("status").eq("id", tarefaId).maybeSingle();
   const { data, error } = await supabase
     .from("tarefas")
     .update({
@@ -99,6 +105,9 @@ export async function salvarTarefa(
       .update({ status: tarefaParaEtapaStatus(d.status) })
       .eq("id", data.etapa_id);
     revalidatePath("/projetos");
+  }
+  if (d.status === "aprovacao_marco" && antes && antes.status !== d.status) {
+    await avisarDiretoria({ titulo: "Para aprovar: " + titulo, link: "/executivo" });
   }
   revalidatePath("/operacional");
   return { ok: true };

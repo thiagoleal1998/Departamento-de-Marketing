@@ -45,6 +45,7 @@ export async function atualizarPerfilUsuario(
   const cargo = String(formData.get("cargo") ?? "").trim() || null;
   const area_id = String(formData.get("area_id") ?? "").trim() || null;
   const ativo = formData.get("ativo") === "on";
+  const visao_executiva = formData.get("visao_executiva") === "on";
   if (!nome) return { erro: "Informe o nome." };
 
   // E-mail atual (antes de atualizar) para saber se mudou.
@@ -55,10 +56,14 @@ export async function atualizarPerfilUsuario(
     .single();
   const emailMudou = Boolean(email && atual?.email?.toLowerCase() !== email);
 
-  const { error } = await supabase
+  let { error } = await supabase
     .from("profiles")
-    .update({ nome, email, role, cargo, area_id, ativo })
+    .update({ nome, email, role, cargo, area_id, ativo, visao_executiva })
     .eq("id", id);
+  // Antes da migration 0054 a coluna não existe: salva o resto normalmente.
+  if (error && (error.code === "42703" || error.code === "PGRST204")) {
+    ({ error } = await supabase.from("profiles").update({ nome, email, role, cargo, area_id, ativo }).eq("id", id));
+  }
   if (error) {
     return { erro: "Não foi possível salvar. Tente novamente." };
   }

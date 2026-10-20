@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   Ticket,
   Clock,
@@ -32,6 +33,7 @@ export default async function DashboardPage() {
   const usuario = await exigirUsuario();
   const supabase = await criarClienteServidor();
   const lideranca = ehLideranca(usuario.role);
+  if (usuario.visao_executiva && !lideranca) redirect("/executivo");
 
   // Chamados visíveis pelo usuário (a RLS já limita o escopo).
   const { data: chamadosData } = await supabase

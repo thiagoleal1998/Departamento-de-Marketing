@@ -26,6 +26,8 @@ export interface Profile {
   cargo: string | null;
   avatar_url: string | null;
   ativo: boolean;
+  /** Acessa a visão geral da diretoria (/executivo) e aprova as tarefas dela. */
+  visao_executiva?: boolean;
   created_at: string;
 }
 

@@ -18,6 +18,7 @@ import {
   NotebookPen,
   Handshake,
   FolderOpen,
+  Smartphone,
   CalendarRange,
   Store,
   Plane,
@@ -59,6 +60,14 @@ export const NAVEGACAO: ItemNav[] = [
     icone: LayoutDashboard,
     gradiente: "from-sky-500 to-blue-600",
     descricao: "Visão geral do seu dia",
+  },
+  {
+    href: "/executivo",
+    label: "Visão geral",
+    icone: Smartphone,
+    gradiente: "from-emerald-500 to-teal-600",
+    descricao: "Resumo para o celular e aprovações",
+    requer: "ver_relatorios_gerais",
   },
   {
     href: "/chamados",

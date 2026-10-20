@@ -40,6 +40,7 @@ export function UsuarioRow({
   const [cargo, setCargo] = useState(p.cargo ?? "");
   const [areaId, setAreaId] = useState(p.area_id ?? "");
   const [ativo, setAtivo] = useState(p.ativo);
+  const [visaoExecutiva, setVisaoExecutiva] = useState(p.visao_executiva ?? false);
 
   const [flash, setFlash] = useState(false);
   useEffect(() => {
@@ -154,6 +155,16 @@ export function UsuarioRow({
                 className="size-4 rounded border-input"
               />
               Ativo
+            </label>
+            <label className="flex items-center gap-2 text-sm" title="Abre a Visão geral no celular e aprova as tarefas da coluna Em aprovação">
+              <input
+                type="checkbox"
+                name="visao_executiva"
+                checked={visaoExecutiva}
+                onChange={(e) => setVisaoExecutiva(e.target.checked)}
+                className="size-4 rounded border-input"
+              />
+              Visão da diretoria
             </label>
             <div className="flex items-center gap-2">
               <Button type="submit" size="sm" disabled={pendente}>
