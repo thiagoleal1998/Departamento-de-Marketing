@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Send, Loader2, Link2 } from "lucide-react";
+import { Send, Loader2, Link2, ClipboardPlus } from "lucide-react";
 import { criarClienteBrowser } from "@/lib/supabase/client";
 import { enviarMensagem, marcarConversaLida } from "./actions";
 import {
@@ -12,6 +12,8 @@ import {
   type TarefaParaResponder,
 } from "./vinculos-actions";
 import { VinculoCard } from "./vinculo-card";
+import { SolicitacaoCard } from "./solicitacao-card";
+import { SolicitacaoForm } from "./solicitacao-form";
 import { refsDe, type DadosVinculo, type ItemEstoqueChat, type RefItem } from "./vinculo-tipos";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -28,6 +30,7 @@ export interface MensagemView {
   estoque_item_id?: string | null;
   estoque_itens?: RefItem[] | null;
   projeto_id?: string | null;
+  solicitacao_id?: string | null;
 }
 
 export interface ProjetoOpcao {
@@ -73,6 +76,7 @@ export function ChatJanela({
 
   // Vínculos (estoque / tarefa) da próxima mensagem.
   const [vincular, setVincular] = useState(false);
+  const [solicitando, setSolicitando] = useState(false);
 
   // Responder sobre uma tarefa citada nesta conversa (dá baixa no estoque e conclui).
   const [tarefasResp, setTarefasResp] = useState<TarefaParaResponder[]>([]);
@@ -279,6 +283,13 @@ export function ChatJanela({
                     </p>
                   ) : null}
                   <p className="whitespace-pre-wrap break-words">{m.texto}</p>
+                  {m.solicitacao_id ? (
+                    <SolicitacaoCard
+                      id={m.solicitacao_id}
+                      versao={mensagens.filter((x) => x.solicitacao_id === m.solicitacao_id).length}
+                      minha={minha}
+                    />
+                  ) : null}
                   {m.tarefa_id || m.estoque_item_id || m.projeto_id || (m.estoque_itens?.length ?? 0) > 0 ? (
                     <VinculoCard
                       conversaId={conversaId}
@@ -534,6 +545,16 @@ export function ChatJanela({
           >
             <Link2 className="size-4" />
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            aria-label="Solicitar criação"
+            title="Solicitar criação de LP, banner, lâmina, vídeo…"
+            onClick={() => setSolicitando(true)}
+          >
+            <ClipboardPlus className="size-4" />
+            <span className="hidden lg:inline">Solicitar criação</span>
+          </Button>
           <Textarea
             value={texto}
             onChange={(e) => {
@@ -571,6 +592,10 @@ export function ChatJanela({
           </Button>
         </div>
       </form>
+
+      {solicitando ? (
+        <SolicitacaoForm conversaId={conversaId} meuNome={nomes[meuId] ?? ""} aoFechar={() => setSolicitando(false)} />
+      ) : null}
     </div>
   );
 }
