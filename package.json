@@ -1,6 +1,6 @@
 {
   "name": "painel-marketing",
-  "version": "0.87.3",
+  "version": "0.88.0",
   "private": true,
   "scripts": {
     "dev": "next dev",

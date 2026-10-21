@@ -101,3 +101,28 @@
     width: 92%;
   }
 }
+
+/* Página inicial (portal público) */
+@keyframes home-flutuar {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  33% { transform: translate3d(40px, -30px, 0) scale(1.08); }
+  66% { transform: translate3d(-30px, 30px, 0) scale(0.95); }
+}
+@keyframes home-faixa {
+  to { transform: translateX(-50%); }
+}
+@keyframes home-entrar {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes home-palavra {
+  from { opacity: 0; transform: translateY(0.4em); filter: blur(6px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+.home-palavra { animation: home-palavra 0.55s ease-out both; }
+.home-entrar { animation: home-entrar 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.home-aurora { animation: home-flutuar 18s ease-in-out infinite; }
+.home-faixa { animation: home-faixa 38s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .home-palavra, .home-entrar, .home-aurora, .home-faixa { animation: none !important; }
+}

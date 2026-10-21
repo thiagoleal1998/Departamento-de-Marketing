@@ -1,95 +1,207 @@
 import Link from "next/link";
-import { ArrowRight, Inbox, LogIn, Search, Users } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Inbox, LogIn, Radar, Search, Sparkles, Users } from "lucide-react";
 import { obterConfig } from "@/lib/config";
+import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { NomeMarca } from "@/components/shared/nome-marca";
 import { Marca } from "@/components/shared/marca";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
-import { Button } from "@/components/ui/button";
+import { CartaoHolofote, Contador, TextoRotativo } from "@/features/portal/home-efeitos";
 
 export const dynamic = "force-dynamic";
 
-const ATALHOS = [
-  {
-    href: "/central",
-    icone: Inbox,
-    titulo: "Central de Solicitações",
-    texto: "Peça artes, campanhas e materiais ao marketing e receba um número de acompanhamento.",
-    acao: "Abrir uma solicitação",
-  },
-  {
-    href: "/consulta",
-    icone: Search,
-    titulo: "Consulta",
-    texto: "Veja as landing pages ativas, os sites e os links oficiais, sem precisar pedir ao time.",
-    acao: "Consultar dados",
-  },
-  {
-    href: "/login",
-    icone: Users,
-    titulo: "Área do time",
-    texto: "Acesso do time de marketing ao painel de gestão, criação, operação e desenvolvimento.",
-    acao: "Entrar",
-  },
+const SERVICOS = [
+  "Landing pages",
+  "Banners",
+  "Vídeos",
+  "Lâminas",
+  "E-mail marketing",
+  "Artes para redes sociais",
+  "Campanhas",
+  "Conteúdo para o site",
+  "Materiais gráficos",
+  "Eventos e feiras",
 ];
 
+/** Números reais do marketing (só contagens, sem dados internos). */
+async function numeros() {
+  if (!servicoDisponivel()) return { lps: 0, paginas: 0, atendidos: 0 };
+  const sb = criarClienteAdmin();
+  const head = { count: "exact" as const, head: true };
+  const [lps, paginas, atendidos] = await Promise.all([
+    sb.from("landing_pages").select("id", head).eq("status_patrocinio", "ativo").not("grupo", "in", "(antigas,epic,feriados)"),
+    sb.from("conteudos_site").select("id", head).eq("status", "publicado"),
+    sb.from("chamados").select("id", head).in("status", ["resolvido", "fechado"]),
+  ]);
+  return { lps: lps.count ?? 0, paginas: paginas.count ?? 0, atendidos: atendidos.count ?? 0 };
+}
+
 export default async function HomePage() {
-  const { textos, logo } = await obterConfig();
+  const [{ logo }, n] = await Promise.all([obterConfig(), numeros()]);
+  const versao = process.env.NEXT_PUBLIC_APP_VERSION;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-accent/40 via-background to-background">
-      <header className="mx-auto flex max-w-5xl items-center justify-between px-4 py-5">
-        <div className="flex items-center gap-2">
-          <Marca logoUrl={logo} boxClassName="size-9 rounded-xl" iconClassName="size-5" imgClassName="h-10 max-w-[160px]" />
+    <div className="dark relative min-h-screen overflow-hidden bg-[#060a12] text-foreground">
+      {/* Aurora: luzes nas cores da marca */}
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <div className="home-aurora absolute -left-32 -top-32 size-[520px] rounded-full bg-emerald-500/30 blur-[120px]" />
+        <div className="home-aurora absolute -right-24 top-10 size-[480px] rounded-full bg-teal-400/25 blur-[120px] [animation-delay:-6s]" />
+        <div className="home-aurora absolute left-1/3 top-[420px] size-[420px] rounded-full bg-amber-400/15 blur-[130px] [animation-delay:-11s]" />
+        <div className="home-aurora absolute -right-40 top-[780px] size-[460px] rounded-full bg-orange-500/15 blur-[130px] [animation-delay:-3s]" />
+        <div
+          className="absolute inset-0 opacity-[0.35] [mask-image:radial-gradient(ellipse_70%_55%_at_50%_0%,black,transparent)]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.07) 1px, transparent 1px)",
+            backgroundSize: "56px 56px",
+          }}
+        />
+      </div>
+
+      <header className="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-5 py-6">
+        <div className="flex items-center gap-3">
+          <Marca logoUrl={logo} boxClassName="size-10 rounded-xl" iconClassName="size-5" imgClassName="h-10 max-w-[160px]" />
           <NomeMarca />
         </div>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <Button asChild variant="outline" size="sm">
-            <Link href="/login">
-              <LogIn className="size-4" /> Área do time
-            </Link>
-          </Button>
-        </div>
+        <Link
+          href="/login"
+          className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white backdrop-blur transition hover:border-white/30 hover:bg-white/10"
+        >
+          <LogIn className="size-4" /> Área do time
+        </Link>
       </header>
 
-      <main className="mx-auto max-w-5xl space-y-10 px-4 pb-16 pt-8 lg:pt-14">
-        <div className="max-w-2xl space-y-3">
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Marketing</h1>
-          <p className="text-lg text-muted-foreground">
-            Tudo o que você precisa do marketing em um só lugar: peça serviços, consulte informações e acesse a área do
-            time.
+      <main className="relative z-10 mx-auto max-w-6xl px-5 pb-20">
+        {/* Hero */}
+        <section className="home-entrar space-y-8 pb-14 pt-10 sm:pt-16 lg:pt-24">
+          <span className="inline-flex items-center gap-2 rounded-full border border-emerald-300/25 bg-emerald-300/10 px-3.5 py-1.5 text-xs font-medium text-emerald-200">
+            <span className="relative flex size-2">
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-300 opacity-70" />
+              <span className="relative inline-flex size-2 rounded-full bg-emerald-300" />
+            </span>
+            Marketing em movimento
+          </span>
+
+          <h1 className="max-w-4xl text-4xl font-bold leading-[1.05] tracking-tight text-white sm:text-6xl lg:text-7xl">
+            Ideias que viram <TextoRotativo palavras={["campanhas", "landing pages", "vídeos", "experiências", "resultados"]} />
+          </h1>
+
+          <p className="max-w-2xl text-lg text-slate-300 sm:text-xl">
+            Peça ao marketing, acompanhe cada etapa e encontre os links oficiais da Litoral Verde — tudo num só lugar, sem
+            e-mail perdido e sem precisar perguntar.
           </p>
-        </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          {ATALHOS.map(({ href, icone: Icone, titulo, texto, acao }) => (
+          <div className="flex flex-wrap items-center gap-3">
             <Link
-              key={href}
-              href={href}
-              className="group flex flex-col gap-3 rounded-xl border bg-card p-6 shadow-sm transition-shadow hover:shadow-md"
+              href="/central"
+              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-400 via-teal-400 to-amber-300 px-6 py-3.5 text-base font-semibold text-slate-950 shadow-[0_0_40px_-8px_rgba(52,211,153,0.7)] transition hover:scale-[1.03] hover:shadow-[0_0_55px_-6px_rgba(52,211,153,0.9)]"
             >
-              <span className="flex size-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Icone className="size-6" />
-              </span>
-              <h2 className="text-lg font-semibold">{titulo}</h2>
-              <p className="flex-1 text-sm text-muted-foreground">{texto}</p>
-              <span className="inline-flex items-center gap-1 text-sm font-medium text-primary">
-                {acao} <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-              </span>
+              <Sparkles className="size-5" /> Pedir ao marketing
+              <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
             </Link>
-          ))}
-        </div>
+            <Link
+              href="/consulta"
+              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-6 py-3.5 text-base font-medium text-white backdrop-blur transition hover:border-white/40 hover:bg-white/10"
+            >
+              <Search className="size-5" /> Consultar dados
+            </Link>
+          </div>
+        </section>
 
-        <p className="text-sm text-muted-foreground">
-          Já abriu uma solicitação?{" "}
-          <Link href="/acompanhar" className="font-medium text-primary underline">
-            Acompanhe pelo número do chamado
-          </Link>
-          .
-        </p>
+        {/* Números ao vivo */}
+        <section aria-label="Números do marketing" className="home-entrar grid gap-4 [animation-delay:150ms] sm:grid-cols-3">
+          {[
+            { valor: n.lps, rotulo: "landing pages no ar", cor: "from-emerald-300 to-teal-300" },
+            { valor: n.paginas, rotulo: "páginas publicadas no site", cor: "from-teal-300 to-sky-300" },
+            { valor: n.atendidos, rotulo: "solicitações atendidas", cor: "from-amber-300 to-orange-300" },
+          ].map((s) => (
+            <div key={s.rotulo} className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
+              <p className={`bg-gradient-to-r ${s.cor} bg-clip-text text-5xl font-bold text-transparent sm:text-6xl`}>
+                <Contador valor={s.valor} />
+              </p>
+              <p className="mt-2 flex items-center gap-2 text-sm text-slate-300">
+                <Radar className="size-4 text-emerald-300" /> {s.rotulo}
+              </p>
+            </div>
+          ))}
+        </section>
+
+        {/* Faixa de serviços */}
+        <section
+          aria-label="O que o marketing faz"
+          className="relative my-14 overflow-hidden [mask-image:linear-gradient(90deg,transparent,black_12%,black_88%,transparent)]"
+        >
+          <div className="home-faixa flex w-max gap-3">
+            {[...SERVICOS, ...SERVICOS].map((s, i) => (
+              <span
+                key={i}
+                className="whitespace-nowrap rounded-full border border-white/10 bg-white/[0.05] px-5 py-2.5 text-sm font-medium text-slate-200"
+              >
+                {s}
+              </span>
+            ))}
+          </div>
+        </section>
+
+        {/* Atalhos (bento) */}
+        <section className="grid gap-4 md:grid-cols-3 md:grid-rows-2">
+          <CartaoHolofote href="/central" className="gap-4 md:col-span-2 md:row-span-2 md:p-9">
+            <span className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 text-slate-950">
+              <Inbox className="size-7" />
+            </span>
+            <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Central de Solicitações</h2>
+            <p className="max-w-md flex-1 text-base text-slate-300">
+              Precisa de arte, campanha, vídeo ou página? Descreva o pedido, anexe referências e receba um número para
+              acompanhar do início ao fim.
+            </p>
+            <span className="inline-flex items-center gap-2 text-base font-semibold text-emerald-300">
+              Abrir uma solicitação{" "}
+              <ArrowUpRight className="size-5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+            </span>
+          </CartaoHolofote>
+
+          <CartaoHolofote href="/consulta" className="gap-3">
+            <span className="flex size-11 items-center justify-center rounded-xl bg-white/10 text-amber-300">
+              <Search className="size-5" />
+            </span>
+            <h2 className="text-xl font-semibold text-white">Consulta</h2>
+            <p className="flex-1 text-sm text-slate-300">Landing pages, sites e links oficiais, na hora.</p>
+            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-amber-300">
+              Consultar dados <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+            </span>
+          </CartaoHolofote>
+
+          <CartaoHolofote href="/acompanhar" className="gap-3">
+            <span className="flex size-11 items-center justify-center rounded-xl bg-white/10 text-teal-300">
+              <Radar className="size-5" />
+            </span>
+            <h2 className="text-xl font-semibold text-white">Acompanhar pedido</h2>
+            <p className="flex-1 text-sm text-slate-300">Veja o andamento com o número do seu chamado.</p>
+            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-teal-300">
+              Acompanhar <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+            </span>
+          </CartaoHolofote>
+        </section>
+
+        <section className="mt-4">
+          <CartaoHolofote href="/login" className="flex-row items-center justify-between gap-4 !p-6">
+            <span className="flex items-center gap-4">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white/10 text-orange-300">
+                <Users className="size-5" />
+              </span>
+              <span>
+                <span className="block text-lg font-semibold text-white">Área do time</span>
+                <span className="block text-sm text-slate-300">Gestão, criação, operação e desenvolvimento do marketing.</span>
+              </span>
+            </span>
+            <span className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-orange-300">
+              Entrar <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+            </span>
+          </CartaoHolofote>
+        </section>
       </main>
 
-      <footer className="border-t py-6 text-center text-xs text-muted-foreground">{textos.painel_nome}</footer>
+      <footer className="relative z-10 border-t border-white/10 py-8 text-center text-xs text-slate-400">
+        Litoral Verde Operadora · Departamento de marketing{versao ? ` · v${versao}` : ""}
+      </footer>
     </div>
   );
 }
