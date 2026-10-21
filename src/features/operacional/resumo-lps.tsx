@@ -67,7 +67,7 @@ function Tabela({
 
 /** Dados gerais das landing pages: quantas são, de onde, em que situação e por quê. */
 /** Tabelas de distribuição (destino, tipo, estados, banner…) sobre um conjunto de LPs. */
-function Distribuicoes({ linhas, extra }: { linhas: Linha[]; extra: Filtro }) {
+function Distribuicoes({ linhas, extra, publico }: { linhas: Linha[]; extra: Filtro; publico?: boolean }) {
   const total = linhas.length;
   const por = (nome: string, v: string) => linhas.filter((l) => (l[nome] ?? "") === v).length;
   const href = (f: Filtro) => hrefLista({ ...extra, ...f });
@@ -103,11 +103,15 @@ function Distribuicoes({ linhas, extra }: { linhas: Linha[]; extra: Filtro }) {
       </div>
       <div className="space-y-4">
         <Tabela titulo="Países com mais LPs" itens={contagem("pais", 8)} total={total} />
-        <Tabela titulo="Canais" itens={contagem("canal", 8)} total={total} />
-        <Tabela titulo="Banner obrigatório?" itens={sim("banner_obrigatorio")} total={total} />
-        <Tabela titulo="Banner no ar (Comercial)" itens={sim("banner_no_ar")} total={total} />
-        <Tabela titulo="Tem link de casamento?" itens={sim("tem_link_casamento")} total={total} />
-        <Tabela titulo="TAG no ADM MKT" itens={sim("tag_adm_mkt")} total={total} />
+        {publico ? null : (
+          <>
+            <Tabela titulo="Canais" itens={contagem("canal", 8)} total={total} />
+            <Tabela titulo="Banner obrigatório?" itens={sim("banner_obrigatorio")} total={total} />
+            <Tabela titulo="Banner no ar (Comercial)" itens={sim("banner_no_ar")} total={total} />
+            <Tabela titulo="Tem link de casamento?" itens={sim("tem_link_casamento")} total={total} />
+            <Tabela titulo="TAG no ADM MKT" itens={sim("tag_adm_mkt")} total={total} />
+          </>
+        )}
       </div>
     </div>
   );
@@ -119,6 +123,23 @@ function Titulo({ children, total, destaque }: { children: React.ReactNode; tota
       <h2 className="text-base font-semibold">{children}</h2>
       <span className="text-lg font-bold">{total}</span>
     </div>
+  );
+}
+
+/** Versão da página pública de consulta: só as ativas, sem dados internos (banner, canal, TAG). */
+export function ResumoLpsPublico({ linhas }: { linhas: Linha[] }) {
+  const ativas = linhas.filter((l) => l.status_patrocinio === "ativo");
+  return (
+    <section className="space-y-4">
+      <Titulo total={ativas.length} destaque>
+        Landing pages ativas
+      </Titulo>
+      {ativas.length === 0 ? (
+        <p className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">Nenhuma landing page ativa.</p>
+      ) : (
+        <Distribuicoes linhas={ativas} extra={{}} publico />
+      )}
+    </section>
   );
 }
 

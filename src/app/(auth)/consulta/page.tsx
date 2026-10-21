@@ -4,6 +4,8 @@ import { obterConfig } from "@/lib/config";
 import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { ConsultaLps, type LpPublica } from "@/features/portal/consulta-lps";
 import { ConsultaSite, type PaginaSite } from "@/features/portal/consulta-site";
+import { ResumoLpsPublico } from "@/features/operacional/resumo-lps";
+import { ResumoConteudos } from "@/features/operacional/resumo-conteudos";
 import { Marca } from "@/components/shared/marca";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -13,15 +15,29 @@ export const dynamic = "force-dynamic";
 
 export default async function ConsultaPage({ searchParams }: { searchParams: Promise<{ aba?: string }> }) {
   const { aba } = await searchParams;
-  const ativa = aba === "site" ? "site" : "lps";
+  const ativa = aba === "site" ? "site" : aba === "lps" ? "lps" : "dados";
   const { textos, logo } = await obterConfig();
 
   // Página pública: só expõe títulos, categorias e links.
   let lps: LpPublica[] = [];
   let paginas: PaginaSite[] = [];
+  let resumoLps: Record<string, string | null>[] = [];
+  let resumoSite: Record<string, string | null>[] = [];
   if (servicoDisponivel()) {
     const supabase = criarClienteAdmin();
-    if (ativa === "lps") {
+    if (ativa === "dados") {
+      const [a, b] = await Promise.all([
+        supabase
+          .from("landing_pages")
+          .select("grupo, status_patrocinio, destino, tipo_pagina, estado, pais")
+          .eq("status_patrocinio", "ativo")
+          .not("grupo", "in", "(antigas,epic,feriados)")
+          .limit(1000),
+        supabase.from("conteudos_site").select("categoria, estrelas, abrangencia").eq("status", "publicado").limit(3000),
+      ]);
+      resumoLps = (a.data as Record<string, string | null>[] | null) ?? [];
+      resumoSite = (b.data as Record<string, string | null>[] | null) ?? [];
+    } else if (ativa === "lps") {
       const { data } = await supabase
         .from("landing_pages")
         .select("id, nome, grupo, url")
@@ -41,7 +57,8 @@ export default async function ConsultaPage({ searchParams }: { searchParams: Pro
   }
 
   const abas = [
-    { id: "lps", rotulo: "Landing pages ativas", href: "/consulta" },
+    { id: "dados", rotulo: "Dados gerais", href: "/consulta" },
+    { id: "lps", rotulo: "Landing pages ativas", href: "/consulta?aba=lps" },
     { id: "site", rotulo: "Site da LV", href: "/consulta?aba=site" },
   ];
 
@@ -72,7 +89,9 @@ export default async function ConsultaPage({ searchParams }: { searchParams: Pro
         <div className="space-y-2">
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Consulta</h1>
           <p className="text-sm text-muted-foreground">
-            {ativa === "lps"
+            {ativa === "dados"
+              ? "Números gerais das landing pages ativas e das páginas publicadas no site da LV."
+              : ativa === "lps"
               ? "Landing pages ativas e os sites em que estão publicadas. Use a busca para encontrar o link que precisa."
               : "Páginas e conteúdos publicados no site da LV: resorts, hotéis, destinos, circuitos e LV Magazine."}
           </p>
@@ -96,7 +115,17 @@ export default async function ConsultaPage({ searchParams }: { searchParams: Pro
           ))}
         </nav>
 
-        {ativa === "lps" ? <ConsultaLps lps={lps} /> : <ConsultaSite paginas={paginas} />}
+        {ativa === "dados" ? (
+          // Só leitura: os números não levam às telas internas.
+          <div className="space-y-8 [&_a]:pointer-events-none [&_a]:cursor-default">
+            <ResumoLpsPublico linhas={resumoLps} />
+            <ResumoConteudos linhas={resumoSite} />
+          </div>
+        ) : ativa === "lps" ? (
+          <ConsultaLps lps={lps} />
+        ) : (
+          <ConsultaSite paginas={paginas} />
+        )}
       </main>
     </div>
   );
