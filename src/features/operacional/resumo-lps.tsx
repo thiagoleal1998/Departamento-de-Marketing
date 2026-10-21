@@ -93,7 +93,7 @@ export function ResumoLps({ linhas }: { linhas: Linha[] }) {
     .map(([rotulo, qtd]) => ({ rotulo, qtd, href: hrefLista({ estado: rotulo }) }));
 
   const statusPatrocinio = opcoes("status_patrocinio");
-  const grupos = opcoes("grupo");
+  const grupos = opcoes("grupo").filter((g) => !["antigas", "epic", "feriados"].includes(g.value));
 
   return (
     <section className="space-y-4">

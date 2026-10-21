@@ -14,6 +14,9 @@ import { PageHeader } from "@/components/shared/page-header";
 
 export const dynamic = "force-dynamic";
 
+/** Grupos fora da gestão atual: não aparecem na lista nem nas contagens (os dados continuam no banco). */
+const GRUPOS_OCULTOS = ["antigas", "epic", "feriados"];
+
 const FILTROS_URL = ["grupo", "status_patrocinio", "destino", "tipo_pagina", "estado", "banner_obrigatorio", "banner_no_ar", "tem_link_casamento", "tag_adm_mkt"];
 
 export default async function LandingPagesPage({
@@ -28,12 +31,14 @@ export default async function LandingPagesPage({
   const filtrosIniciais: Record<string, string> = {};
   for (const k of FILTROS_URL) if (sp[k]) filtrosIniciais[k] = sp[k]!;
 
-  const [linhas, pessoas, lps, historico] = await Promise.all([
+  const [todas, pessoas, lps, historico] = await Promise.all([
     listarCadastro("landing_pages"),
     aba === "lps" ? listarPessoasOpcoes() : Promise.resolve([]),
     aba === "lps" ? listarLpsOpcoes() : Promise.resolve([]),
     aba === "historico" ? historicoGeralLps() : Promise.resolve(null),
   ]);
+
+  const linhas = todas.filter((l) => !GRUPOS_OCULTOS.includes(l.grupo ?? ""));
 
   return (
     <div className="space-y-6">
