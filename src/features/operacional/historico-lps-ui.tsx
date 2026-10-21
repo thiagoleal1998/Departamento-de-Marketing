@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { History, Loader2, Plus, Pencil, Trash2 } from "lucide-react";
-import { historicoDaLp } from "./historico-lps-actions";
+import { History, Loader2, MessageSquarePlus, Plus, Pencil, Trash2 } from "lucide-react";
+import { adicionarNotaLp, historicoDaLp } from "./historico-lps-actions";
 import { ROTULO_ACAO_LP, type AcaoHistoricoLp, type EntradaHistoricoLp } from "./historico-lps";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -12,8 +14,9 @@ const COR_ACAO: Record<AcaoHistoricoLp, string> = {
   criada: "bg-emerald-100 text-emerald-900",
   alterada: "bg-blue-100 text-blue-900",
   excluida: "bg-red-100 text-red-900",
+  anotacao: "bg-amber-100 text-amber-900",
 };
-const ICONE_ACAO = { criada: Plus, alterada: Pencil, excluida: Trash2 } as const;
+const ICONE_ACAO = { criada: Plus, alterada: Pencil, excluida: Trash2, anotacao: MessageSquarePlus } as const;
 
 const dataHora = (iso: string) =>
   new Date(iso).toLocaleString("pt-BR", {
@@ -50,6 +53,7 @@ function Entrada({ e, mostrarNome }: { e: EntradaHistoricoLp; mostrarNome: boole
           ))}
         </ul>
       ) : null}
+      {e.nota ? <p className="whitespace-pre-line text-sm">{e.nota}</p> : null}
       {e.acao === "criada" ? <p className="text-xs text-muted-foreground">Landing page cadastrada.</p> : null}
       {e.acao === "excluida" ? <p className="text-xs text-muted-foreground">Landing page removida da lista.</p> : null}
     </li>
@@ -59,21 +63,50 @@ function Entrada({ e, mostrarNome }: { e: EntradaHistoricoLp; mostrarNome: boole
 /** Histórico de modificações de uma LP, mostrado dentro da edição (lápis). */
 export function HistoricoDaLp({ lpId }: { lpId: string }) {
   const [dados, setDados] = useState<{ itens: EntradaHistoricoLp[]; indisponivel?: boolean } | null>(null);
+  const [nota, setNota] = useState("");
+  const [erro, setErro] = useState<string | null>(null);
+  const [salvando, setSalvando] = useState(false);
+  const [recarga, setRecarga] = useState(0);
 
   useEffect(() => {
     let vivo = true;
-    setDados(null);
     void historicoDaLp(lpId).then((r) => vivo && setDados(r));
     return () => {
       vivo = false;
     };
-  }, [lpId]);
+  }, [lpId, recarga]);
+
+  async function anotar() {
+    setErro(null);
+    setSalvando(true);
+    const r = await adicionarNotaLp(lpId, nota);
+    setSalvando(false);
+    if (r.erro) return setErro(r.erro);
+    setNota("");
+    setRecarga((n) => n + 1);
+  }
 
   return (
     <div className="space-y-2 border-t pt-4">
       <h3 className="flex items-center gap-2 text-sm font-semibold">
         <History className="size-4" /> Histórico de modificações
       </h3>
+      <div className="space-y-2 rounded-md bg-muted/50 p-3">
+        <Textarea
+          value={nota}
+          onChange={(e) => setNota(e.target.value)}
+          rows={2}
+          maxLength={2000}
+          placeholder="Registrar uma alteração ou observação (ex.: budget aumentado para R$ 5.000, campanha pausada…)"
+          aria-label="Anotação no histórico"
+        />
+        {erro ? <p className="text-xs text-destructive">{erro}</p> : null}
+        <div className="flex justify-end">
+          <Button type="button" size="sm" onClick={anotar} disabled={salvando || !nota.trim()}>
+            {salvando ? <Loader2 className="size-4 animate-spin" /> : <MessageSquarePlus className="size-4" />} Registrar no histórico
+          </Button>
+        </div>
+      </div>
       {dados === null ? (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" /> Carregando…
@@ -112,6 +145,7 @@ export function HistoricoGeralLps({ itens, indisponivel }: { itens: EntradaHisto
       (!acao || e.acao === acao) &&
       (!termo ||
         e.nome.toLowerCase().includes(termo) ||
+        (e.nota ?? "").toLowerCase().includes(termo) ||
         (e.autorNome ?? "").toLowerCase().includes(termo) ||
         e.alteracoes.some((a) => (a.rotulo + " " + (a.de ?? "") + " " + (a.para ?? "")).toLowerCase().includes(termo)))
   );
@@ -126,6 +160,7 @@ export function HistoricoGeralLps({ itens, indisponivel }: { itens: EntradaHisto
             <option value="criada">Criadas</option>
             <option value="alterada">Alteradas</option>
             <option value="excluida">Excluídas</option>
+            <option value="anotacao">Anotações</option>
           </Select>
         </div>
         <span className="text-xs text-muted-foreground">

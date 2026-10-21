@@ -1,6 +1,6 @@
 import { CADASTROS } from "./cadastros";
 
-export type AcaoHistoricoLp = "criada" | "alterada" | "excluida";
+export type AcaoHistoricoLp = "criada" | "alterada" | "excluida" | "anotacao";
 
 export interface AlteracaoLp {
   campo: string;
@@ -15,6 +15,7 @@ export interface EntradaHistoricoLp {
   nome: string;
   acao: AcaoHistoricoLp;
   alteracoes: AlteracaoLp[];
+  nota: string | null;
   autorNome: string | null;
   criadoEm: string;
 }
@@ -23,6 +24,7 @@ export const ROTULO_ACAO_LP: Record<AcaoHistoricoLp, string> = {
   criada: "Criada",
   alterada: "Alterada",
   excluida: "Excluída",
+  anotacao: "Anotação",
 };
 
 /** Valor como a pessoa lê na tela (rótulo da opção, nome do responsável, data em dd/mm/aaaa). */
