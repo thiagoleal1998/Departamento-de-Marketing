@@ -30,8 +30,9 @@ export function BarraProgresso() {
       if (url.pathname + url.search === location.pathname + location.search) return;
       setCarregando(true);
     }
-    document.addEventListener("click", aoClicar);
-    return () => document.removeEventListener("click", aoClicar);
+    // Fase de captura: roda antes do <Link> do Next, que cancela o clique padrão.
+    document.addEventListener("click", aoClicar, true);
+    return () => document.removeEventListener("click", aoClicar, true);
   }, []);
 
   useEffect(() => {
