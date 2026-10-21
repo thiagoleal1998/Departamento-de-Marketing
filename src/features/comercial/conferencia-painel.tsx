@@ -161,7 +161,7 @@ export function ConferenciaPainel({
         vazio="Toda LP ativa tem produto no Comercial."
         cabecalho={["Landing page", "Grupo", "Link"]}
         linhas={lpsAtivasSemProduto.map((l) => [
-          <Link key={l.id} href="/operacional/landing-pages" className="font-medium hover:underline">
+          <Link key={l.id} href="/operacional/landing-pages?aba=lps" className="font-medium hover:underline">
             {l.nome}
           </Link>,
           l.grupo ?? "—",

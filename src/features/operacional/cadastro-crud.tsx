@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { Plus, Pencil, Trash2, Loader2, X, ExternalLink } from "lucide-react";
 import { salvarRegistro, excluirRegistro } from "./cadastros-actions";
 import { CADASTROS, type CadastroChave, type CampoDef } from "./cadastros";
+import { HistoricoDaLp } from "./historico-lps-ui";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -272,6 +273,7 @@ export function CadastroCrud({
                 Salvar
               </Button>
             </div>
+            {chave === "landing_pages" && editando !== "novo" ? <HistoricoDaLp lpId={editando} /> : null}
           </CardContent>
         </Card>
       )}

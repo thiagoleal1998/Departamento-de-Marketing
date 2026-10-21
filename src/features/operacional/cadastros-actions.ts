@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { CADASTROS, type CadastroChave } from "./cadastros";
+import { compararLp } from "./historico-lps";
 
 export type EstadoCadastro = { ok?: boolean; erro?: string };
 
@@ -41,11 +42,42 @@ export async function salvarRegistro(
     payload.criado_por = user.id;
   }
 
-  const q = id
-    ? supabase.from(def.tabela).update(payload).eq("id", id)
-    : supabase.from(def.tabela).insert(payload);
-  const { error } = await q;
-  if (error) return { erro: "Não foi possível salvar. Tente novamente." };
+  // Landing pages: guarda o registro anterior para montar o histórico de modificações.
+  const comHistorico = chave === "landing_pages";
+  let antes: Record<string, string | null> | null = null;
+  if (comHistorico && id) {
+    const { data } = await supabase.from(def.tabela).select("*").eq("id", id).maybeSingle();
+    antes = (data as Record<string, string | null> | null) ?? null;
+  }
+
+  let novoId: string | null = id;
+  if (id) {
+    const { error } = await supabase.from(def.tabela).update(payload).eq("id", id);
+    if (error) return { erro: "Não foi possível salvar. Tente novamente." };
+  } else {
+    const { data, error } = await supabase.from(def.tabela).insert(payload).select("id").single();
+    if (error) return { erro: "Não foi possível salvar. Tente novamente." };
+    novoId = (data as { id: string } | null)?.id ?? null;
+  }
+
+  if (comHistorico) {
+    try {
+      const { data: ps } = await supabase.from("profiles").select("id, nome");
+      const pessoas = new Map(((ps ?? []) as { id: string; nome: string }[]).map((p) => [p.id, p.nome]));
+      const alteracoes = compararLp(antes, payload, pessoas);
+      if (!id || alteracoes.length > 0) {
+        await supabase.from("landing_pages_historico").insert({
+          landing_page_id: novoId,
+          lp_nome: payload.nome ?? antes?.nome ?? "—",
+          acao: id ? "alterada" : "criada",
+          alteracoes: id ? alteracoes : [],
+          autor_id: user.id,
+        });
+      }
+    } catch {
+      // histórico é complementar: nunca impede o salvamento
+    }
+  }
 
   revalidatePath(def.rota);
   return { ok: true };
@@ -59,12 +91,32 @@ export async function excluirRegistro(
   const def = CADASTROS[chave];
   if (!def) return { erro: "Cadastro inválido." };
   const supabase = await criarClienteServidor();
+  let nomeAntes: string | null = null;
+  let autor: string | null = null;
+  if (chave === "landing_pages") {
+    const { data } = await supabase.from(def.tabela).select("nome").eq("id", id).maybeSingle();
+    nomeAntes = (data as { nome: string } | null)?.nome ?? null;
+    autor = (await supabase.auth.getUser()).data.user?.id ?? null;
+  }
   const { error, count } = await supabase
     .from(def.tabela)
     .delete({ count: "exact" })
     .eq("id", id);
   if (error || !count) {
     return { erro: "Não foi possível excluir (apenas liderança pode)." };
+  }
+  if (chave === "landing_pages" && autor) {
+    try {
+      await supabase.from("landing_pages_historico").insert({
+        landing_page_id: null,
+        lp_nome: nomeAntes ?? "—",
+        acao: "excluida",
+        alteracoes: [],
+        autor_id: autor,
+      });
+    } catch {
+      // histórico é complementar
+    }
   }
   revalidatePath(def.rota);
   return { ok: true };
