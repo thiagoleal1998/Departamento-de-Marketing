@@ -87,6 +87,12 @@ export function AcompanharForm() {
                   {estado.chamado.departamento ?? "—"}
                 </p>
               </div>
+              {estado.chamado.responsavel ? (
+                <div className="col-span-2">
+                  <p className="text-xs text-muted-foreground">Responsável pelo seu chamado</p>
+                  <p className="font-medium">{estado.chamado.responsavel}</p>
+                </div>
+              ) : null}
               <div>
                 <p className="text-xs text-muted-foreground">Aberto em</p>
                 <p className="font-medium">
@@ -102,10 +108,7 @@ export function AcompanharForm() {
                   {estado.chamado.historico.map((h, i) => (
                     <li key={i} className="flex items-center gap-2 text-sm">
                       <span className="size-2 rounded-full bg-primary" />
-                      <span className="font-medium capitalize">{h.campo}</span>
-                      {h.para ? (
-                        <span className="text-muted-foreground">→ {h.para}</span>
-                      ) : null}
+                      <span className="font-medium">{h.texto}</span>
                       <span className="ml-auto text-xs text-muted-foreground">
                         {formatarDataHora(h.created_at)}
                       </span>

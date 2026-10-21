@@ -505,6 +505,12 @@ export async function definirResponsavel(
     .eq("id", chamadoId)
     .single();
 
+  let nomeResponsavel: string | null = null;
+  if (responsavel_id) {
+    const { data: r } = await supabase.from("profiles").select("nome").eq("id", responsavel_id).maybeSingle();
+    nomeResponsavel = (r as { nome: string } | null)?.nome ?? null;
+  }
+
   await supabase
     .from("chamados")
     .update({ responsavel_id })
@@ -520,7 +526,7 @@ export async function definirResponsavel(
     perfil.id,
     "responsavel",
     null,
-    responsavel_id ? "responsável atualizado" : "responsável removido"
+    responsavel_id ? `designado a ${nomeResponsavel ?? "um membro da equipe"}` : "responsável removido"
   );
 
   if (
