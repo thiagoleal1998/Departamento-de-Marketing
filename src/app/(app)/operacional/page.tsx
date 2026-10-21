@@ -88,6 +88,8 @@ export default async function OperacionalPage({
       />
       <KanbanTarefas
         abrirId={abrirId ?? null}
+        usuarioId={usuario.id}
+        lideranca={lideranca}
         tarefas={view}
         pessoas={Array.from(perfis.values()).map((p) => ({
           id: p.id,

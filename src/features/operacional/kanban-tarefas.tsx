@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { ChevronLeft, ChevronRight, GripVertical, Link2, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, GripVertical, Link2, Plus, Search } from "lucide-react";
 import { KanbanSquare } from "lucide-react";
 import { moverTarefa } from "./actions";
 import { TarefaDetalhe } from "./tarefa-detalhe";
+import { NovoCardDialogo } from "./novo-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,7 +54,11 @@ export function KanbanTarefas({
   tarefas,
   pessoas,
   abrirId = null,
+  usuarioId,
+  lideranca = false,
 }: {
+  usuarioId: string;
+  lideranca?: boolean;
   tarefas: TarefaView[];
   pessoas: PessoaOpcao[];
   /** Tarefa para abrir logo ao carregar (link vindo do chat). */
@@ -67,6 +72,7 @@ export function KanbanTarefas({
   const [arrastando, setArrastando] = useState<string | null>(null);
   const [sobre, setSobre] = useState<TarefaStatus | null>(null);
   const [aberta, setAberta] = useState<string | null>(abrirId);
+  const [criando, setCriando] = useState<TarefaStatus | null>(null);
   const [busca, setBusca] = useState("");
   const [filtroResp, setFiltroResp] = useState("");
   // A coluna "Concluído" mostra as mais recentes; o botão abre todas.
@@ -80,13 +86,37 @@ export function KanbanTarefas({
   const [, startTransition] = useTransition();
   const trilho = useRef<HTMLDivElement>(null);
 
+  const dialogoNovo =
+    criando !== null ? (
+      <NovoCardDialogo
+        pessoas={pessoas}
+        colunas={[...COLUNAS, "revisao"]}
+        statusInicial={criando}
+        usuarioId={usuarioId}
+        lideranca={lideranca}
+        aoFechar={() => setCriando(null)}
+        aoCriar={(id) => {
+          setCriando(null);
+          setAberta(id);
+        }}
+      />
+    ) : null;
+
   if (lista.length === 0) {
     return (
-      <EmptyState
-        icone={KanbanSquare}
-        titulo="Nenhuma tarefa ainda"
-        descricao="Converta um chamado em tarefa para vê-la aparecer aqui no kanban."
-      />
+      <div className="space-y-4">
+        <div className="flex justify-end">
+          <Button onClick={() => setCriando("a_fazer")}>
+            <Plus className="size-4" /> Novo card
+          </Button>
+        </div>
+        <EmptyState
+          icone={KanbanSquare}
+          titulo="Nenhuma tarefa ainda"
+          descricao="Crie um card com o botão acima ou converta um chamado em tarefa."
+        />
+        {dialogoNovo}
+      </div>
     );
   }
 
@@ -152,6 +182,9 @@ export function KanbanTarefas({
             </option>
           ))}
         </Select>
+        <Button className="ml-auto h-9" onClick={() => setCriando("a_fazer")}>
+          <Plus className="size-4" /> Novo card
+        </Button>
         {termo || filtroResp ? (
           <span className="text-xs text-muted-foreground">
             {visiveis.length} de {lista.length} tarefas
@@ -296,6 +329,7 @@ export function KanbanTarefas({
           }
         />
       ) : null}
+      {dialogoNovo}
     </div>
   );
 }

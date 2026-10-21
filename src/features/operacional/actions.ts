@@ -147,3 +147,71 @@ export async function excluirTarefa(tarefaId: string): Promise<{ ok?: boolean; e
   revalidatePath("/chat");
   return { ok: true };
 }
+
+export interface NovoCard {
+  titulo: string;
+  descricao: string;
+  status: TarefaStatus;
+  responsavel_id: string | null;
+  prazo: string | null;
+  prioridade: number | null;
+  tag: string;
+  link: string;
+}
+
+/**
+ * Cria um card no quadro. Liderança escolhe qualquer responsável; os demais criam cards para si mesmos
+ * (o banco só deixa a liderança inserir tarefas, por isso a gravação usa a chave de serviço depois de checar quem é).
+ */
+export async function criarTarefaCard(d: NovoCard): Promise<{ ok?: boolean; erro?: string; id?: string }> {
+  const supabase = await criarClienteServidor();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { erro: "Sessão expirada. Entre novamente." };
+
+  const titulo = d.titulo.trim().slice(0, 200);
+  if (!titulo) return { erro: "Dê um título ao card." };
+  if (!STATUS_VALIDOS.includes(d.status)) return { erro: "Coluna inválida." };
+  if (d.prioridade !== null && (d.prioridade < 1 || d.prioridade > 5)) return { erro: "Prioridade deve ser de 1 a 5." };
+  const link = d.link.trim();
+  if (link && !/^https?:\/\//i.test(link)) return { erro: "O link deve começar com http:// ou https://." };
+  if (!servicoDisponivel()) return { erro: "Criação de cards indisponível no momento." };
+
+  const { data: eu } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  const papel = (eu as { role: string } | null)?.role;
+  const lideranca = papel === "gerente" || papel === "lider";
+  const responsavel = lideranca ? d.responsavel_id || null : user.id;
+
+  const admin = criarClienteAdmin();
+  const { data, error } = await admin
+    .from("tarefas")
+    .insert({
+      titulo,
+      descricao: d.descricao.trim() || null,
+      status: d.status,
+      responsavel_id: responsavel,
+      prazo: d.prazo || null,
+      prioridade: d.prioridade,
+      tag: d.tag.trim() || null,
+      link: link || null,
+    })
+    .select("id")
+    .single();
+  if (error || !data) return { erro: "Não foi possível criar o card. Tente novamente." };
+  const id = (data as { id: string }).id;
+
+  if (responsavel && responsavel !== user.id) {
+    await admin.from("notificacoes").insert({
+      destinatario_id: responsavel,
+      tipo: "tarefa",
+      titulo: `Novo card para você: ${titulo}`,
+      link: "/operacional?tarefa=" + id,
+    });
+  }
+  if (d.status === "aprovacao_marco") {
+    await avisarDiretoria({ titulo: "Para aprovar: " + titulo, link: "/executivo" });
+  }
+  revalidatePath("/operacional");
+  return { ok: true, id };
+}
