@@ -29,18 +29,24 @@ export function FeriasPainel({ ferias, pessoas, ano, indisponivel }: { ferias: F
   const [obs, setObs] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, start] = useTransition();
+  const [filtro, setFiltro] = useState("");
 
   const nome = new Map(pessoas.map((p) => [p.id, p.nome]));
   const hoje = hojeIso();
-  const ordenadas = [...ferias].sort((a, b) => a.inicio.localeCompare(b.inicio) || (nome.get(a.profile_id) ?? "").localeCompare(nome.get(b.profile_id) ?? "", "pt-BR"));
-  const emFerias = ordenadas.filter((f) => f.inicio <= hoje && hoje <= f.fim);
+  const todas = [...ferias].sort((a, b) => a.inicio.localeCompare(b.inicio) || (nome.get(a.profile_id) ?? "").localeCompare(nome.get(b.profile_id) ?? "", "pt-BR"));
+  // O filtro por colaborador vale para a linha do tempo e para a lista (avisos e coincidências usam todos).
+  const ordenadas = filtro ? todas.filter((f) => f.profile_id === filtro) : todas;
+  const comFerias = Array.from(new Set(todas.map((f) => f.profile_id)))
+    .map((id) => ({ id, nome: nome.get(id) ?? "—" }))
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  const emFerias = todas.filter((f) => f.inicio <= hoje && hoje <= f.fim);
 
   // Pessoas com férias no ano, uma linha cada, na ordem alfabética.
   const linhas = Array.from(new Set(ordenadas.map((f) => f.profile_id)))
     .map((id) => ({ id, nome: nome.get(id) ?? "—" }))
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
-  const conflito = (f: Ferias) => ordenadas.some((o) => o.id !== f.id && o.profile_id !== f.profile_id && sobrepoe(o, f));
+  const conflito = (f: Ferias) => todas.some((o) => o.id !== f.id && o.profile_id !== f.profile_id && sobrepoe(o, f));
 
   function abrirNovo() {
     setPessoa("");
@@ -177,6 +183,31 @@ export function FeriasPainel({ ferias, pessoas, ano, indisponivel }: { ferias: F
           <Palmtree className="size-4" /> De férias agora:{" "}
           <strong>{emFerias.map((f) => `${nome.get(f.profile_id) ?? "—"} (até ${dataBr(f.fim)})`).join(" · ")}</strong>
         </p>
+      ) : null}
+
+      {comFerias.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="w-60">
+            <Select value={filtro} onChange={(e) => setFiltro(e.target.value)} aria-label="Filtrar por colaborador" className="h-9">
+              <option value="">Todos os colaboradores</option>
+              {comFerias.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nome}
+                </option>
+              ))}
+            </Select>
+          </div>
+          {filtro ? (
+            <>
+              <span className="text-xs text-muted-foreground">
+                {ordenadas.length} período(s) · {ordenadas.reduce((t, f) => t + diasDeFerias(f), 0)} dias em {ano}
+              </span>
+              <Button variant="ghost" size="sm" onClick={() => setFiltro("")}>
+                Limpar filtro
+              </Button>
+            </>
+          ) : null}
+        </div>
       ) : null}
 
       {/* Linha do tempo do ano */}
