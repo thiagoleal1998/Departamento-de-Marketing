@@ -416,6 +416,9 @@ export default async function ChamadoDetalhePage({
                 </Label>
                 {lideranca ? (
                   <form
+                    // Recria o formulário quando o responsável muda: sem isso, o React volta o campo
+                    // para o valor antigo depois de salvar e parece que não gravou.
+                    key={chamado.responsavel_id ?? "sem-responsavel"}
                     action={definirResponsavel.bind(null, id)}
                     className="flex gap-2"
                   >
@@ -527,6 +530,7 @@ export default async function ChamadoDetalhePage({
               </CardHeader>
               <CardContent>
                 <form
+                  key={`${chamado.prioridade}-${chamado.prazo_sla ?? ""}`}
                   action={triarChamado.bind(null, id)}
                   className="space-y-3"
                 >
