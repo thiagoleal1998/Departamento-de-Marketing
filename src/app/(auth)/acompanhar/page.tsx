@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { obterConfig } from "@/lib/config";
 import { AcompanharForm } from "@/features/portal/acompanhar-form";
+import { NomeMarca } from "@/components/shared/nome-marca";
 import { Marca } from "@/components/shared/marca";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,7 @@ export default async function AcompanharPage() {
             iconClassName="size-5"
             imgClassName="h-10 max-w-[160px]"
           />
-          <span className="text-sm font-semibold">{textos.painel_nome}</span>
+          <NomeMarca />
         </Link>
         <div className="flex items-center gap-2">
           <ThemeToggle />

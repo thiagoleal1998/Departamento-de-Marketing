@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { NomeMarca } from "@/components/shared/nome-marca";
 import { LogOut, MessagesSquare } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ export async function Topbar({
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b bg-card px-4 sm:px-6">
       <div className="lg:hidden">
-        <span className="text-sm font-semibold">{nomePainel}</span>
+        <NomeMarca />
       </div>
       <div className="hidden lg:block" />
 

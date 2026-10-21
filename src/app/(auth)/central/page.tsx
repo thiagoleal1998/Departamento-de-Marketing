@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LogIn, Clock, Palette, MessagesSquare, Search } from "lucide-react";
 import { obterConfig } from "@/lib/config";
 import { PortalForm } from "@/features/portal/portal-form";
+import { NomeMarca } from "@/components/shared/nome-marca";
 import { Marca } from "@/components/shared/marca";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,7 @@ export default async function CentralPage() {
             iconClassName="size-5"
             imgClassName="h-10 max-w-[160px]"
           />
-          <span className="text-sm font-semibold">{textos.painel_nome}</span>
+          <NomeMarca />
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />

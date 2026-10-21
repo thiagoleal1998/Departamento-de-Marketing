@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Marca } from "@/components/shared/marca";
+import { NomeMarca } from "@/components/shared/nome-marca";
 import { NAVEGACAO, type ItemNav, type SubItemNav } from "@/lib/navigation";
 import { pode } from "@/lib/permissions";
 import { somarContagens, type Contagens } from "@/lib/contagens";
@@ -163,9 +164,7 @@ export function Sidebar({
           iconClassName="size-4"
           imgClassName="h-8 max-w-[104px]"
         />
-        <span className="truncate text-sm font-semibold leading-tight">
-          {nomePainel}
-        </span>
+        <NomeMarca />
       </div>
 
       <nav className="flex flex-1 flex-col overflow-y-auto p-3">
