@@ -78,7 +78,7 @@ function Distribuicoes({ linhas, extra }: { linhas: Linha[]; extra: Filtro }) {
   const sim = (nome: string) => [
     { rotulo: "Sim", qtd: por(nome, "Sim"), href: href({ [nome]: "Sim" }) },
     { rotulo: "Não", qtd: por(nome, "Não"), href: href({ [nome]: "Não" }) },
-    { rotulo: "Não informado", qtd: linhas.filter((l) => !(l[nome] ?? "").trim()).length, href: href({}) },
+    { rotulo: "Não informado", qtd: linhas.filter((l) => !(l[nome] ?? "").trim()).length, href: href({ [nome]: "__vazio__" }) },
   ];
 
   const contagem = (nome: string, limite: number) =>

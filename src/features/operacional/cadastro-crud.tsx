@@ -227,7 +227,9 @@ export function CadastroCrud({
   const termo = busca.trim().toLowerCase();
   const visiveis = linhas.filter((l) => {
     for (const [campo, valor] of Object.entries(filtroVal)) {
-      if (valor && (l[campo] ?? "") !== valor) return false;
+      if (valor === "__vazio__") {
+        if ((l[campo] ?? "").trim()) return false; // "Não informado": só as que estão sem o campo
+      } else if (valor && (l[campo] ?? "") !== valor) return false;
     }
     if (!termo) return true;
     return def.campos.some((c) =>
@@ -312,6 +314,22 @@ export function CadastroCrud({
               </Select>
             </div>
           ))}
+          {Object.entries(filtroVal)
+            .filter(([k, v]) => v && !camposFiltro.some((c) => c.name === k))
+            .map(([k, v]) => {
+              const c = def.campos.find((x) => x.name === k);
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setFiltroVal((p) => ({ ...p, [k]: "" }))}
+                  className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/20"
+                  title="Remover este filtro"
+                >
+                  {c?.label ?? k}: {v === "__vazio__" ? "não informado" : v} <X className="size-3" />
+                </button>
+              );
+            })}
           <span className="text-xs text-muted-foreground">
             {visiveis.length} de {linhas.length}
           </span>
