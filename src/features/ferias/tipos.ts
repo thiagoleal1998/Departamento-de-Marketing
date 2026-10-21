@@ -35,3 +35,11 @@ export function posicaoNoAno(iso: string, ano: number, fimDoDia = false): number
 }
 
 export const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+/** Quantos dias dois períodos têm em comum (0 se não se sobrepõem). */
+export function diasEmComum(a: { inicio: string; fim: string }, b: { inicio: string; fim: string }): number {
+  if (!sobrepoe(a, b)) return 0;
+  const ini = a.inicio > b.inicio ? a.inicio : b.inicio;
+  const fim = a.fim < b.fim ? a.fim : b.fim;
+  return diasDeFerias({ inicio: ini, fim });
+}

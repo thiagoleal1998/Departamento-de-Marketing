@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { AlertTriangle, ChevronLeft, ChevronRight, Loader2, Palmtree, Pencil, Plus, Trash2, X } from "lucide-react";
 import { excluirFerias, salvarFerias } from "./actions";
-import { MESES, dataBr, diasDeFerias, posicaoNoAno, sobrepoe, type Ferias, type PessoaFerias } from "./tipos";
+import { MESES, dataBr, diasDeFerias, diasEmComum, posicaoNoAno, type Ferias, type PessoaFerias } from "./tipos";
 import { useDialogo } from "@/components/shared/dialogo-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,7 +20,20 @@ const hojeIso = () => {
 
 const CORES = ["bg-emerald-500", "bg-sky-500", "bg-amber-500", "bg-fuchsia-500", "bg-teal-500", "bg-orange-500", "bg-indigo-500", "bg-rose-500"];
 
-export function FeriasPainel({ ferias, pessoas, ano, indisponivel }: { ferias: Ferias[]; pessoas: PessoaFerias[]; ano: number; indisponivel?: boolean }) {
+export function FeriasPainel({
+  ferias,
+  pessoas,
+  ano,
+  indisponivel,
+  podeEditar = true,
+}: {
+  ferias: Ferias[];
+  pessoas: PessoaFerias[];
+  ano: number;
+  indisponivel?: boolean;
+  /** Liderança registra e edita; colaborador só consulta as próprias férias. */
+  podeEditar?: boolean;
+}) {
   const { confirmar, avisar } = useDialogo();
   const [editando, setEditando] = useState<string | "novo" | null>(null);
   const [pessoa, setPessoa] = useState("");
@@ -46,7 +59,12 @@ export function FeriasPainel({ ferias, pessoas, ano, indisponivel }: { ferias: F
     .map((id) => ({ id, nome: nome.get(id) ?? "—" }))
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
-  const conflito = (f: Ferias) => todas.some((o) => o.id !== f.id && o.profile_id !== f.profile_id && sobrepoe(o, f));
+  /** Com quem este período coincide e por quantos dias. */
+  const coincidencias = (f: Ferias) =>
+    todas
+      .filter((o) => o.id !== f.id && o.profile_id !== f.profile_id)
+      .map((o) => ({ nome: nome.get(o.profile_id) ?? "—", dias: diasEmComum(f, o) }))
+      .filter((c) => c.dias > 0);
 
   function abrirNovo() {
     setPessoa("");
@@ -110,7 +128,7 @@ export function FeriasPainel({ ferias, pessoas, ano, indisponivel }: { ferias: F
             </Link>
           </Button>
         </div>
-        {editando === null ? (
+        {editando === null && podeEditar ? (
           <Button onClick={abrirNovo} disabled={indisponivel}>
             <Plus className="size-4" /> Registrar férias
           </Button>
@@ -123,7 +141,7 @@ export function FeriasPainel({ ferias, pessoas, ano, indisponivel }: { ferias: F
         </p>
       ) : null}
 
-      {editando !== null ? (
+      {editando !== null && podeEditar ? (
         <Card>
           <CardContent className="pt-6">
             <form onSubmit={salvar} className="space-y-4">
@@ -185,7 +203,7 @@ export function FeriasPainel({ ferias, pessoas, ano, indisponivel }: { ferias: F
         </p>
       ) : null}
 
-      {comFerias.length > 0 ? (
+      {comFerias.length > 1 && podeEditar ? (
         <div className="flex flex-wrap items-center gap-2">
           <div className="w-60">
             <Select value={filtro} onChange={(e) => setFiltro(e.target.value)} aria-label="Filtrar por colaborador" className="h-9">
@@ -275,12 +293,13 @@ export function FeriasPainel({ ferias, pessoas, ano, indisponivel }: { ferias: F
                   <th className="px-4 py-2 font-medium">Dias</th>
                   <th className="px-4 py-2 font-medium">Situação</th>
                   <th className="px-4 py-2 font-medium">Observação</th>
-                  <th className="w-24 px-4 py-2" />
+                  {podeEditar ? <th className="w-24 px-4 py-2" /> : null}
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {ordenadas.map((f) => {
                   const s = situacao(f);
+                  const coinc = coincidencias(f);
                   return (
                     <tr key={f.id} className="align-top">
                       <td className="px-4 py-3 font-medium">{nome.get(f.profile_id) ?? "—"}</td>
@@ -290,13 +309,23 @@ export function FeriasPainel({ ferias, pessoas, ano, indisponivel }: { ferias: F
                       <td className="px-4 py-3 tabular-nums">{diasDeFerias(f)}</td>
                       <td className="px-4 py-3">
                         <span className={cn("rounded px-1.5 py-0.5 text-xs font-semibold", s.cor)}>{s.rotulo}</span>
-                        {conflito(f) ? (
-                          <span className="ml-2 inline-flex items-center gap-1 text-xs text-amber-700" title="Outra pessoa do time está de férias no mesmo período">
-                            <AlertTriangle className="size-3.5" /> coincide com outra
+                        {coinc.length > 0 ? (
+                          <span className="mt-1 flex items-start gap-1 text-xs text-amber-700">
+                            <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+                            <span>
+                              Coincide com{" "}
+                              {coinc.map((c, i) => (
+                                <span key={i}>
+                                  {i > 0 ? ", " : ""}
+                                  <strong>{c.nome}</strong> ({c.dias} {c.dias === 1 ? "dia" : "dias"} juntos)
+                                </span>
+                              ))}
+                            </span>
                           </span>
                         ) : null}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{f.observacao ?? "—"}</td>
+                      {podeEditar ? (
                       <td className="px-4 py-3">
                         <div className="flex justify-end gap-1">
                           <Button variant="ghost" size="icon" aria-label="Editar" onClick={() => abrirEdicao(f)}>
@@ -307,6 +336,7 @@ export function FeriasPainel({ ferias, pessoas, ano, indisponivel }: { ferias: F
                           </Button>
                         </div>
                       </td>
+                      ) : null}
                     </tr>
                   );
                 })}

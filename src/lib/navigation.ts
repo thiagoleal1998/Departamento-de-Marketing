@@ -26,6 +26,7 @@ import {
   Clapperboard,
   KeyRound,
   Settings,
+  Palmtree,
   type LucideIcon,
 } from "lucide-react";
 import type { Permissao } from "@/lib/permissions";
@@ -38,6 +39,8 @@ export interface ItemNav {
   gradiente: string;
   /** Se definido, só aparece para quem tem a permissão. */
   requer?: Permissao;
+  /** Só aparece para colaboradores (a liderança acessa pela área de Gestão). */
+  soColaborador?: boolean;
   descricao?: string;
   /** Aparece separado dos demais (rodapé do menu). */
   separado?: boolean;
@@ -97,6 +100,14 @@ export const NAVEGACAO: ItemNav[] = [
     gradiente: "from-emerald-500 to-teal-600",
     requer: "ver_relatorios_gerais",
     descricao: "Indicadores e campanhas",
+  },
+  {
+    href: "/gestao/ferias",
+    label: "Minhas férias",
+    icone: Palmtree,
+    gradiente: "from-emerald-500 to-teal-600",
+    soColaborador: true,
+    descricao: "Seus períodos de férias",
   },
   {
     href: "/operacional",

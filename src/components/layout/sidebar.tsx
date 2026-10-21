@@ -119,7 +119,7 @@ export function Sidebar({
   contagens: Contagens;
 }) {
   const pathname = usePathname();
-  const itens = NAVEGACAO.filter((i) => !i.requer || pode(papel, i.requer));
+  const itens = NAVEGACAO.filter((i) => (!i.requer || pode(papel, i.requer)) && (!i.soColaborador || papel === "colaborador"));
   const principais = itens.filter((i) => !i.separado);
   const separados = itens.filter((i) => i.separado);
 

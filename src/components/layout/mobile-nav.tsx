@@ -27,7 +27,7 @@ export function MobileNav({
   contagens: Contagens;
 }) {
   const pathname = usePathname();
-  const itens = NAVEGACAO.filter((i) => !i.requer || pode(papel, i.requer));
+  const itens = NAVEGACAO.filter((i) => (!i.requer || pode(papel, i.requer)) && (!i.soColaborador || papel === "colaborador"));
 
   // Submenus ficam "achatados" na barra horizontal.
   const planos: ItemPlano[] = itens.flatMap((i): ItemPlano[] =>
