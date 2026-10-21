@@ -93,6 +93,11 @@ export default async function ChamadoDetalhePage({
     (chamado.solicitante_id ? perfis.get(chamado.solicitante_id)?.nome : null) ??
     chamado.solicitante_nome ??
     "—";
+  // E-mail do solicitante: o informado na abertura (portal) ou o do perfil dele (chamado interno).
+  const solicitanteEmail =
+    chamado.solicitante_email ||
+    (chamado.solicitante_id ? perfis.get(chamado.solicitante_id)?.email : null) ||
+    null;
   const responsavel = chamado.responsavel_id
     ? perfis.get(chamado.responsavel_id)
     : null;
@@ -145,9 +150,12 @@ export default async function ChamadoDetalhePage({
                 <div>
                   <p className="text-xs text-muted-foreground">Solicitante</p>
                   <p className="font-medium">{solicitanteNome}</p>
-                  {chamado.origem === "portal" ? (
-                    <p className="text-xs text-muted-foreground">
-                      {chamado.solicitante_email} · via portal
+                  {solicitanteEmail ? (
+                    <p className="break-all text-xs text-muted-foreground">
+                      <a href={`mailto:${solicitanteEmail}`} className="hover:underline">
+                        {solicitanteEmail}
+                      </a>
+                      {chamado.origem === "portal" ? " · via portal" : ""}
                     </p>
                   ) : null}
                 </div>
