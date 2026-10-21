@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { BarChart3, Brain } from "lucide-react";
+import { BarChart3, Brain, Palmtree } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-/** Abas da área de Gestão: indicadores e perfis comportamentais. */
-export function GestaoAbas({ ativa }: { ativa: "indicadores" | "perfis" }) {
+/** Abas da área de Gestão: indicadores, perfis comportamentais e férias. */
+export function GestaoAbas({ ativa }: { ativa: "indicadores" | "perfis" | "ferias" }) {
   const abas = [
     { chave: "indicadores", href: "/gestao", label: "Indicadores", icone: BarChart3 },
     {
@@ -12,6 +12,7 @@ export function GestaoAbas({ ativa }: { ativa: "indicadores" | "perfis" }) {
       label: "Perfis comportamentais",
       icone: Brain,
     },
+    { chave: "ferias", href: "/gestao/ferias", label: "Férias", icone: Palmtree },
   ] as const;
 
   return (
