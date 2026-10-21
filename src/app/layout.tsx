@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { obterConfig, estiloDeCor } from "@/lib/config";
+import { Suspense } from "react";
+import { BarraProgresso } from "@/components/shared/barra-progresso";
 import { DialogoProvider } from "@/components/shared/dialogo-provider";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -32,7 +34,12 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body className={`${inter.variable} font-sans antialiased`}><DialogoProvider>{children}</DialogoProvider></body>
+      <body className={`${inter.variable} font-sans antialiased`}><DialogoProvider>
+          <Suspense fallback={null}>
+            <BarraProgresso />
+          </Suspense>
+          {children}
+        </DialogoProvider></body>
     </html>
   );
 }

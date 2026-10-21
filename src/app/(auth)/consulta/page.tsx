@@ -40,8 +40,9 @@ export default async function ConsultaPage({ searchParams }: { searchParams: Pro
     } else if (secao === "lps") {
       const { data } = await supabase
         .from("landing_pages")
-        .select("id, nome, grupo, url")
-        .eq("status_patrocinio", "ativo")
+        .select("id, nome, grupo, url, status_patrocinio")
+        .in("status_patrocinio", ["ativo", "inativo"])
+        .not("grupo", "in", "(antigas,epic,feriados)")
         .order("nome")
         .limit(1000);
       lps = (data as LpPublica[] | null) ?? [];
@@ -102,7 +103,7 @@ export default async function ConsultaPage({ searchParams }: { searchParams: Pro
             {secao === "lps"
               ? dados
                 ? "Números gerais das landing pages ativas."
-                : "Landing pages ativas e os sites em que estão publicadas. Use a busca para encontrar o link que precisa."
+                : "Landing pages ativas e inativas e os sites em que estão publicadas. Use a busca para encontrar o link que precisa."
               : dados
               ? "Números gerais das páginas publicadas no site da LV."
               : "Páginas e conteúdos publicados no site da LV: resorts, hotéis, destinos, circuitos e LV Magazine."}
