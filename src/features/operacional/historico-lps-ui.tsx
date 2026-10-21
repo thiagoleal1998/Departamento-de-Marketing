@@ -29,12 +29,12 @@ const dataHora = (iso: string) =>
   });
 
 function Entrada({ e, mostrarNome }: { e: EntradaHistoricoLp; mostrarNome: boolean }) {
-  const Icone = ICONE_ACAO[e.acao];
+  const Icone = ICONE_ACAO[e.acao] ?? Pencil;
   return (
     <li className="space-y-1.5 rounded-md border p-3 text-sm">
       <div className="flex flex-wrap items-center gap-2">
-        <span className={cn("inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-semibold", COR_ACAO[e.acao])}>
-          <Icone className="size-3" /> {ROTULO_ACAO_LP[e.acao]}
+        <span className={cn("inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-semibold", COR_ACAO[e.acao] ?? "bg-muted")}>
+          <Icone className="size-3" /> {ROTULO_ACAO_LP[e.acao] ?? e.acao}
         </span>
         {mostrarNome ? <strong>{e.nome}</strong> : null}
         <span className="text-xs text-muted-foreground">
@@ -70,7 +70,9 @@ export function HistoricoDaLp({ lpId }: { lpId: string }) {
 
   useEffect(() => {
     let vivo = true;
-    void historicoDaLp(lpId).then((r) => vivo && setDados(r));
+    historicoDaLp(lpId)
+      .then((r) => vivo && setDados(r))
+      .catch(() => vivo && setDados({ itens: [], indisponivel: true }));
     return () => {
       vivo = false;
     };

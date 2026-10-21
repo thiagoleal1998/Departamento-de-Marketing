@@ -2,7 +2,7 @@
 
 import { useDialogo } from "@/components/shared/dialogo-provider";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Plus, Pencil, Trash2, Loader2, X, ExternalLink } from "lucide-react";
 import { salvarRegistro, excluirRegistro } from "./cadastros-actions";
 import { CADASTROS, type CadastroChave, type CampoDef } from "./cadastros";
@@ -66,11 +66,17 @@ export function CadastroCrud({
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, startTransition] = useTransition();
   const { confirmar, avisar } = useDialogo();
+  const cartaoEdicao = useRef<HTMLDivElement>(null);
   const [busca, setBusca] = useState("");
   const [limite, setLimite] = useState(200);
   const [filtroVal, setFiltroVal] = useState<Record<string, string>>(
     filtrosIniciais ?? {}
   );
+
+  // Ao abrir a edição (lápis), leva a tela até o formulário — ele fica no topo da lista.
+  useEffect(() => {
+    if (editando !== null) cartaoEdicao.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [editando]);
 
   const nomePessoa = new Map(pessoas.map((p) => [p.id, p.nome]));
   const nomeLp = new Map(lps.map((l) => [l.id, l.nome]));
@@ -245,7 +251,7 @@ export function CadastroCrud({
           </Button>
         </div>
       ) : (
-        <Card>
+        <Card ref={cartaoEdicao} className="scroll-mt-20">
           <CardContent className="space-y-4 pt-6">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold">
