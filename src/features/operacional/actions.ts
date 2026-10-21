@@ -76,8 +76,15 @@ export async function salvarTarefa(
     return { erro: "O conteúdo está muito grande." };
   }
 
-  const { data: antes } = await supabase.from("tarefas").select("status").eq("id", tarefaId).maybeSingle();
-  const { data, error } = await supabase
+  // A leitura passa pela RLS: só enxerga o card quem é da liderança ou o responsável atual.
+  const { data: antes } = await supabase.from("tarefas").select("status, responsavel_id").eq("id", tarefaId).maybeSingle();
+  if (!antes) return { erro: "Você não tem permissão para editar este card." };
+
+  // Quem passa o card a outra pessoa deixa de ser o responsável, e a regra de atualização do banco
+  // (liderança ou responsável) barraria a própria gravação. Como a permissão já foi conferida acima,
+  // a gravação usa a chave de serviço.
+  const gravador = servicoDisponivel() ? criarClienteAdmin() : supabase;
+  const { data, error } = await gravador
     .from("tarefas")
     .update({
       titulo,
@@ -108,6 +115,16 @@ export async function salvarTarefa(
   }
   if (d.status === "aprovacao_marco" && antes && antes.status !== d.status) {
     await avisarDiretoria({ titulo: "Para aprovar: " + titulo, link: "/executivo" });
+  }
+  // Avisa quem recebeu o card.
+  const novoResp = d.responsavel_id || null;
+  if (novoResp && novoResp !== antes.responsavel_id && novoResp !== user.id && servicoDisponivel()) {
+    await criarClienteAdmin().from("notificacoes").insert({
+      destinatario_id: novoResp,
+      tipo: "tarefa",
+      titulo: "Card passado para você: " + titulo,
+      link: "/operacional?tarefa=" + tarefaId,
+    });
   }
   revalidatePath("/operacional");
   return { ok: true };
