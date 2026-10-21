@@ -38,12 +38,18 @@ export async function consultarChamado(
   const supabase = criarClienteAdmin();
   const { data: chamado } = await supabase
     .from("chamados")
-    .select("id, numero, titulo, status, departamento, created_at, solicitante_email")
+    .select("id, numero, titulo, status, departamento, created_at, solicitante_email, solicitante_id")
     .eq("numero", numero)
     .maybeSingle();
 
-  // Se o e-mail foi informado, precisa conferir com o da abertura.
-  const confere = !!email && (chamado?.solicitante_email ?? "").trim().toLowerCase() === email.toLowerCase();
+  // Se o e-mail foi informado, precisa conferir com o da abertura: o informado no portal ou,
+  // nos chamados abertos dentro do sistema, o e-mail do perfil de quem abriu.
+  let emailDoChamado = (chamado?.solicitante_email ?? "").trim().toLowerCase();
+  if (chamado && !emailDoChamado && chamado.solicitante_id) {
+    const { data: perfil } = await supabase.from("profiles").select("email").eq("id", chamado.solicitante_id).maybeSingle();
+    emailDoChamado = ((perfil as { email: string } | null)?.email ?? "").trim().toLowerCase();
+  }
+  const confere = !!email && !!emailDoChamado && emailDoChamado === email.toLowerCase();
   if (!chamado || (email && !confere)) {
     return {
       erro: email
