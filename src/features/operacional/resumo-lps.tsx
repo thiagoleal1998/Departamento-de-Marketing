@@ -134,19 +134,7 @@ export function ResumoLps({ linhas }: { linhas: Linha[] }) {
   return (
     <div className="space-y-8">
       <section className="space-y-4">
-        <Titulo total={ativas.length} destaque>
-          Landing pages ativas
-        </Titulo>
-        {ativas.length === 0 ? (
-          <p className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">Nenhuma landing page ativa.</p>
-        ) : (
-          <Distribuicoes linhas={ativas} extra={{ status_patrocinio: "ativo" }} />
-        )}
-      </section>
-
-      <section className="space-y-4">
         <Titulo total={total}>Visão geral (todas as situações)</Titulo>
-
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {statusPatrocinio.map((s) => {
             const qtd = por("status_patrocinio", s.value);
@@ -164,6 +152,21 @@ export function ResumoLps({ linhas }: { linhas: Linha[] }) {
           })}
         </div>
 
+      </section>
+
+      <section className="space-y-4">
+        <Titulo total={ativas.length} destaque>
+          Landing pages ativas
+        </Titulo>
+        {ativas.length === 0 ? (
+          <p className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">Nenhuma landing page ativa.</p>
+        ) : (
+          <Distribuicoes linhas={ativas} extra={{ status_patrocinio: "ativo" }} />
+        )}
+      </section>
+
+      <section className="space-y-4">
+        <Titulo total={total}>Todas as landing pages</Titulo>
         <div className="overflow-x-auto rounded-md border">
           <p className="bg-muted px-3 py-1.5 text-center text-sm font-semibold">Grupo × Status de patrocínio</p>
           <table className="w-full text-sm">
