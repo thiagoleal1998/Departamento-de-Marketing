@@ -36,14 +36,16 @@ export function AcompanharForm() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="email">E-mail informado na abertura</Label>
+                <Label htmlFor="email">
+                  E-mail informado na abertura <span className="font-normal text-muted-foreground">(opcional)</span>
+                </Label>
                 <Input
                   id="email"
                   name="email"
                   type="email"
                   placeholder="voce@empresa.com"
-                  required
                 />
+                <p className="text-xs text-muted-foreground">Com o e-mail você vê também o título e o andamento detalhado.</p>
               </div>
             </div>
             {estado.erro ? (
@@ -71,7 +73,9 @@ export function AcompanharForm() {
                 <p className="text-sm text-muted-foreground">
                   Chamado #{estado.chamado.numero}
                 </p>
-                <h2 className="text-lg font-semibold">{estado.chamado.titulo}</h2>
+                <h2 className="text-lg font-semibold">
+                  {estado.chamado.titulo ?? "Título visível ao informar o e-mail da abertura"}
+                </h2>
               </div>
               <ChamadoStatusBadge status={estado.chamado.status} />
             </div>
@@ -109,6 +113,12 @@ export function AcompanharForm() {
                   ))}
                 </ul>
               </div>
+            ) : null}
+
+            {estado.chamado.parcial ? (
+              <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
+                Quer ver o título e o andamento detalhado? Informe também o e-mail usado na abertura e consulte de novo.
+              </p>
             ) : null}
 
             <p className="text-xs text-muted-foreground">

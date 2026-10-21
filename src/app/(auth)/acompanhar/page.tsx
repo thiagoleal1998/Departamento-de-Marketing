@@ -46,8 +46,7 @@ export default async function AcompanharPage() {
             Acompanhar chamado
           </h1>
           <p className="text-sm text-muted-foreground">
-            Informe o número do chamado e o e-mail usado na abertura para ver a
-            situação.
+            Informe o número do chamado para ver a situação. O e-mail usado na abertura é opcional e libera também o título e o andamento detalhado.
           </p>
         </div>
         <AcompanharForm />

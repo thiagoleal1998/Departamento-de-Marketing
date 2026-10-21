@@ -5,7 +5,9 @@ import type { ChamadoStatus } from "@/types";
 
 export interface ChamadoConsulta {
   numero: number;
-  titulo: string;
+  /** Sem o e-mail, o título e o detalhe do andamento ficam ocultos. */
+  parcial: boolean;
+  titulo: string | null;
   status: ChamadoStatus;
   departamento: string | null;
   created_at: string;
@@ -14,7 +16,10 @@ export interface ChamadoConsulta {
 
 export type EstadoConsulta = { chamado?: ChamadoConsulta; erro?: string };
 
-/** Consulta pública de um chamado do portal pelo número + e-mail do solicitante. */
+/**
+ * Consulta pública de um chamado do portal. O e-mail é opcional: só com o número se vê a situação;
+ * com o e-mail do solicitante (e se ele conferir) aparecem também o título e o andamento detalhado.
+ */
 export async function consultarChamado(
   _prev: EstadoConsulta,
   formData: FormData
@@ -26,21 +31,38 @@ export async function consultarChamado(
   const numero = Number(String(formData.get("numero") ?? "").replace(/\D/g, ""));
   const email = String(formData.get("email") ?? "").trim();
 
-  if (!numero || !email) {
-    return { erro: "Informe o número do chamado e o e-mail usado na abertura." };
+  if (!numero) {
+    return { erro: "Informe o número do chamado." };
   }
 
   const supabase = criarClienteAdmin();
   const { data: chamado } = await supabase
     .from("chamados")
-    .select("id, numero, titulo, status, departamento, created_at")
+    .select("id, numero, titulo, status, departamento, created_at, solicitante_email")
     .eq("numero", numero)
-    .ilike("solicitante_email", email)
     .maybeSingle();
 
-  if (!chamado) {
+  // Se o e-mail foi informado, precisa conferir com o da abertura.
+  const confere = !!email && (chamado?.solicitante_email ?? "").trim().toLowerCase() === email.toLowerCase();
+  if (!chamado || (email && !confere)) {
     return {
-      erro: "Chamado não encontrado. Confira o número e o e-mail informados.",
+      erro: email
+        ? "Chamado não encontrado. Confira o número e o e-mail informados."
+        : "Chamado não encontrado. Confira o número informado.",
+    };
+  }
+
+  if (!confere) {
+    return {
+      chamado: {
+        numero: chamado.numero,
+        parcial: true,
+        titulo: null,
+        status: chamado.status as ChamadoStatus,
+        departamento: chamado.departamento,
+        created_at: chamado.created_at,
+        historico: [],
+      },
     };
   }
 
@@ -53,6 +75,7 @@ export async function consultarChamado(
   return {
     chamado: {
       numero: chamado.numero,
+      parcial: false,
       titulo: chamado.titulo,
       status: chamado.status as ChamadoStatus,
       departamento: chamado.departamento,
