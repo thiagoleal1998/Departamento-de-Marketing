@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 /** Grupos fora da gestão atual: não aparecem na lista nem nas contagens (os dados continuam no banco). */
 const GRUPOS_OCULTOS = ["antigas", "epic", "feriados"];
 
-const FILTROS_URL = ["grupo", "status_patrocinio", "destino", "tipo_pagina", "estado", "banner_obrigatorio", "banner_no_ar", "tem_link_casamento", "tag_adm_mkt"];
+const FILTROS_URL = ["pais", "canal", "grupo", "status_patrocinio", "destino", "tipo_pagina", "estado", "banner_obrigatorio", "banner_no_ar", "tem_link_casamento", "tag_adm_mkt"];
 
 export default async function LandingPagesPage({
   searchParams,
