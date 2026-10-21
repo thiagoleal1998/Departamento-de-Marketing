@@ -283,11 +283,14 @@ export function ChatJanela({
                     </p>
                   ) : null}
                   <p className="whitespace-pre-wrap break-words">{m.texto}</p>
-                  {m.solicitacao_id ? (
+                  {m.solicitacao_id && mensagens.find((x) => x.solicitacao_id === m.solicitacao_id)?.id === m.id ? (
                     <SolicitacaoCard
                       id={m.solicitacao_id}
                       versao={mensagens.filter((x) => x.solicitacao_id === m.solicitacao_id).length}
                       minha={minha}
+                      conversaId={conversaId}
+                      meuNome={nomes[meuId] ?? ""}
+                      pessoas={pessoas}
                     />
                   ) : null}
                   {m.tarefa_id || m.estoque_item_id || m.projeto_id || (m.estoque_itens?.length ?? 0) > 0 ? (
@@ -594,7 +597,7 @@ export function ChatJanela({
       </form>
 
       {solicitando ? (
-        <SolicitacaoForm conversaId={conversaId} meuNome={nomes[meuId] ?? ""} aoFechar={() => setSolicitando(false)} />
+        <SolicitacaoForm conversaId={conversaId} meuNome={nomes[meuId] ?? ""} pessoas={pessoas} outroId={outroId} aoFechar={() => setSolicitando(false)} />
       ) : null}
     </div>
   );

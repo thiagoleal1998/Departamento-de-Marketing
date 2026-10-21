@@ -53,6 +53,8 @@ export interface NovaSolicitacao {
   prazo: string | null;
   detalhes: string;
   prova: { caminho: string; nome: string } | null;
+  /** Quem vai executar: recebe uma tarefa no quadro (nenhum = não cria tarefa). */
+  executorId?: string | null;
 }
 
 export interface SolicitacaoView {
@@ -64,9 +66,15 @@ export interface SolicitacaoView {
   prazo: string | null;
   detalhes: string | null;
   provaNome: string | null;
+  provaCaminho: string | null;
   provaUrl: string | null;
   provaEhImagem: boolean;
   status: StatusSolicitacao;
   criadoPorNome: string | null;
   criadoEm: string;
+  /** Marca "Editado" (data da última edição). */
+  editadoEm: string | null;
+  /** Só quem criou a solicitação edita. */
+  podeEditar: boolean;
+  tarefaId: string | null;
 }

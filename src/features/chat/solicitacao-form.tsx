@@ -3,13 +3,14 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { ImageIcon, Loader2, Paperclip, X } from "lucide-react";
 import { criarClienteBrowser } from "@/lib/supabase/client";
-import { criarSolicitacaoChat, prepararEnvioProva } from "./solicitacoes-actions";
+import { criarSolicitacaoChat, editarSolicitacaoChat, prepararEnvioProva } from "./solicitacoes-actions";
 import {
   BUCKET_SOLICITACOES,
   MAX_BYTES_PROVA,
   TIPOS_PROVA,
   TIPOS_SOLICITACAO,
   metaDoTipo,
+  type SolicitacaoView,
   type TipoSolicitacao,
 } from "./solicitacao-tipos";
 import { Button } from "@/components/ui/button";
@@ -22,19 +23,31 @@ import { Textarea } from "@/components/ui/textarea";
 export function SolicitacaoForm({
   conversaId,
   meuNome,
+  pessoas = [],
+  outroId = null,
+  edicao,
   aoFechar,
 }: {
   conversaId: string;
   meuNome: string;
+  pessoas?: { id: string; nome: string }[];
+  outroId?: string | null;
+  /** Quando informado, o formulário edita essa solicitação. */
+  edicao?: SolicitacaoView;
   aoFechar: () => void;
 }) {
-  const [tipo, setTipo] = useState<TipoSolicitacao>("landing_page");
-  const [produto, setProduto] = useState("");
-  const [link, setLink] = useState("");
-  const [solicitante, setSolicitante] = useState(meuNome);
-  const [prazo, setPrazo] = useState("");
-  const [detalhes, setDetalhes] = useState("");
-  const [prova, setProva] = useState<{ caminho: string; nome: string; previa: string | null } | null>(null);
+  const [tipo, setTipo] = useState<TipoSolicitacao>((edicao?.tipo as TipoSolicitacao) ?? "landing_page");
+  const [produto, setProduto] = useState(edicao?.produto ?? "");
+  const [link, setLink] = useState(edicao?.linkReferencia ?? "");
+  const [solicitante, setSolicitante] = useState(edicao?.solicitante ?? meuNome);
+  const [prazo, setPrazo] = useState(edicao?.prazo ? edicao.prazo.slice(0, 10) : "");
+  const [detalhes, setDetalhes] = useState(edicao?.detalhes ?? "");
+  const [executor, setExecutor] = useState(outroId ?? "");
+  const [prova, setProva] = useState<{ caminho: string; nome: string; previa: string | null } | null>(
+    edicao?.provaCaminho
+      ? { caminho: edicao.provaCaminho, nome: edicao.provaNome ?? "print", previa: edicao.provaEhImagem ? edicao.provaUrl : null }
+      : null
+  );
   const [enviandoProva, setEnviandoProva] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, start] = useTransition();
@@ -92,7 +105,7 @@ export function SolicitacaoForm({
     e.preventDefault();
     setErro(null);
     start(async () => {
-      const r = await criarSolicitacaoChat(conversaId, {
+      const dados = {
         tipo,
         produto,
         linkReferencia: link,
@@ -100,7 +113,9 @@ export function SolicitacaoForm({
         prazo: prazo || null,
         detalhes,
         prova: prova ? { caminho: prova.caminho, nome: prova.nome } : null,
-      });
+        executorId: executor || null,
+      };
+      const r = edicao ? await editarSolicitacaoChat(edicao.id, dados) : await criarSolicitacaoChat(conversaId, dados);
       if (r.erro) setErro(r.erro);
       else aoFechar();
     });
@@ -123,8 +138,12 @@ export function SolicitacaoForm({
       >
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">Solicitar criação</h2>
-            <p className="text-sm text-muted-foreground">Pedido estruturado: aparece na conversa como um cartão próprio, com andamento.</p>
+            <h2 className="text-lg font-semibold">{edicao ? "Editar solicitação" : "Solicitar criação"}</h2>
+            <p className="text-sm text-muted-foreground">
+              {edicao
+                ? "Ao salvar, o cartão mostra “Editado” para todos na conversa."
+                : "Pedido estruturado: aparece na conversa como um cartão próprio, com andamento."}
+            </p>
           </div>
           <Button type="button" variant="ghost" size="icon" aria-label="Fechar" onClick={aoFechar}>
             <X className="size-5" />
@@ -155,6 +174,20 @@ export function SolicitacaoForm({
             <Label htmlFor="sol-prazo">Prazo desejado</Label>
             <Input id="sol-prazo" type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} />
           </div>
+          {!edicao ? (
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="sol-exec">Quem vai executar</Label>
+              <Select id="sol-exec" value={executor} onChange={(e) => setExecutor(e.target.value)}>
+                <option value="">Não criar tarefa no quadro</option>
+                {pessoas.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nome}
+                  </option>
+                ))}
+              </Select>
+              <p className="text-xs text-muted-foreground">A pessoa escolhida recebe um card na coluna dela em Tarefas.</p>
+            </div>
+          ) : null}
           <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor="sol-link">Link de referência{meta.exigeReferencia ? " *" : ""}</Label>
             <Input
@@ -209,7 +242,7 @@ export function SolicitacaoForm({
             Cancelar
           </Button>
           <Button type="submit" disabled={pendente || enviandoProva}>
-            {pendente ? <Loader2 className="size-4 animate-spin" /> : null} Enviar solicitação
+            {pendente ? <Loader2 className="size-4 animate-spin" /> : null} {edicao ? "Salvar edição" : "Enviar solicitação"}
           </Button>
         </div>
       </form>

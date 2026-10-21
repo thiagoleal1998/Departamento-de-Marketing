@@ -17,7 +17,16 @@ import {
 
 type Resultado = { ok?: boolean; erro?: string };
 const MIGRACAO = "As solicitações de criação ainda não foram ativadas no banco (migration 0055).";
+const MIGRACAO_EDICAO = "A edição de solicitações ainda não foi ativada no banco (migration 0056).";
 const semTabela = (c?: string) => c === "42P01" || c === "PGRST205" || c === "42703" || c === "PGRST204";
+
+/** Situação da tarefa que acompanha cada situação da solicitação. */
+const STATUS_TAREFA: Record<StatusSolicitacao, string | null> = {
+  solicitada: "a_fazer",
+  em_andamento: "em_andamento",
+  concluida: "concluida",
+  cancelada: null, // a tarefa é retirada do quadro
+};
 
 async function usuario() {
   const supabase = await criarClienteServidor();
@@ -25,6 +34,35 @@ async function usuario() {
     data: { user },
   } = await supabase.auth.getUser();
   return { supabase, user };
+}
+
+function validar(d: NovaSolicitacao) {
+  const meta = metaDoTipo(d.tipo);
+  const produto = d.produto.trim().slice(0, 200);
+  const solicitante = d.solicitante.trim().slice(0, 120);
+  const link = d.linkReferencia.trim().slice(0, 1000);
+  const detalhes = d.detalhes.trim().slice(0, 3000);
+  const prazo = /^\d{4}-\d{2}-\d{2}$/.test(d.prazo ?? "") ? d.prazo : null;
+
+  let erro: string | null = null;
+  if (!produto) erro = `Informe: ${meta.rotuloProduto.toLowerCase()}.`;
+  else if (!solicitante) erro = "Informe quem solicitou.";
+  else if (meta.exigeReferencia && !link) erro = "Informe o link de referência.";
+  else if (link && !/^https?:\/\//i.test(link)) erro = "O link de referência deve começar com http:// ou https://.";
+  else if (meta.exigeProva && !d.prova) erro = "Anexe o print de prova da solicitação.";
+  return { meta, produto, solicitante, link, detalhes, prazo, erro };
+}
+
+/** Descrição da tarefa criada a partir da solicitação. */
+function descricaoTarefa(v: { solicitante: string; link: string; detalhes: string; prazo: string | null }): string {
+  return [
+    `Solicitado por: ${v.solicitante}`,
+    v.link ? `Referência: ${v.link}` : null,
+    v.detalhes ? `\n${v.detalhes}` : null,
+    "\n(Pedido feito pelo chat; o print de prova está no cartão da solicitação.)",
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 /** Endereço de envio assinado para o print de prova (vai direto do navegador ao armazenamento). */
@@ -46,34 +84,24 @@ export async function prepararEnvioProva(
   return { caminho, token: data.token };
 }
 
-/** Cria a solicitação (pedido estruturado) e a mostra na conversa como um cartão próprio. */
+/** Cria a solicitação, mostra o cartão na conversa e (se houver executor) cria a tarefa no quadro. */
 export async function criarSolicitacaoChat(conversaId: string, d: NovaSolicitacao): Promise<Resultado> {
   const { supabase, user } = await usuario();
   if (!user) return { erro: "Sessão expirada. Entre novamente." };
 
-  const meta = metaDoTipo(d.tipo);
-  const produto = d.produto.trim().slice(0, 200);
-  const solicitante = d.solicitante.trim().slice(0, 120);
-  const link = d.linkReferencia.trim().slice(0, 1000);
-  const detalhes = d.detalhes.trim().slice(0, 3000);
-  const prazo = /^\d{4}-\d{2}-\d{2}$/.test(d.prazo ?? "") ? d.prazo : null;
-
-  if (!produto) return { erro: `Informe: ${meta.rotuloProduto.toLowerCase()}.` };
-  if (!solicitante) return { erro: "Informe quem solicitou." };
-  if (meta.exigeReferencia && !link) return { erro: "Informe o link de referência." };
-  if (link && !/^https?:\/\//i.test(link)) return { erro: "O link de referência deve começar com http:// ou https://." };
-  if (meta.exigeProva && !d.prova) return { erro: "Anexe o print de prova da solicitação." };
+  const v = validar(d);
+  if (v.erro) return { erro: v.erro };
 
   const { data: sol, error } = await supabase
     .from("chat_solicitacoes")
     .insert({
       conversa_id: conversaId,
       tipo: d.tipo,
-      produto,
-      link_referencia: link || null,
-      solicitante,
-      prazo,
-      detalhes: detalhes || null,
+      produto: v.produto,
+      link_referencia: v.link || null,
+      solicitante: v.solicitante,
+      prazo: v.prazo,
+      detalhes: v.detalhes || null,
       prova_caminho: d.prova?.caminho ?? null,
       prova_nome: d.prova?.nome?.slice(0, 200) ?? null,
       criado_por: user.id,
@@ -81,15 +109,99 @@ export async function criarSolicitacaoChat(conversaId: string, d: NovaSolicitaca
     .select("id")
     .single();
   if (error || !sol) return { erro: semTabela(error?.code) ? MIGRACAO : "Não foi possível criar a solicitação." };
+  const solId = (sol as { id: string }).id;
 
-  const texto = `📋 Solicitação de ${meta.rotulo.toLowerCase()}: ${produto}`;
+  // Tarefa para quem vai executar (criada com a chave de serviço: colaboradores também pedem).
+  let tarefaId: string | null = null;
+  if (d.executorId && servicoDisponivel()) {
+    const admin = criarClienteAdmin();
+    const { data: dest } = await admin.from("profiles").select("id").eq("id", d.executorId).eq("ativo", true).maybeSingle();
+    if (dest) {
+      const { data: t } = await admin
+        .from("tarefas")
+        .insert({
+          titulo: `${v.meta.rotulo}: ${v.produto}`.slice(0, 200),
+          descricao: descricaoTarefa(v),
+          status: "a_fazer",
+          responsavel_id: d.executorId,
+          prazo: v.prazo ? `${v.prazo}T12:00:00-03:00` : null,
+          tag: "Solicitação",
+          link: v.link || null,
+        })
+        .select("id")
+        .single();
+      tarefaId = (t as { id: string } | null)?.id ?? null;
+      if (tarefaId) {
+        await supabase.from("chat_solicitacoes").update({ tarefa_id: tarefaId }).eq("id", solId); // coluna da 0056 (ignora se faltar)
+        if (d.executorId !== user.id) {
+          await admin.from("notificacoes").insert({
+            destinatario_id: d.executorId,
+            tipo: "tarefa",
+            titulo: `Nova solicitação: ${v.meta.rotulo.toLowerCase()} — ${v.produto}`,
+            link: "/operacional?tarefa=" + tarefaId,
+          });
+        }
+      }
+    }
+  }
+
+  const texto = `📋 Solicitação de ${v.meta.rotulo.toLowerCase()}: ${v.produto}`;
   const { error: errMsg } = await supabase
     .from("chat_mensagens")
-    .insert({ conversa_id: conversaId, autor_id: user.id, texto, solicitacao_id: (sol as { id: string }).id });
+    .insert({ conversa_id: conversaId, autor_id: user.id, texto, solicitacao_id: solId, ...(tarefaId ? { tarefa_id: tarefaId } : {}) });
   if (errMsg) return { erro: semTabela(errMsg.code) ? MIGRACAO : "A solicitação foi criada, mas não foi possível avisar na conversa." };
 
   await avisarNovaMensagem(supabase, user.id, conversaId, texto);
   revalidatePath("/chat");
+  revalidatePath("/operacional");
+  return { ok: true };
+}
+
+/** Quem criou a solicitação edita; o cartão passa a mostrar "Editado" e a tarefa acompanha. */
+export async function editarSolicitacaoChat(id: string, d: NovaSolicitacao): Promise<Resultado> {
+  const { supabase, user } = await usuario();
+  if (!user) return { erro: "Sessão expirada. Entre novamente." };
+
+  const { data: atual } = await supabase.from("chat_solicitacoes").select("id, criado_por, tarefa_id").eq("id", id).maybeSingle();
+  const s = atual as { id: string; criado_por: string | null; tarefa_id?: string | null } | null;
+  if (!s) return { erro: "Solicitação não encontrada." };
+  if (s.criado_por !== user.id) return { erro: "Só quem fez a solicitação pode editá-la." };
+
+  const v = validar(d);
+  if (v.erro) return { erro: v.erro };
+
+  const agora = new Date().toISOString();
+  const { error } = await supabase
+    .from("chat_solicitacoes")
+    .update({
+      tipo: d.tipo,
+      produto: v.produto,
+      link_referencia: v.link || null,
+      solicitante: v.solicitante,
+      prazo: v.prazo,
+      detalhes: v.detalhes || null,
+      prova_caminho: d.prova?.caminho ?? null,
+      prova_nome: d.prova?.nome?.slice(0, 200) ?? null,
+      editado_em: agora,
+      updated_at: agora,
+    })
+    .eq("id", id);
+  if (error) return { erro: semTabela(error.code) ? MIGRACAO_EDICAO : "Não foi possível salvar a edição." };
+
+  if (s.tarefa_id && servicoDisponivel()) {
+    await criarClienteAdmin()
+      .from("tarefas")
+      .update({
+        titulo: `${v.meta.rotulo}: ${v.produto}`.slice(0, 200),
+        descricao: descricaoTarefa(v),
+        prazo: v.prazo ? `${v.prazo}T12:00:00-03:00` : null,
+        link: v.link || null,
+      })
+      .eq("id", s.tarefa_id);
+  }
+
+  revalidatePath("/chat");
+  revalidatePath("/operacional");
   return { ok: true };
 }
 
@@ -112,6 +224,8 @@ export async function dadosSolicitacao(id: string): Promise<SolicitacaoView | nu
     status: StatusSolicitacao;
     criado_por: string | null;
     created_at: string;
+    editado_em?: string | null;
+    tarefa_id?: string | null;
   } | null;
   if (!s) return null;
 
@@ -135,15 +249,19 @@ export async function dadosSolicitacao(id: string): Promise<SolicitacaoView | nu
     prazo: s.prazo,
     detalhes: s.detalhes,
     provaNome: s.prova_nome,
+    provaCaminho: s.prova_caminho,
     provaUrl,
     provaEhImagem: /\.(png|jpe?g|webp|gif)$/i.test(s.prova_nome ?? s.prova_caminho ?? ""),
     status: s.status,
     criadoPorNome,
     criadoEm: s.created_at,
+    editadoEm: s.editado_em ?? null,
+    podeEditar: s.criado_por === user.id,
+    tarefaId: s.tarefa_id ?? null,
   };
 }
 
-/** Atualiza o andamento da solicitação e avisa na conversa. */
+/** Atualiza o andamento da solicitação, acompanha a tarefa e avisa na conversa. */
 export async function atualizarStatusSolicitacao(id: string, status: StatusSolicitacao): Promise<Resultado> {
   const { supabase, user } = await usuario();
   if (!user) return { erro: "Sessão expirada. Entre novamente." };
@@ -153,10 +271,18 @@ export async function atualizarStatusSolicitacao(id: string, status: StatusSolic
     .from("chat_solicitacoes")
     .update({ status, updated_at: new Date().toISOString() })
     .eq("id", id)
-    .select("conversa_id, produto, tipo")
+    .select("*")
     .maybeSingle();
   if (error || !data) return { erro: "Não foi possível atualizar a solicitação." };
-  const s = data as { conversa_id: string; produto: string; tipo: string };
+  const s = data as { conversa_id: string; produto: string; tipo: string; tarefa_id?: string | null };
+
+  // A tarefa do quadro acompanha a situação da solicitação.
+  if (s.tarefa_id && servicoDisponivel()) {
+    const admin = criarClienteAdmin();
+    const alvo = STATUS_TAREFA[status];
+    if (alvo) await admin.from("tarefas").update({ status: alvo }).eq("id", s.tarefa_id);
+    else await admin.from("tarefas").delete().eq("id", s.tarefa_id);
+  }
 
   const { data: eu } = await supabase.from("profiles").select("nome").eq("id", user.id).single();
   const quem = (eu as { nome: string } | null)?.nome ?? "Alguém";
@@ -165,5 +291,6 @@ export async function atualizarStatusSolicitacao(id: string, status: StatusSolic
   await avisarNovaMensagem(supabase, user.id, s.conversa_id, texto);
 
   revalidatePath("/chat");
+  revalidatePath("/operacional");
   return { ok: true };
 }
