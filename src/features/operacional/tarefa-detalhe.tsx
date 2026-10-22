@@ -7,6 +7,7 @@ import Link from "next/link";
 import { X, Loader2, Save, ExternalLink, Check, Trash2 } from "lucide-react";
 import { excluirTarefa, salvarTarefa } from "./actions";
 import { ConteudoCard } from "./conteudo-card";
+import { AnexosTarefa } from "./anexos-tarefa";
 import { ItensEstoqueTarefa } from "./itens-estoque-tarefa";
 import { HistoricoChatTarefa } from "./historico-chat-tarefa";
 import type { TarefaView, PessoaOpcao } from "./kanban-tarefas";
@@ -274,6 +275,8 @@ export function TarefaDetalhe({
 
           {/* Corpo do card */}
           <ConteudoCard valor={conteudo} onChange={setConteudo} />
+
+          <AnexosTarefa tarefaId={tarefa.id} />
 
           {tarefa.origemHref ? (
             <Link
