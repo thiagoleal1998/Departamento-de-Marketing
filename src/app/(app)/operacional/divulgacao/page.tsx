@@ -83,7 +83,7 @@ async function Semana(sp: Sp, hoje: string, podeExcluir: boolean) {
         ) : null}
         <span className="ml-auto text-xs text-muted-foreground">{total} oferta(s) na semana</span>
       </div>
-      {indisponivel ? AVISO_MIGRACAO : <OfertasLista dias={visiveis} podeExcluir={podeExcluir} />}
+      {indisponivel ? AVISO_MIGRACAO : <OfertasLista dias={visiveis} podeExcluir={podeExcluir} lado />}
     </>
   );
 }

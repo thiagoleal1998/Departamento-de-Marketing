@@ -312,7 +312,18 @@ export function NovaOferta({ dataPadrao }: { dataPadrao: string }) {
 }
 
 /** Ofertas agrupadas por dia. */
-export function OfertasLista({ dias, podeExcluir, vazio }: { dias: Dia[]; podeExcluir: boolean; vazio?: string }) {
+export function OfertasLista({
+  dias,
+  podeExcluir,
+  vazio,
+  lado = false,
+}: {
+  dias: Dia[];
+  podeExcluir: boolean;
+  vazio?: string;
+  /** Dias lado a lado (Segunda 19/10 | Terça 20/10 | …), como no quadro da semana. */
+  lado?: boolean;
+}) {
   const [editando, setEditando] = useState<Oferta | null>(null);
 
   if (dias.length === 0) {
@@ -320,18 +331,19 @@ export function OfertasLista({ dias, podeExcluir, vazio }: { dias: Dia[]; podeEx
   }
 
   return (
-    <div className="space-y-6">
+    <div className={lado ? "flex items-start gap-4 overflow-x-auto pb-3" : "space-y-6"}>
       {dias.map((dia) => (
-        <section key={dia.data} className="space-y-3">
+        <section key={dia.data} className={cn("space-y-3", lado && "w-[320px] shrink-0 rounded-xl bg-muted/30 p-3")}>
           <h2 className={cn("flex items-baseline gap-2 border-b pb-1.5 text-base font-semibold", dia.hoje && "border-primary text-primary")}>
             <span className="capitalize">{diaSemana(dia.data)}</span>
             <span className="text-sm font-normal text-muted-foreground">{dataCurta(dia.data)}</span>
             {dia.hoje ? <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold text-primary-foreground">Hoje</span> : null}
+            {lado && dia.itens.length > 0 ? <span className="ml-auto text-xs font-normal text-muted-foreground">{dia.itens.length}</span> : null}
           </h2>
           {dia.itens.length === 0 ? (
             <p className="text-sm text-muted-foreground">Sem divulgação cadastrada.</p>
           ) : (
-            <div className="grid gap-3 lg:grid-cols-2">
+            <div className={lado ? "grid gap-3" : "grid gap-3 lg:grid-cols-2"}>
               {dia.itens.map((o) => (
                 <OfertaCard key={o.id} o={o} podeExcluir={podeExcluir} aoEditar={setEditando} />
               ))}
