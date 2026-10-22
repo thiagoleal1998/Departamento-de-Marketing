@@ -135,7 +135,7 @@ export const NAVEGACAO: ItemNav[] = [
       },
       {
         href: "/operacional/calendario",
-        label: "Calendário de conteúdo",
+        label: "Calendário de e-mail",
         icone: CalendarRange,
       },
       { href: "/operacional/divulgacao", label: "Divulgação diária", icone: Newspaper },

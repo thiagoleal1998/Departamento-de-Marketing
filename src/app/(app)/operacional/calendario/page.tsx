@@ -1,5 +1,6 @@
 import { CalendarRange } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
+import { ehLideranca } from "@/lib/permissions";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { ListaCalendario, type ItemCalendario } from "@/features/calendario/lista-calendario";
 import { PageHeader } from "@/components/shared/page-header";
@@ -7,7 +8,7 @@ import { PageHeader } from "@/components/shared/page-header";
 export const dynamic = "force-dynamic";
 
 export default async function CalendarioPage() {
-  await exigirUsuario();
+  const usuario = await exigirUsuario();
   const supabase = await criarClienteServidor();
   const { data } = await supabase
     .from("calendario_conteudo")
@@ -19,8 +20,8 @@ export default async function CalendarioPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        titulo="Calendário de conteúdo"
-        descricao="Posts, e-mails, ofertas e podcasts planejados, por dia, tipo e responsável."
+        titulo="Calendário de e-mail"
+        descricao="E-mails programados por dia, status e responsável. Os outros conteúdos (redes sociais, ofertas, podcasts) continuam aqui: troque o filtro de tipo."
       />
       {itens.length === 0 ? (
         <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed p-10 text-center text-sm text-muted-foreground">
@@ -28,7 +29,7 @@ export default async function CalendarioPage() {
           Nenhum item ainda. Rode a migration 0048 para importar o calendário do Notion.
         </div>
       ) : (
-        <ListaCalendario itens={itens} />
+        <ListaCalendario itens={itens} podeExcluir={ehLideranca(usuario.role)} />
       )}
     </div>
   );

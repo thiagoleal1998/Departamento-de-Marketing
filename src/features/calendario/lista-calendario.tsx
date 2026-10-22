@@ -1,7 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { useDialogo } from "@/components/shared/dialogo-provider";
+import { excluirItemCalendario } from "./actions";
+import { ItemCalendarioForm } from "./item-form";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -51,13 +55,16 @@ const dia = (iso: string) => {
 };
 
 /** Calendário de conteúdo: itens agrupados por mês e dia, com filtros. */
-export function ListaCalendario({ itens }: { itens: ItemCalendario[] }) {
+export function ListaCalendario({ itens, podeExcluir = false }: { itens: ItemCalendario[]; podeExcluir?: boolean }) {
+  const { confirmar, avisar } = useDialogo();
+  const [formulario, setFormulario] = useState<ItemCalendario | "novo" | null>(null);
   const [busca, setBusca] = useState("");
   const [mes, setMes] = useState(() => {
     const hoje = new Date().toISOString().slice(0, 7);
     return itens.some((i) => i.data?.startsWith(hoje)) ? hoje : "";
   });
-  const [tipo, setTipo] = useState("");
+  // O calendário é de e-mail: abre já filtrado nos e-mails (dá para ver todos os tipos).
+  const [tipo, setTipo] = useState(() => (itens.some((i) => i.tipo === "E-mail Marketing") ? "E-mail Marketing" : ""));
   const [resp, setResp] = useState("");
   const [status, setStatus] = useState("");
 
@@ -88,6 +95,15 @@ export function ListaCalendario({ itens }: { itens: ItemCalendario[] }) {
   }, [visiveis]);
 
   const sel = "h-9 rounded-md border bg-background px-2 text-sm";
+  const responsaveisConhecidos = resps;
+  const hoje = new Date().toISOString().slice(0, 10);
+
+  async function excluir(i: ItemCalendario) {
+    const ok = await confirmar({ titulo: "Excluir este item?", descricao: i.nome, confirmar: "Excluir", perigo: true });
+    if (!ok) return;
+    const r = await excluirItemCalendario(i.id);
+    if (r.erro) void avisar(r.erro, "Não foi possível excluir");
+  }
 
   return (
     <div className="space-y-5">
@@ -125,6 +141,9 @@ export function ListaCalendario({ itens }: { itens: ItemCalendario[] }) {
         <span className="text-xs text-muted-foreground">
           {visiveis.length} de {itens.length} itens
         </span>
+        <Button className="ml-auto" onClick={() => setFormulario("novo")}>
+          <Plus className="size-4" /> Novo e-mail
+        </Button>
       </div>
 
       {porDia.length === 0 ? (
@@ -140,6 +159,16 @@ export function ListaCalendario({ itens }: { itens: ItemCalendario[] }) {
                     <p className="text-sm font-medium leading-snug">{i.nome}</p>
                     <span className={cn("shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium", corStatus(i.status))}>{i.status}</span>
                   </div>
+                  <div className="flex justify-end gap-1">
+                    <Button variant="ghost" size="icon" className="size-7" aria-label={`Editar ${i.nome}`} onClick={() => setFormulario(i)}>
+                      <Pencil className="size-3.5" />
+                    </Button>
+                    {podeExcluir ? (
+                      <Button variant="ghost" size="icon" className="size-7" aria-label={`Excluir ${i.nome}`} onClick={() => void excluir(i)}>
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    ) : null}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     {[i.tipo, i.tipo_post, i.canais.join(", "), i.publico.join("/"), i.objetivo].filter(Boolean).join(" · ") || "—"}
                   </p>
@@ -150,6 +179,14 @@ export function ListaCalendario({ itens }: { itens: ItemCalendario[] }) {
           </section>
         ))
       )}
+      {formulario !== null ? (
+        <ItemCalendarioForm
+          item={formulario === "novo" ? undefined : formulario}
+          responsaveisConhecidos={responsaveisConhecidos}
+          dataPadrao={hoje}
+          aoFechar={() => setFormulario(null)}
+        />
+      ) : null}
     </div>
   );
 }
