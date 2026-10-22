@@ -1,4 +1,4 @@
-import { BUSCA_RISCO, classificar, semAcento, type Categoria } from "./classificar";
+import { BUSCA_FONTES, BUSCA_RISCO, classificar, fonteAceita, pertinenteAoTurista, semAcento, type Categoria } from "./classificar";
 import type { DestinoMonitorado } from "./destinos";
 
 export interface Noticia {
@@ -34,7 +34,7 @@ const tag = (bloco: string, nome: string) => {
 const HORAS = 72;
 
 async function buscarDestino(d: DestinoMonitorado): Promise<AlertaDestino> {
-  const consulta = `"${d.busca}" ${BUSCA_RISCO} when:3d`;
+  const consulta = `"${d.busca}" ${BUSCA_RISCO} ${BUSCA_FONTES} when:3d`;
   const q = encodeURIComponent(consulta);
   const base = `https://news.google.com/rss/search?q=${q}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
   const buscaUrl = `https://news.google.com/search?q=${q}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
@@ -50,6 +50,9 @@ async function buscarDestino(d: DestinoMonitorado): Promise<AlertaDestino> {
       const bloco = m[1];
       let titulo = tag(bloco, "title");
       const fonte = tag(bloco, "source") || (titulo.includes(" - ") ? titulo.split(" - ").pop()! : "");
+      const urlFonte = (bloco.match(/<source[^>]*url="([^"]*)"/i) ?? [])[1] ?? "";
+      // Só G1, O Globo, UOL e CNN Brasil.
+      if (!fonteAceita(fonte, urlFonte)) continue;
       if (fonte && titulo.endsWith(` - ${fonte}`)) titulo = titulo.slice(0, -(fonte.length + 3));
       const quando = new Date(tag(bloco, "pubDate")).getTime();
       if (!titulo || !Number.isFinite(quando) || quando < limite) continue;
@@ -57,6 +60,9 @@ async function buscarDestino(d: DestinoMonitorado): Promise<AlertaDestino> {
       if (!semAcento(titulo).includes(termo)) continue;
       const categorias = classificar(titulo);
       if (categorias.length === 0) continue;
+      // Só o que interessa a quem viaja: clima, natureza, saúde, transporte, eventos graves
+      // ou crime com contexto de turismo (praia, hotel, aeroporto…).
+      if (!pertinenteAoTurista(titulo, categorias)) continue;
       const chave = semAcento(titulo).slice(0, 60);
       if (vistos.has(chave)) continue;
       vistos.add(chave);
