@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { Boxes, X } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
+import { ehLideranca } from "@/lib/permissions";
+import { AbasEstoque } from "@/features/estoque/abas-estoque";
+import { FornecedoresPainel } from "@/features/fornecedores/fornecedores-painel";
+import { listarFornecedoresResumo } from "@/features/fornecedores/data";
 import {
   listarItensEstoque,
   listarAlteracoesRecentes,
@@ -27,10 +31,23 @@ function formatarDataHora(iso: string): string {
   });
 }
 
-export default async function EstoquePage({ searchParams }: { searchParams: Promise<{ filtro?: string }> }) {
-  const { filtro } = await searchParams;
+export default async function EstoquePage({ searchParams }: { searchParams: Promise<{ filtro?: string; aba?: string }> }) {
+  const { filtro, aba } = await searchParams;
   const usuario = await exigirUsuario();
   const ehGerente = usuario.role === "gerente";
+  // Fornecedores, cotações e notas fiscais: só gerente e líder.
+  const lideranca = ehLideranca(usuario.role);
+
+  if (lideranca && aba === "fornecedores") {
+    const f = await listarFornecedoresResumo();
+    return (
+      <div className="space-y-6">
+        <PageHeader titulo="Estoque" descricao="Fornecedores: contato, cotações, compras e notas fiscais." />
+        <AbasEstoque ativa="fornecedores" />
+        <FornecedoresPainel fornecedores={f.itens} indisponivel={f.indisponivel} />
+      </div>
+    );
+  }
 
   const [itens, movimentos, alteracoes, vinculos, perfis] = await Promise.all([
     listarItensEstoque(),
@@ -58,6 +75,7 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
         descricao="Brindes, flyers e banners: entradas, saídas e histórico."
         acoes={ehGerente ? <NovoItemForm /> : undefined}
       />
+      {lideranca ? <AbasEstoque ativa="produtos" /> : null}
 
       {abaixoMinimo.length > 0 ? (
         <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -98,6 +116,7 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
               chamados={vinculos.chamados}
               projetos={vinculos.projetos}
               ehGerente={ehGerente}
+              podeVerFornecedor={lideranca}
             />
           ))}
         </div>

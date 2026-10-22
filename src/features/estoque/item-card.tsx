@@ -23,12 +23,14 @@ import {
   renomearItemEstoque,
 } from "./actions";
 import type { OpcaoVinculo } from "./data";
+import { ProdutoDetalhe } from "./produto-detalhe";
 import type { EstoqueItem } from "@/types/database";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 
 export const CATEGORIA_LABEL: Record<EstoqueItem["categoria"], string> = {
@@ -43,12 +45,16 @@ export function ItemCard({
   chamados,
   projetos,
   ehGerente,
+  podeVerFornecedor = false,
 }: {
   item: EstoqueItem;
   chamados: OpcaoVinculo[];
   projetos: OpcaoVinculo[];
   ehGerente: boolean;
+  /** Liderança: clicar no cartão abre o produto com a aba Fornecedor. */
+  podeVerFornecedor?: boolean;
 }) {
+  const [detalhe, setDetalhe] = useState(false);
   const [modo, setModo] = useState<"entrada" | "saida" | null>(null);
   const [qtd, setQtd] = useState("1");
   const [motivo, setMotivo] = useState("");
@@ -146,7 +152,19 @@ export function ItemCard({
   }
 
   return (
-    <Card className={baixo ? "border-amber-300" : undefined}>
+    <>
+    <Card
+      className={cn(baixo ? "border-amber-300" : undefined, podeVerFornecedor ? "cursor-pointer transition-shadow hover:shadow-md" : undefined)}
+      onClick={
+        podeVerFornecedor
+          ? (e) => {
+              // Cliques em botões, campos e links têm função própria e não abrem o produto.
+              if ((e.target as HTMLElement).closest("button, a, input, textarea, select, label")) return;
+              setDetalhe(true);
+            }
+          : undefined
+      }
+    >
       <CardContent className="space-y-3 p-4">
         <div className="flex gap-3">
           {item.foto_url ? (
@@ -431,5 +449,7 @@ export function ItemCard({
         {erro ? <p className="text-xs text-destructive">{erro}</p> : null}
       </CardContent>
     </Card>
+    {detalhe ? <ProdutoDetalhe item={item} aoFechar={() => setDetalhe(false)} /> : null}
+    </>
   );
 }
