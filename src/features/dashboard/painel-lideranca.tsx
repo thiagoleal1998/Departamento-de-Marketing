@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { criarClienteServidor } from "@/lib/supabase/server";
+import { DivulgacaoHoje } from "@/features/divulgacao/divulgacao-hoje";
 import { DataCard } from "@/components/shared/data-card";
 import {
   Card,
@@ -243,6 +244,9 @@ export async function PainelLideranca() {
 
   return (
     <div className="space-y-6">
+      {/* Divulgação do dia (e-mail e ofertas programados para hoje) */}
+      <DivulgacaoHoje />
+
       {/* Atenção */}
       <Card className={alertas.length > 0 ? "border-amber-300" : undefined}>
         <CardHeader>
