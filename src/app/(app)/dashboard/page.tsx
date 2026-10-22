@@ -66,17 +66,22 @@ export default async function DashboardPage() {
       {lideranca ? (
         // Gerente e líder: à esquerda o cumprimento e, logo abaixo, os alertas dos destinos;
         // à direita, a divulgação do dia.
-        <div className="grid gap-6 border-b pb-6 lg:grid-cols-[minmax(0,1fr)_440px]">
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <h1 className="text-2xl font-semibold tracking-tight">{`Olá, ${usuario.nome.split(" ")[0]} 👋`}</h1>
-              <p className="text-sm text-muted-foreground">Veja o panorama da operação e o que precisa da sua atenção.</p>
-            </div>
-            <Suspense fallback={null}>
-              <AlertasDestinos />
-            </Suspense>
+        <div className="space-y-5 border-b pb-6">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight">{`Olá, ${usuario.nome.split(" ")[0]} 👋`}</h1>
+            <p className="text-sm text-muted-foreground">Veja o panorama da operação e o que precisa da sua atenção.</p>
           </div>
-          <DivulgacaoHoje />
+          {/* As duas caixas começam e terminam na mesma altura. */}
+          <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(0,1fr)_440px]">
+            <div className="min-w-0 [&>*]:h-full">
+              <Suspense fallback={null}>
+                <AlertasDestinos />
+              </Suspense>
+            </div>
+            <div className="[&>*]:h-full">
+              <DivulgacaoHoje />
+            </div>
+          </div>
         </div>
       ) : (
         <PageHeader titulo={`Olá, ${usuario.nome.split(" ")[0]} 👋`} descricao="Aqui está o resumo do seu dia." />

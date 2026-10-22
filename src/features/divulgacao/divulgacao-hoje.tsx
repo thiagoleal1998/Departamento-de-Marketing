@@ -40,7 +40,7 @@ export async function DivulgacaoHoje() {
   ];
 
   return (
-    <section aria-label="Divulgação de hoje" className="h-fit w-full rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 p-4 text-white shadow-md">
+    <section aria-label="Divulgação de hoje" className="w-full rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 p-4 text-white shadow-md">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-2 text-sm font-semibold">
