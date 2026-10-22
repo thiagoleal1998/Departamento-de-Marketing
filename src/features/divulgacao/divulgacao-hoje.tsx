@@ -40,29 +40,29 @@ export async function DivulgacaoHoje() {
   ];
 
   return (
-    <section aria-label="Divulgação de hoje" className="w-full rounded-xl border bg-card p-4 shadow-sm lg:w-[440px]">
+    <section aria-label="Divulgação de hoje" className="w-full rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 p-4 text-white shadow-md lg:w-[440px]">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-2 text-sm font-semibold">
-            <Newspaper className="size-4 text-primary" /> Divulgação de hoje
+            <Newspaper className="size-4" /> Divulgação de hoje
           </h2>
-          <p className="text-xs capitalize text-muted-foreground">
+          <p className="text-xs capitalize text-white/75">
             {diaSemana(hoje)}, {dataCurta(hoje)}
           </p>
         </div>
-        <Link href="/operacional/divulgacao" className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-primary hover:underline">
+        <Link href="/operacional/divulgacao" className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-white underline-offset-2 hover:underline">
           Ver semana <ArrowRight className="size-3.5" />
         </Link>
       </div>
 
       {itens.length === 0 ? (
-        <p className="mt-4 text-sm text-muted-foreground">
+        <p className="mt-4 text-sm text-white/85">
           Nada cadastrado para hoje.
           {proxima ? (
             <>
               {" "}
               Próxima:{" "}
-              <Link href={`/operacional/divulgacao?semana=${proxima}`} className="font-medium text-primary hover:underline">
+              <Link href={`/operacional/divulgacao?semana=${proxima}`} className="font-semibold underline-offset-2 hover:underline">
                 <span className="capitalize">{diaSemana(proxima)}</span>, {dataCurta(proxima)}
               </Link>
               .
@@ -73,40 +73,40 @@ export async function DivulgacaoHoje() {
         <div className="mt-4 space-y-4">
           {/* Oferta do dia */}
           <div>
-            <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/70">
               <Tag className="size-3.5" /> Oferta do dia
             </p>
             {ofertas.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Não tem oferta hoje.</p>
+              <p className="text-sm text-white/85">Não tem oferta hoje.</p>
             ) : (
               <ul className="space-y-2">
                 {ofertas.slice(0, MAX).map((o, i) => (
                   <li key={i} className="text-sm leading-snug">
                     <span className="font-medium">{o.titulo}</span>
-                    <span className={`ml-2 rounded px-1 py-0.5 text-[10px] font-semibold ${o.tag === "Nacional" ? "bg-emerald-100 text-emerald-900" : "bg-sky-100 text-sky-900"}`}>{o.tag}</span>
-                    {o.detalhe ? <span className="block text-xs text-muted-foreground">{o.detalhe}</span> : null}
+                    <span className={`ml-2 rounded px-1 py-0.5 text-[10px] font-semibold bg-white/20 text-white`}>{o.tag}</span>
+                    {o.detalhe ? <span className="block text-xs text-white/75">{o.detalhe}</span> : null}
                   </li>
                 ))}
-                {ofertas.length > MAX ? <li className="text-xs text-muted-foreground">+ {ofertas.length - MAX} outra(s)</li> : null}
+                {ofertas.length > MAX ? <li className="text-xs text-white/75">+ {ofertas.length - MAX} outra(s)</li> : null}
               </ul>
             )}
           </div>
 
           {/* E-mail do dia */}
-          <div className="border-t pt-3">
-            <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <div className="border-t border-white/25 pt-3">
+            <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/70">
               <Mail className="size-3.5" /> E-mail do dia
             </p>
             {emails.length > 0 ? (
               <div className="flex flex-wrap gap-1.5">
                 {emails.map((e) => (
-                  <span key={e} className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                  <span key={e} className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold text-white">
                     {e}
                   </span>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">Não tem e-mail hoje.</p>
+              <p className="text-sm text-white/85">Não tem e-mail hoje.</p>
             )}
           </div>
         </div>
