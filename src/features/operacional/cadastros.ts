@@ -33,7 +33,7 @@ export interface CadastroDef {
   campos: CampoDef[];
 }
 
-export type CadastroChave = "landing_pages" | "conteudos_site" | "lp_conteudos";
+export type CadastroChave = "landing_pages" | "conteudos_site" | "lp_conteudos" | "divulgacao_condicoes";
 
 export const CADASTROS: Record<CadastroChave, CadastroDef> = {
   landing_pages: {
@@ -210,6 +210,16 @@ export const CADASTROS: Record<CadastroChave, CadastroDef> = {
       { name: "responsavel_id", label: "Responsável", tipo: "pessoa" },
       { name: "prazo", label: "Prazo", tipo: "data" },
       { name: "observacoes", label: "Observações", tipo: "textarea" },
+    ],
+  },
+  divulgacao_condicoes: {
+    tabela: "divulgacao_condicoes",
+    rota: "/operacional/divulgacao",
+    campos: [
+      { name: "hotel", label: "Hotel", tipo: "texto", obrigatorio: true, lista: true },
+      { name: "periodo_venda", label: "Período de venda", tipo: "texto", lista: true, placeholder: "Ex.: 15 a 21/03" },
+      { name: "periodo_viagem", label: "Período de viagem", tipo: "texto", lista: true, placeholder: "Ex.: 15/03 a 31/08" },
+      { name: "condicao", label: "Condição", tipo: "textarea", lista: true },
     ],
   },
   lp_conteudos: {

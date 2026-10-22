@@ -27,6 +27,7 @@ import {
   KeyRound,
   Settings,
   Palmtree,
+  Newspaper,
   type LucideIcon,
 } from "lucide-react";
 import type { Permissao } from "@/lib/permissions";
@@ -114,7 +115,7 @@ export const NAVEGACAO: ItemNav[] = [
     label: "Operacional",
     icone: KanbanSquare,
     gradiente: "from-amber-500 to-orange-600",
-    descricao: "Tarefas, LPs, conteúdos, calendário e senhas",
+    descricao: "Tarefas, LPs, conteúdos, divulgação diária, calendário e senhas",
     filhos: [
       { href: "/operacional", label: "Tarefas", icone: ListChecks, exato: true },
       {
@@ -137,6 +138,7 @@ export const NAVEGACAO: ItemNav[] = [
         label: "Calendário de conteúdo",
         icone: CalendarRange,
       },
+      { href: "/operacional/divulgacao", label: "Divulgação diária", icone: Newspaper },
       { href: "/operacional/senhas", label: "Senhas", icone: KeyRound },
     ],
   },
