@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import { ChevronDown, ChevronUp, Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
+import { usePuxarParaRolar } from "@/lib/puxar-para-rolar";
 import { useDialogo } from "@/components/shared/dialogo-provider";
 import { excluirOferta, salvarOferta } from "./actions";
 import { blocosNacional, dataBr, dataCurta, diaSemana, moeda, type DadosOferta, type Oferta, type TipoOferta } from "./tipos";
@@ -325,13 +326,31 @@ export function OfertasLista({
   lado?: boolean;
 }) {
   const [editando, setEditando] = useState<Oferta | null>(null);
+  const trilho = useRef<HTMLDivElement>(null);
+  // Com os dias lado a lado, dá para puxar o fundo (ou os cabeçalhos dos dias) para o lado.
+  usePuxarParaRolar(trilho, "a, button, input, select, textarea, label, article", lado);
+  const rolar = (d: 1 | -1) => trilho.current?.scrollBy({ left: d * 340, behavior: "smooth" });
 
   if (dias.length === 0) {
     return <p className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">{vazio ?? "Nenhuma oferta encontrada."}</p>;
   }
 
   return (
-    <div className={lado ? "flex items-start gap-4 overflow-x-auto pb-3" : "space-y-6"}>
+    <div className="space-y-2">
+      {lado ? (
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">Puxe o fundo para o lado ou use as setas para ver os outros dias.</p>
+          <div className="flex gap-1">
+            <Button type="button" variant="outline" size="icon" className="size-8" onClick={() => rolar(-1)} aria-label="Rolar para a esquerda">
+              <ChevronLeft className="size-4" />
+            </Button>
+            <Button type="button" variant="outline" size="icon" className="size-8" onClick={() => rolar(1)} aria-label="Rolar para a direita">
+              <ChevronRight className="size-4" />
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    <div ref={trilho} className={lado ? "flex cursor-grab items-start gap-4 overflow-x-auto pb-3" : "space-y-6"}>
       {dias.map((dia) => (
         <section key={dia.data} className={cn("space-y-3", lado && "w-[320px] shrink-0 rounded-xl bg-muted/30 p-3")}>
           <h2 className={cn("flex items-baseline gap-2 border-b pb-1.5 text-base font-semibold", dia.hoje && "border-primary text-primary")}>
@@ -352,6 +371,7 @@ export function OfertasLista({
         </section>
       ))}
       {editando ? <OfertaForm oferta={editando} dataPadrao={editando.data} aoFechar={() => setEditando(null)} /> : null}
+    </div>
     </div>
   );
 }

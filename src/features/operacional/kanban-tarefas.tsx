@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { EmptyState } from "@/components/shared/empty-state";
 import { cn, formatarData } from "@/lib/utils";
+import { usePuxarParaRolar } from "@/lib/puxar-para-rolar";
 import { TAREFA_STATUS_META, type TarefaStatus } from "@/types";
 
 export interface TarefaView {
@@ -85,6 +86,7 @@ export function KanbanTarefas({
   });
   const [, startTransition] = useTransition();
   const trilho = useRef<HTMLDivElement>(null);
+  usePuxarParaRolar(trilho); // puxar o fundo do quadro para o lado
 
   const dialogoNovo =
     criando !== null ? (
@@ -193,7 +195,7 @@ export function KanbanTarefas({
       </div>
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">
-          Clique em um card para abrir e editar. Arraste para mudar de coluna.
+          Clique em um card para abrir e editar. Arraste o card para mudar de coluna; puxe o fundo para andar para o lado.
         </p>
         <div className="flex gap-1">
           <Button
@@ -219,7 +221,7 @@ export function KanbanTarefas({
         </div>
       </div>
 
-      <div ref={trilho} className="flex gap-4 overflow-x-auto pb-3">
+      <div ref={trilho} className="flex cursor-grab gap-4 overflow-x-auto pb-3">
         {colunas.map((coluna) => {
           const todasDaColuna = visiveis.filter((t) => t.status === coluna);
           const limitada = coluna === "concluida" && !todasConcluidas && todasDaColuna.length > LIMITE_CONCLUIDAS;
