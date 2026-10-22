@@ -43,7 +43,7 @@ export async function AlertasDestinos() {
             : "Nenhuma notícia de risco nas últimas 72 horas nos destinos das ofertas de hoje."}
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="max-h-[300px] space-y-4 overflow-y-auto">
         {comAlerta.map(({ destino, noticias, buscaUrl }) => (
           <div key={destino.termo} className="space-y-2">
             <div className="flex items-center justify-between gap-2">

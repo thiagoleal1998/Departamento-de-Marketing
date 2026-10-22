@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import {
   Ticket,
@@ -13,6 +14,7 @@ import { criarClienteServidor } from "@/lib/supabase/server";
 import { ehLideranca } from "@/lib/permissions";
 import { PainelLideranca } from "@/features/dashboard/painel-lideranca";
 import { DivulgacaoHoje } from "@/features/divulgacao/divulgacao-hoje";
+import { AlertasDestinos } from "@/features/noticias/alertas-destinos";
 import { PageHeader } from "@/components/shared/page-header";
 import { DataCard } from "@/components/shared/data-card";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -61,16 +63,24 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        titulo={`Olá, ${usuario.nome.split(" ")[0]} 👋`}
-        descricao={
-          lideranca
-            ? "Veja o panorama da operação e o que precisa da sua atenção."
-            : "Aqui está o resumo do seu dia."
-        }
-        // Gerente e líder: a divulgação do dia fica no canto do cabeçalho.
-        acoes={lideranca ? <DivulgacaoHoje /> : undefined}
-      />
+      {lideranca ? (
+        // Gerente e líder: à esquerda o cumprimento e, logo abaixo, os alertas dos destinos;
+        // à direita, a divulgação do dia.
+        <div className="grid gap-6 border-b pb-6 lg:grid-cols-[minmax(0,1fr)_440px]">
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <h1 className="text-2xl font-semibold tracking-tight">{`Olá, ${usuario.nome.split(" ")[0]} 👋`}</h1>
+              <p className="text-sm text-muted-foreground">Veja o panorama da operação e o que precisa da sua atenção.</p>
+            </div>
+            <Suspense fallback={null}>
+              <AlertasDestinos />
+            </Suspense>
+          </div>
+          <DivulgacaoHoje />
+        </div>
+      ) : (
+        <PageHeader titulo={`Olá, ${usuario.nome.split(" ")[0]} 👋`} descricao="Aqui está o resumo do seu dia." />
+      )}
 
       {lideranca ? <PainelLideranca /> : null}
 

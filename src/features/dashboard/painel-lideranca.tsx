@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { Suspense } from "react";
-import { AlertasDestinos } from "@/features/noticias/alertas-destinos";
+
 import {
   AlertTriangle,
   CalendarClock,
@@ -293,11 +292,6 @@ export async function PainelLideranca() {
           </CardContent>
         ) : null}
       </Card>
-
-      {/* Notícias de risco nos destinos das ofertas de hoje (carrega à parte, sem atrasar o painel) */}
-      <Suspense fallback={null}>
-        <AlertasDestinos />
-      </Suspense>
 
       {/* Indicadores */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
