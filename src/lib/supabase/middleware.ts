@@ -52,9 +52,13 @@ export async function atualizarSessao(request: NextRequest) {
     },
   });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Se o serviço de login demorar demais, não deixamos a requisição inteira estourar o limite do
+  // middleware (erro 504): segue adiante e a própria página confere o acesso.
+  type Resposta = Awaited<ReturnType<typeof supabase.auth.getUser>>;
+  const limite = new Promise<"demorou">((resolve) => setTimeout(() => resolve("demorou"), 6000));
+  const resultado: Resposta | "demorou" = await Promise.race([supabase.auth.getUser().catch(() => "demorou" as const), limite]);
+  if (resultado === "demorou") return response;
+  const user = resultado.data.user;
 
   const { pathname } = request.nextUrl;
   const ehPublica = rotaPublica(pathname);
