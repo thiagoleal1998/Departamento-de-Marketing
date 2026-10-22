@@ -126,3 +126,24 @@
 @media (prefers-reduced-motion: reduce) {
   .home-palavra, .home-entrar, .home-aurora, .home-faixa { animation: none !important; }
 }
+
+/* Letreiro da agenda no dashboard */
+@keyframes agenda-letreiro {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.agenda-letreiro {
+  animation: agenda-letreiro 40s linear infinite;
+}
+.agenda-janela:hover .agenda-letreiro {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .agenda-janela {
+    overflow-x: auto;
+  }
+  .agenda-letreiro {
+    animation: none !important;
+  }
+}
