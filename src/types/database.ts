@@ -260,6 +260,8 @@ export interface EstoqueItem {
   cor: string | null;
   danificados: number;
   observacoes: string | null;
+  /** Produto pontual: não gera alerta de estoque baixo. */
+  ignorar_alerta?: boolean;
   ativo: boolean;
   criado_por: string | null;
   created_at: string;

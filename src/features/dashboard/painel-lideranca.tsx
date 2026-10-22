@@ -54,6 +54,7 @@ interface ItemEstoque {
   cor: string | null;
   quantidade: number;
   estoque_minimo: number;
+  ignorar_alerta?: boolean;
 }
 
 interface TarefaAtrasada {
@@ -142,12 +143,18 @@ async function carregar(supabase: Supabase) {
   // Estoque: compara quantidade x mínimo no servidor (pequeno volume).
   let estoqueBaixo: ItemEstoque[] = [];
   try {
-    const { data } = await supabase
+    const comColuna = await supabase
       .from("estoque_itens")
-      .select("id, nome, cor, quantidade, estoque_minimo")
+      .select("id, nome, cor, quantidade, estoque_minimo, ignorar_alerta")
       .eq("ativo", true);
-    estoqueBaixo = ((data as ItemEstoque[] | null) ?? [])
-      .filter((i) => i.quantidade <= i.estoque_minimo)
+    let itens = comColuna.data as ItemEstoque[] | null;
+    if (comColuna.error) {
+      // Antes da migration 0062 a coluna ignorar_alerta não existe.
+      const semColuna = await supabase.from("estoque_itens").select("id, nome, cor, quantidade, estoque_minimo").eq("ativo", true);
+      itens = semColuna.data as ItemEstoque[] | null;
+    }
+    estoqueBaixo = (itens ?? [])
+      .filter((i) => i.quantidade <= i.estoque_minimo && !i.ignorar_alerta)
       .sort((a, b) => a.quantidade - b.quantidade);
   } catch {
     estoqueBaixo = [];

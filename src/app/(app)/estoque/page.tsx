@@ -45,7 +45,8 @@ export default async function EstoquePage({ searchParams }: { searchParams: Prom
   );
   const rotuloChamado = new Map(vinculos.chamados.map((c) => [c.id, c.rotulo]));
   const rotuloProjeto = new Map(vinculos.projetos.map((p) => [p.id, p.rotulo]));
-  const abaixoMinimo = itens.filter((i) => i.quantidade <= i.estoque_minimo);
+  // Itens marcados para desconsiderar o alerta (produtos pontuais) ficam fora do aviso.
+  const abaixoMinimo = itens.filter((i) => i.quantidade <= i.estoque_minimo && !i.ignorar_alerta);
   // Vindo do painel ("Estoque baixo ou zerado"): mostra só os itens para repor.
   const soBaixo = filtro === "baixo";
   const exibidos = soBaixo ? abaixoMinimo : itens;

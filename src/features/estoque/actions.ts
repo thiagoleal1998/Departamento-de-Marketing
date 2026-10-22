@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { avisarNovaMensagem } from "@/features/chat/aviso";
 import { criarClienteServidor } from "@/lib/supabase/server";
+import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import type { EstoqueCategoria } from "@/types/database";
 
 const CATEGORIAS: EstoqueCategoria[] = ["brinde", "flyer", "banner", "outro"];
@@ -195,5 +196,44 @@ export async function renomearItemEstoque(
   revalidatePath("/estoque");
   revalidatePath("/chat");
   revalidatePath("/operacional");
+  return { ok: true };
+}
+
+/**
+ * Observação do item (qualquer pessoa logada do time). A tabela só deixa o gerente gravar,
+ * então a gravação usa a chave de serviço depois de conferir que há alguém logado.
+ */
+export async function atualizarObservacaoEstoque(id: string, texto: string): Promise<EstadoEstoque> {
+  const supabase = await criarClienteServidor();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { erro: "Sessão expirada. Entre novamente." };
+  if (!servicoDisponivel()) return { erro: "Edição indisponível no momento." };
+
+  const observacoes = texto.trim().slice(0, 1000) || null;
+  const { data, error } = await criarClienteAdmin().from("estoque_itens").update({ observacoes }).eq("id", id).select("id");
+  if (error || !data || data.length === 0) return { erro: "Não foi possível salvar a observação." };
+  revalidatePath("/estoque");
+  return { ok: true };
+}
+
+/** Desconsidera (ou volta a considerar) o alerta de estoque baixo de um item — só gerente. */
+export async function definirIgnorarAlertaEstoque(id: string, ignorar: boolean): Promise<EstadoEstoque> {
+  const supabase = await criarClienteServidor();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { erro: "Sessão expirada. Entre novamente." };
+  const { data: perfil } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  if (perfil?.role !== "gerente") return { erro: "Apenas gerentes mudam o alerta de estoque." };
+
+  const { data, error } = await supabase.from("estoque_itens").update({ ignorar_alerta: ignorar }).eq("id", id).select("id");
+  if (error) {
+    return { erro: error.code === "42703" || error.code === "PGRST204" ? "O alerta por item ainda não foi ativado no banco (migration 0062)." : "Não foi possível salvar." };
+  }
+  if (!data || data.length === 0) return { erro: "Não foi possível salvar." };
+  revalidatePath("/estoque");
+  revalidatePath("/dashboard");
   return { ok: true };
 }

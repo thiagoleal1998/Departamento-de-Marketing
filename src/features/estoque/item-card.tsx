@@ -14,7 +14,14 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
-import { arquivarItemEstoque, atualizarMinimoEstoque, registrarMovimento, renomearItemEstoque } from "./actions";
+import {
+  arquivarItemEstoque,
+  atualizarMinimoEstoque,
+  atualizarObservacaoEstoque,
+  definirIgnorarAlertaEstoque,
+  registrarMovimento,
+  renomearItemEstoque,
+} from "./actions";
 import type { OpcaoVinculo } from "./data";
 import type { EstoqueItem } from "@/types/database";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 export const CATEGORIA_LABEL: Record<EstoqueItem["categoria"], string> = {
   brinde: "Brinde",
@@ -55,8 +63,31 @@ export function ItemCard({
   const [editandoMinimo, setEditandoMinimo] = useState(false);
   const [minimo, setMinimo] = useState(String(item.estoque_minimo));
   const [erroMinimo, setErroMinimo] = useState<string | null>(null);
+  const [editandoObs, setEditandoObs] = useState(false);
+  const [obs, setObs] = useState(item.observacoes ?? "");
+  const [erroObs, setErroObs] = useState<string | null>(null);
+  const [erroAlerta, setErroAlerta] = useState<string | null>(null);
 
-  const baixo = item.quantidade <= item.estoque_minimo;
+  const abaixo = item.quantidade <= item.estoque_minimo;
+  // Produto pontual: com o alerta desconsiderado, não aparece como "estoque baixo".
+  const baixo = abaixo && !item.ignorar_alerta;
+
+  function salvarObs() {
+    setErroObs(null);
+    startTransition(async () => {
+      const res = await atualizarObservacaoEstoque(item.id, obs);
+      if (res.erro) setErroObs(res.erro);
+      else setEditandoObs(false);
+    });
+  }
+
+  function alternarAlerta() {
+    setErroAlerta(null);
+    startTransition(async () => {
+      const res = await definirIgnorarAlertaEstoque(item.id, !item.ignorar_alerta);
+      if (res.erro) setErroAlerta(res.erro);
+    });
+  }
 
   function salvarNome() {
     setErroNome(null);
@@ -234,11 +265,53 @@ export function ItemCard({
                 </span>
               ) : null}
             </div>
-            {item.observacoes ? (
-              <p className="mt-0.5 line-clamp-2 text-xs italic text-muted-foreground">
-                {item.observacoes}
+            {editandoObs ? (
+              <div className="mt-1 space-y-1.5">
+                <Textarea
+                  value={obs}
+                  onChange={(e) => setObs(e.target.value)}
+                  rows={2}
+                  maxLength={1000}
+                  placeholder="Observação sobre este item…"
+                  aria-label="Observação"
+                  autoFocus
+                />
+                <div className="flex gap-1.5">
+                  <Button type="button" size="sm" className="h-7 px-2 text-xs" onClick={salvarObs} disabled={pendente}>
+                    {pendente ? <Loader2 className="size-3 animate-spin" /> : "Salvar"}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => {
+                      setObs(item.observacoes ?? "");
+                      setEditandoObs(false);
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+                {erroObs ? <p className="text-xs text-destructive">{erroObs}</p> : null}
+              </div>
+            ) : (
+              <p className="mt-0.5 flex items-start gap-1 text-xs text-muted-foreground">
+                {item.observacoes ? <span className="line-clamp-3 whitespace-pre-line italic">{item.observacoes}</span> : null}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setObs(item.observacoes ?? "");
+                    setEditandoObs(true);
+                  }}
+                  className={item.observacoes ? "shrink-0 rounded p-0.5 hover:bg-accent hover:text-foreground" : "text-primary hover:underline"}
+                  title="Editar observação"
+                  aria-label={`Editar a observação de ${item.nome}`}
+                >
+                  {item.observacoes ? <Pencil className="size-3" /> : "+ Observação"}
+                </button>
               </p>
-            ) : null}
+            )}
           </div>
         </div>
 
@@ -250,6 +323,10 @@ export function ItemCard({
           {baixo ? (
             <span className="flex items-center gap-1 text-xs font-medium text-amber-600">
               <AlertTriangle className="size-3.5" /> Estoque baixo
+            </span>
+          ) : abaixo && item.ignorar_alerta ? (
+            <span className="text-xs text-muted-foreground" title="Produto pontual: o alerta de estoque baixo está desconsiderado">
+              Sem alerta (pontual)
             </span>
           ) : null}
         </div>
@@ -271,9 +348,20 @@ export function ItemCard({
           </Button>
           {ehGerente ? (
             <Button
+              size="sm"
+              variant="ghost"
+              className="ml-auto text-xs text-muted-foreground"
+              title={item.ignorar_alerta ? "Voltar a avisar quando o estoque ficar baixo" : "Produto pontual: não avisar estoque baixo"}
+              onClick={alternarAlerta}
+              disabled={pendente}
+            >
+              {item.ignorar_alerta ? "Voltar a alertar" : "Desconsiderar alerta"}
+            </Button>
+          ) : null}
+          {ehGerente ? (
+            <Button
               size="icon"
               variant="ghost"
-              className="ml-auto"
               title="Remover item"
               aria-label={`Remover ${item.nome}`}
               onClick={arquivar}
@@ -283,6 +371,8 @@ export function ItemCard({
             </Button>
           ) : null}
         </div>
+
+        {erroAlerta ? <p className="text-xs text-destructive">{erroAlerta}</p> : null}
 
         {modo ? (
           <div className="space-y-2 rounded-md border bg-muted/30 p-3">

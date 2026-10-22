@@ -67,7 +67,7 @@ export async function obterResumoExecutivo(): Promise<ResumoExecutivo> {
       .gte("detectado_em", setediasAtras)
       .order("detectado_em", { ascending: false })
       .limit(8),
-    admin.from("estoque_itens").select("nome, cor").eq("ativo", true).lte("quantidade", 0).limit(20),
+    admin.from("estoque_itens").select("*").eq("ativo", true).lte("quantidade", 0).limit(60),
     admin.from("profiles").select("id, nome"),
   ]);
 
@@ -99,7 +99,10 @@ export async function obterResumoExecutivo(): Promise<ResumoExecutivo> {
   const projetos = ((projetosR.data as { id: string; nome: string; status: string; responsavel_id: string | null }[] | null) ?? []).map(
     (p) => ({ id: p.id, nome: p.nome, status: p.status, responsavel: p.responsavel_id ? nomes.get(p.responsavel_id) ?? null : null })
   );
-  const zerados = ((estoqueR.data as { nome: string; cor: string | null }[] | null) ?? []).map((i) => (i.cor ? `${i.nome} (${i.cor})` : i.nome));
+  const zerados = ((estoqueR.data as { nome: string; cor: string | null; ignorar_alerta?: boolean }[] | null) ?? [])
+    .filter((i) => !i.ignorar_alerta) // produtos pontuais não entram no aviso
+    .slice(0, 20)
+    .map((i) => (i.cor ? `${i.nome} (${i.cor})` : i.nome));
 
   return {
     geradoEm: new Date().toISOString(),
