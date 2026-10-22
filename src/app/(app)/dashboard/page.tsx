@@ -12,6 +12,7 @@ import { exigirUsuario } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { ehLideranca } from "@/lib/permissions";
 import { PainelLideranca } from "@/features/dashboard/painel-lideranca";
+import { DivulgacaoHoje } from "@/features/divulgacao/divulgacao-hoje";
 import { PageHeader } from "@/components/shared/page-header";
 import { DataCard } from "@/components/shared/data-card";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -67,6 +68,8 @@ export default async function DashboardPage() {
             ? "Veja o panorama da operação e o que precisa da sua atenção."
             : "Aqui está o resumo do seu dia."
         }
+        // Gerente e líder: a divulgação do dia fica no canto do cabeçalho.
+        acoes={lideranca ? <DivulgacaoHoje /> : undefined}
       />
 
       {lideranca ? <PainelLideranca /> : null}
