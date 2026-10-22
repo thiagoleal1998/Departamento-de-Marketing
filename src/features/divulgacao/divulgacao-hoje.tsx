@@ -16,9 +16,18 @@ export async function DivulgacaoHoje() {
   const { itens, indisponivel } = await ofertasDoPeriodo(hoje, hoje);
   if (indisponivel) return null; // migration ainda não aplicada: o quadro simplesmente não aparece
 
+  // E-mails programados para hoje no Calendário de e-mail (nome, status e responsável).
+  const supabase = await criarClienteServidor();
+  const { data: calendario } = await supabase
+    .from("calendario_conteudo")
+    .select("id, nome, status, responsaveis")
+    .eq("data", hoje)
+    .eq("tipo", "E-mail Marketing")
+    .order("created_at", { ascending: true });
+  const emailsCalendario = (calendario as { id: string; nome: string; status: string; responsaveis: string[] | null }[] | null) ?? [];
+
   let proxima: string | null = null;
-  if (itens.length === 0) {
-    const supabase = await criarClienteServidor();
+  if (itens.length === 0 && emailsCalendario.length === 0) {
     const { data } = await supabase.from("divulgacao_ofertas").select("data").gt("data", hoje).order("data", { ascending: true }).limit(1);
     proxima = (data as { data: string }[] | null)?.[0]?.data ?? null;
   }
@@ -55,7 +64,7 @@ export async function DivulgacaoHoje() {
         </Link>
       </div>
 
-      {itens.length === 0 ? (
+      {itens.length === 0 && emailsCalendario.length === 0 ? (
         <p className="mt-4 text-sm text-white/85">
           Nada cadastrado para hoje.
           {proxima ? (
@@ -97,13 +106,28 @@ export async function DivulgacaoHoje() {
             <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/70">
               <Mail className="size-3.5" /> E-mail do dia
             </p>
-            {emails.length > 0 ? (
-              <div className="flex flex-wrap gap-1.5">
-                {emails.map((e) => (
-                  <span key={e} className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold text-white">
-                    {e}
-                  </span>
-                ))}
+            {emailsCalendario.length > 0 || emails.length > 0 ? (
+              <div className="space-y-2">
+                {emailsCalendario.length > 0 ? (
+                  <ul className="space-y-1.5">
+                    {emailsCalendario.map((e) => (
+                      <li key={e.id} className="text-sm leading-snug">
+                        <span className="font-medium">{e.nome}</span>
+                        <span className="ml-2 rounded bg-white/20 px-1 py-0.5 text-[10px] font-semibold">{e.status}</span>
+                        {e.responsaveis && e.responsaveis.length > 0 ? <span className="block text-xs text-white/75">{e.responsaveis.join(", ")}</span> : null}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {emails.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {emails.map((e) => (
+                      <span key={e} className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold text-white">
+                        {e}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             ) : (
               <p className="text-sm text-white/85">Não tem e-mail hoje.</p>
