@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { X } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { obterDiretorio } from "@/features/equipe/diretorio";
@@ -13,9 +15,9 @@ export const dynamic = "force-dynamic";
 export default async function OperacionalPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tarefa?: string }>;
+  searchParams: Promise<{ tarefa?: string; filtro?: string }>;
 }) {
-  const { tarefa: abrirId } = await searchParams;
+  const { tarefa: abrirId, filtro } = await searchParams;
   const usuario = await exigirUsuario();
   const lideranca = usuario.role === "gerente" || usuario.role === "lider";
   const supabase = await criarClienteServidor();
@@ -31,7 +33,10 @@ export default async function OperacionalPage({
 
   // Todas as tarefas vão para o quadro; a coluna "Concluído" mostra as mais recentes primeiro
   // e o quadro oferece o botão para ver todas (o histórico importado é grande).
-  const tarefas = todas;
+  // Vindo do painel: "Tarefas atrasadas" mostra só as vencidas e não concluídas (mesma conta do painel).
+  const hoje = new Date().toISOString().slice(0, 10);
+  const soAtrasadas = filtro === "atrasadas";
+  const tarefas = soAtrasadas ? todas.filter((t) => t.status !== "concluida" && !!t.prazo && t.prazo < hoje) : todas;
 
   // Mapa etapa_id -> projeto_id (para o link dos cards de projeto).
   const etapaIds = tarefas
@@ -86,6 +91,18 @@ export default async function OperacionalPage({
         titulo="Operacional · Tarefas"
         descricao="Quadro de tarefas — arraste para mudar de coluna e clique no card para editar."
       />
+      {soAtrasadas ? (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-muted-foreground">Filtrando por:</span>
+          <Link
+            href="/operacional"
+            className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+            title="Remover filtro"
+          >
+            Tarefas atrasadas ({tarefas.length}) <X className="size-3" />
+          </Link>
+        </div>
+      ) : null}
       <KanbanTarefas
         abrirId={abrirId ?? null}
         usuarioId={usuario.id}

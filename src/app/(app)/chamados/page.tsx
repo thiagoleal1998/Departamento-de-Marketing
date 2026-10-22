@@ -42,6 +42,7 @@ export default async function ChamadosPage({
       ? perfis.get(c.responsavel_id)?.nome ?? "—"
       : null,
     prazo_sla: c.prazo_sla,
+    prazo_entrega: c.prazo_entrega,
     created_at: c.created_at,
   }));
 

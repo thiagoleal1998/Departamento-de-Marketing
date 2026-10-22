@@ -38,6 +38,8 @@ export interface ChamadoView {
   solicitante_nome: string;
   responsavel_nome: string | null;
   prazo_sla: string | null;
+  /** Prazo de entrega (usado no filtro "prazo vencido" do painel). */
+  prazo_entrega?: string | null;
   created_at: string;
 }
 
@@ -120,6 +122,8 @@ function LinhaChamado({
 
 const SITUACAO_LABEL: Record<string, string> = {
   abertos: "Em aberto",
+  triagem: "Para triar (abertos ou em triagem)",
+  vencidos: "Com prazo vencido",
   em_andamento: "Em andamento",
   resolvidos: "Resolvidos / fechados",
 };
@@ -127,6 +131,11 @@ const SITUACAO_LABEL: Record<string, string> = {
 function passaSituacao(c: ChamadoView, situacao: string): boolean {
   const finalizado = c.status === "resolvido" || c.status === "fechado";
   if (situacao === "abertos") return !finalizado;
+  if (situacao === "triagem") return c.status === "aberto" || c.status === "em_triagem";
+  if (situacao === "vencidos") {
+    const hoje = new Date().toISOString().slice(0, 10); // mesma conta do painel
+    return !finalizado && !!c.prazo_entrega && c.prazo_entrega < hoje;
+  }
   if (situacao === "resolvidos") return finalizado;
   if (situacao === "em_andamento") return c.status === "em_andamento";
   return true;

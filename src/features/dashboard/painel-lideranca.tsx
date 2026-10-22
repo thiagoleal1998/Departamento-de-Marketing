@@ -193,21 +193,21 @@ export async function PainelLideranca() {
     {
       titulo: "Chamados para triar",
       qtd: d.chamadosTriagem,
-      href: "/chamados?situacao=abertos",
+      href: "/chamados?situacao=triagem",
       icone: Ticket,
       descricao: "Abertos ou em triagem",
     },
     {
       titulo: "Chamados com prazo vencido",
       qtd: d.chamadosVencidos,
-      href: "/chamados?situacao=abertos",
+      href: "/chamados?situacao=vencidos",
       icone: Clock,
       descricao: "Passaram da data de entrega",
     },
     {
       titulo: "Tarefas atrasadas",
       qtd: d.tarefasAtrasadas,
-      href: "/operacional",
+      href: "/operacional?filtro=atrasadas",
       icone: ListChecks,
       descricao: "Prazo vencido e não concluídas",
     },
@@ -228,7 +228,7 @@ export async function PainelLideranca() {
     {
       titulo: "Estoque baixo ou zerado",
       qtd: d.estoqueBaixo.length,
-      href: "/estoque",
+      href: "/estoque?filtro=baixo",
       icone: Boxes,
       descricao: "Itens para repor",
     },
@@ -395,7 +395,7 @@ export async function PainelLideranca() {
               <CardDescription>Prazo vencido e ainda não concluídas</CardDescription>
             </div>
             <Button asChild variant="ghost" size="sm">
-              <Link href="/operacional">
+              <Link href="/operacional?filtro=atrasadas">
                 Ver tarefas <ArrowRight className="size-4" />
               </Link>
             </Button>
@@ -412,7 +412,9 @@ export async function PainelLideranca() {
                     key={t.id}
                     className="flex items-center justify-between gap-3 py-2.5 text-sm"
                   >
-                    <span className="min-w-0 truncate">{t.titulo}</span>
+                    <Link href={`/operacional?tarefa=${t.id}`} className="min-w-0 truncate hover:underline">
+                      {t.titulo}
+                    </Link>
                     <span className="shrink-0 text-xs text-destructive">
                       venceu em {formatarData(t.prazo)}
                     </span>

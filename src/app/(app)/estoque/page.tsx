@@ -1,4 +1,5 @@
-import { Boxes } from "lucide-react";
+import Link from "next/link";
+import { Boxes, X } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import {
   listarItensEstoque,
@@ -26,7 +27,8 @@ function formatarDataHora(iso: string): string {
   });
 }
 
-export default async function EstoquePage() {
+export default async function EstoquePage({ searchParams }: { searchParams: Promise<{ filtro?: string }> }) {
+  const { filtro } = await searchParams;
   const usuario = await exigirUsuario();
   const ehGerente = usuario.role === "gerente";
 
@@ -44,6 +46,9 @@ export default async function EstoquePage() {
   const rotuloChamado = new Map(vinculos.chamados.map((c) => [c.id, c.rotulo]));
   const rotuloProjeto = new Map(vinculos.projetos.map((p) => [p.id, p.rotulo]));
   const abaixoMinimo = itens.filter((i) => i.quantidade <= i.estoque_minimo);
+  // Vindo do painel ("Estoque baixo ou zerado"): mostra só os itens para repor.
+  const soBaixo = filtro === "baixo";
+  const exibidos = soBaixo ? abaixoMinimo : itens;
 
   return (
     <div className="space-y-6">
@@ -60,6 +65,19 @@ export default async function EstoquePage() {
         </div>
       ) : null}
 
+      {soBaixo ? (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-muted-foreground">Filtrando por:</span>
+          <Link
+            href="/estoque"
+            className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+            title="Remover filtro"
+          >
+            Estoque baixo ou zerado ({abaixoMinimo.length}) <X className="size-3" />
+          </Link>
+        </div>
+      ) : null}
+
       {itens.length === 0 ? (
         <EmptyState
           icone={Boxes}
@@ -72,7 +90,7 @@ export default async function EstoquePage() {
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {itens.map((item) => (
+          {exibidos.map((item) => (
             <ItemCard
               key={item.id}
               item={item}
