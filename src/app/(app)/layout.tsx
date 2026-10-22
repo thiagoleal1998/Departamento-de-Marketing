@@ -6,6 +6,8 @@ import { MobileNav } from "@/components/layout/mobile-nav";
 import { exigirUsuario } from "@/lib/auth";
 import { obterConfig } from "@/lib/config";
 import { contagensDoMenu } from "@/features/notificacoes/menu";
+import { obterDiretorio } from "@/features/equipe/diretorio";
+import { ChatFlutuante } from "@/features/chat/chat-flutuante";
 
 export const dynamic = "force-dynamic";
 
@@ -15,10 +17,15 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const usuario = await exigirUsuario();
-  const [{ textos, logo }, contagens] = await Promise.all([
+  const [{ textos, logo }, contagens, diretorio] = await Promise.all([
     obterConfig(),
     contagensDoMenu(),
+    obterDiretorio(),
   ]);
+  const colegas = Array.from(diretorio.values())
+    .filter((p) => p.id !== usuario.id)
+    .map((p) => ({ id: p.id, nome: p.nome }))
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -40,6 +47,7 @@ export default async function AppLayout({
           </div>
         </main>
       </div>
+      <ChatFlutuante usuarioId={usuario.id} pessoas={colegas} naoLidas={contagens["/chat"] ?? 0} />
     </div>
   );
 }
