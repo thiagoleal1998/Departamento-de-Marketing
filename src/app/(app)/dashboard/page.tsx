@@ -15,6 +15,7 @@ import { ehLideranca } from "@/lib/permissions";
 import { PainelLideranca } from "@/features/dashboard/painel-lideranca";
 import { DivulgacaoHoje } from "@/features/divulgacao/divulgacao-hoje";
 import { AlertasDestinos } from "@/features/noticias/alertas-destinos";
+import { AgendaHoje } from "@/features/agenda/agenda-hoje";
 import { PageHeader } from "@/components/shared/page-header";
 import { DataCard } from "@/components/shared/data-card";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -67,9 +68,15 @@ export default async function DashboardPage() {
         // Gerente e líder: à esquerda o cumprimento e, logo abaixo, os alertas dos destinos;
         // à direita, a divulgação do dia.
         <div className="space-y-5 border-b pb-6">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight">{`Olá, ${usuario.nome.split(" ")[0]} 👋`}</h1>
-            <p className="text-sm text-muted-foreground">Veja o panorama da operação e o que precisa da sua atenção.</p>
+          {/* Cumprimento à esquerda; agenda de hoje e amanhã à direita. */}
+          <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,620px)]">
+            <div className="space-y-1">
+              <h1 className="text-2xl font-semibold tracking-tight">{`Olá, ${usuario.nome.split(" ")[0]} 👋`}</h1>
+              <p className="text-sm text-muted-foreground">Veja o panorama da operação e o que precisa da sua atenção.</p>
+            </div>
+            <Suspense fallback={null}>
+              <AgendaHoje />
+            </Suspense>
           </div>
           {/* As duas caixas começam e terminam na mesma altura. */}
           <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(0,1fr)_440px]">

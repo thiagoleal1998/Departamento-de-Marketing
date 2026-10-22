@@ -8,6 +8,8 @@ const pkg = JSON.parse(readFileSync(join(raiz, "package.json"), "utf-8"));
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Leitor de agendas iCal: carregado do node_modules em vez de empacotado.
+  serverExternalPackages: ["node-ical"],
   env: {
     // Versão do sistema (fonte única: package.json), visível na interface.
     NEXT_PUBLIC_APP_VERSION: pkg.version,
