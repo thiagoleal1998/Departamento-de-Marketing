@@ -320,6 +320,7 @@ export function KanbanTarefas({
         <TarefaDetalhe
           key={aberto.id}
           tarefa={aberto}
+          usuarioId={usuarioId}
           pessoas={pessoas}
           onFechar={() => setAberta(null)}
           podeExcluir={aberto.podeExcluir ?? false}

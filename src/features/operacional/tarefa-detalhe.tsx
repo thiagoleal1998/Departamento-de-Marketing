@@ -9,7 +9,7 @@ import { excluirTarefa, salvarTarefa } from "./actions";
 import { ConteudoCard } from "./conteudo-card";
 import { AnexosTarefa } from "./anexos-tarefa";
 import { ItensEstoqueTarefa } from "./itens-estoque-tarefa";
-import { HistoricoChatTarefa } from "./historico-chat-tarefa";
+import { ConversaDoCard } from "./conversa-card";
 import type { TarefaView, PessoaOpcao } from "./kanban-tarefas";
 import { TAREFA_STATUS_META, type TarefaStatus } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,9 @@ export function TarefaDetalhe({
   onSalvo,
   onExcluida,
   podeExcluir = false,
+  usuarioId,
 }: {
+  usuarioId: string;
   tarefa: TarefaView;
   pessoas: PessoaOpcao[];
   onFechar: () => void;
@@ -169,7 +171,6 @@ export function TarefaDetalhe({
 
         <div className="space-y-6 p-5">
           <ItensEstoqueTarefa tarefaId={tarefa.id} />
-          <HistoricoChatTarefa tarefaId={tarefa.id} />
 
           {/* Propriedades */}
           <div className="grid gap-3 sm:grid-cols-2">
@@ -277,6 +278,8 @@ export function TarefaDetalhe({
           <ConteudoCard valor={conteudo} onChange={setConteudo} />
 
           <AnexosTarefa tarefaId={tarefa.id} />
+
+          <ConversaDoCard tarefaId={tarefa.id} pessoas={pessoas} usuarioId={usuarioId} responsavelId={tarefa.responsavel_id} />
 
           {tarefa.origemHref ? (
             <Link
