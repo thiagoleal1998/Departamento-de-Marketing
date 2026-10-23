@@ -16,6 +16,7 @@ import { PainelLideranca } from "@/features/dashboard/painel-lideranca";
 import { DivulgacaoHoje } from "@/features/divulgacao/divulgacao-hoje";
 import { AlertasDestinos } from "@/features/noticias/alertas-destinos";
 import { AgendaHoje } from "@/features/agenda/agenda-hoje";
+import { EsqueletoAgenda, EsqueletoAlertas, EsqueletoDivulgacao, EsqueletoPainel } from "@/components/shared/esqueleto";
 import { PageHeader } from "@/components/shared/page-header";
 import { DataCard } from "@/components/shared/data-card";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -76,19 +77,21 @@ export default async function DashboardPage() {
               <h1 className="text-2xl font-semibold tracking-tight">{`Olá, ${usuario.nome.split(" ")[0]} 👋`}</h1>
               <p className="text-sm text-muted-foreground">Veja o panorama da operação e o que precisa da sua atenção.</p>
             </div>
-            <Suspense fallback={null}>
+            <Suspense fallback={<EsqueletoAgenda />}>
               <AgendaHoje />
             </Suspense>
           </div>
           {/* As duas caixas começam e terminam na mesma altura. */}
           <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(0,1fr)_440px]">
             <div className="min-w-0 [&>*]:h-full">
-              <Suspense fallback={null}>
+              <Suspense fallback={<EsqueletoAlertas />}>
                 <AlertasDestinos />
               </Suspense>
             </div>
             <div className="[&>*]:h-full">
-              <DivulgacaoHoje />
+              <Suspense fallback={<EsqueletoDivulgacao />}>
+                <DivulgacaoHoje />
+              </Suspense>
             </div>
           </div>
         </div>
@@ -96,7 +99,11 @@ export default async function DashboardPage() {
         <PageHeader titulo={`Olá, ${usuario.nome.split(" ")[0]} 👋`} descricao="Aqui está o resumo do seu dia." />
       )}
 
-      {lideranca ? <PainelLideranca /> : null}
+      {lideranca ? (
+        <Suspense fallback={<EsqueletoPainel />}>
+          <PainelLideranca />
+        </Suspense>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <DataCard
