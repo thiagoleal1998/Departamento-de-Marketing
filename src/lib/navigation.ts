@@ -28,6 +28,7 @@ import {
   Settings,
   Palmtree,
   Newspaper,
+  FileBarChart,
   type LucideIcon,
 } from "lucide-react";
 import type { Permissao } from "@/lib/permissions";
@@ -101,6 +102,14 @@ export const NAVEGACAO: ItemNav[] = [
     gradiente: "from-emerald-500 to-teal-600",
     requer: "ver_relatorios_gerais",
     descricao: "Indicadores e campanhas",
+  },
+  {
+    href: "/relatorios",
+    label: "Relatórios",
+    icone: FileBarChart,
+    gradiente: "from-violet-500 to-purple-600",
+    requer: "ver_relatorios_gerais",
+    descricao: "Divulgação por produto, tipo e período",
   },
   {
     href: "/gestao/ferias",
