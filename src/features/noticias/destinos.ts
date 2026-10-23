@@ -42,7 +42,7 @@ function lugaresDoTitulo(linha: string): string[] {
 const compacto = (t: string) => semAcento(t).replace(/[^a-z0-9]/g, "");
 
 /** Destinos das ofertas de hoje: cidade da landing page (nacional) ou o destino citado (internacional). */
-export function destinosDasOfertas(ofertas: Oferta[], lps: LpLocal[]): DestinoMonitorado[] {
+export function destinosDasOfertas(ofertas: Oferta[], lps: LpLocal[], opcoes: { soSeguro?: boolean } = {}): DestinoMonitorado[] {
   const mapa = new Map<string, DestinoMonitorado>();
   const adicionar = (d: DestinoMonitorado) => {
     const k = semAcento(d.termo);
@@ -58,12 +58,12 @@ export function destinosDasOfertas(ofertas: Oferta[], lps: LpLocal[]): DestinoMo
         const lp = lps.find((l) => compacto(l.nome) === p) ?? lps.find((l) => compacto(l.nome).includes(p) || p.includes(compacto(l.nome)));
         if (lp?.cidade) {
           adicionar({ nome: `${lp.cidade}${lp.estado ? ` (${lp.estado})` : ""}`, termo: lp.cidade, busca: `${lp.cidade} ${lp.estado ?? ""}`.trim(), tipo: "nacional" });
-        } else {
+        } else if (!opcoes.soSeguro) {
           const curto = prod.split(" ").slice(0, 2).join(" ");
           adicionar({ nome: prod, termo: curto, busca: curto, tipo: "nacional" });
         }
       }
-    } else {
+    } else if (!opcoes.soSeguro) {
       const linha = limparLinha(o.produto);
       if (!linha) continue;
       const lugares = linha.length > 28 || linha.includes(":") ? lugaresDoTitulo(linha) : [linha];
