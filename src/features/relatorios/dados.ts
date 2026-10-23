@@ -1,24 +1,30 @@
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { hojeSP, somarDias } from "@/features/divulgacao/tipos";
-import type { LinhaRelatorio } from "./agregar";
+import { filtrarPorItens, type LinhaRelatorio } from "./agregar";
 
 export interface FiltroRelatorio {
   de: string;
   ate: string;
   tipo: "" | "nacional" | "internacional";
   busca: string;
+  /** Grupo do período: Feriado, Férias, Baixa temporada. */
+  periodo: string;
+  /** Regime: All Inclusive, Pensão completa… */
+  regime: string;
 }
 
 const ehData = (v: string | undefined) => !!v && /^\d{4}-\d{2}-\d{2}$/.test(v);
 
 /** Filtro vindo da URL; sem datas, o padrão são os últimos 30 dias. */
-export function lerFiltro(sp: { de?: string; ate?: string; tipo?: string; q?: string }): FiltroRelatorio {
+export function lerFiltro(sp: { de?: string; ate?: string; tipo?: string; q?: string; periodo?: string; regime?: string }): FiltroRelatorio {
   const hoje = hojeSP();
   return {
     de: ehData(sp.de) ? sp.de! : somarDias(hoje, -29),
     ate: ehData(sp.ate) ? sp.ate! : hoje,
     tipo: sp.tipo === "nacional" || sp.tipo === "internacional" ? sp.tipo : "",
     busca: (sp.q ?? "").trim().slice(0, 80),
+    periodo: ["Feriado", "Férias", "Baixa temporada", "Data comemorativa", "Last minute", "Sem período informado"].includes(sp.periodo ?? "") ? sp.periodo! : "",
+    regime: ["All Inclusive", "Pensão completa", "Meia pensão", "Café da manhã", "Sem alimentação", "Não informado"].includes(sp.regime ?? "") ? sp.regime! : "",
   };
 }
 
@@ -29,7 +35,7 @@ export async function divulgacoesDoPeriodo(f: FiltroRelatorio): Promise<{ linhas
   for (let i = 0; i < 10000; i += 1000) {
     let q = supabase
       .from("divulgacao_ofertas")
-      .select("data, tipo, canal, produto, temporada")
+      .select("data, tipo, canal, produto, temporada, vantagem")
       .gte("data", f.de)
       .lte("data", f.ate)
       .order("data", { ascending: true })
@@ -46,5 +52,5 @@ export async function divulgacoesDoPeriodo(f: FiltroRelatorio): Promise<{ linhas
     linhas.push(...lote);
     if (lote.length < 1000) break;
   }
-  return { linhas, indisponivel: false };
+  return { linhas: filtrarPorItens(linhas, f.periodo, f.regime), indisponivel: false };
 }

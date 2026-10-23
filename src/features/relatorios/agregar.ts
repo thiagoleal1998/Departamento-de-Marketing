@@ -6,6 +6,7 @@ export interface LinhaRelatorio {
   canal: string | null;
   produto: string | null;
   temporada: string | null;
+  vantagem?: string | null;
 }
 
 const SEPARADOR = /\n\s*-{3,}\s*\n/;
@@ -40,7 +41,145 @@ export function tipoDeDivulgacao(l: LinhaRelatorio): string {
   return (l.canal ?? "").trim() || "Outro";
 }
 
+// ---- Período (feriado, férias, baixa temporada) e regime (all inclusive…) ------------------------
+
+export type GrupoPeriodo = "Feriado" | "Férias" | "Baixa temporada" | "Data comemorativa" | "Last minute" | "Sem período informado";
+
+const FERIADOS = [
+  "natal",
+  "reveillon",
+  "ano novo",
+  "carnaval",
+  "semana santa",
+  "pascoa",
+  "corpus christi",
+  "consciencia negra",
+  "tiradentes",
+  "independencia",
+  "proclamacao",
+  "finados",
+  "aparecida",
+  "feriado",
+  "sao joao",
+  "dia do trabalho",
+];
+
+const COMEMORATIVAS = ["dia das criancas", "dia das maes", "dia dos pais", "dia dos namorados", "black friday", "dia da mulher", "dia do amigo"];
+
+/** "Natal (10x)" → { grupo: "Feriado", nome: "Natal" }. */
+export function classificarPeriodo(temporada: string | null | undefined): { grupo: GrupoPeriodo; nome: string } {
+  const primeira = (temporada ?? "")
+    .split("\n")
+    .map((x) => x.trim())
+    .find((x) => x && !/^-+$/.test(x));
+  if (!primeira) return { grupo: "Sem período informado", nome: "Sem período informado" };
+  const nome = primeira.replace(/\(\s*\d+\s*x\s*\)/i, "").replace(/\s+/g, " ").trim();
+  const t = semAcento(nome);
+  if (t.includes("baixa")) return { grupo: "Baixa temporada", nome };
+  if (t.includes("last minute")) return { grupo: "Last minute", nome };
+  if (COMEMORATIVAS.some((f) => t.includes(f))) return { grupo: "Data comemorativa", nome };
+  if (t.includes("ferias")) return { grupo: "Férias", nome };
+  if (FERIADOS.some((f) => t.includes(f))) return { grupo: "Feriado", nome };
+  return { grupo: "Sem período informado", nome };
+}
+
+export type Regime = "All Inclusive" | "Pensão completa" | "Meia pensão" | "Café da manhã" | "Sem alimentação" | "Não informado";
+
+/** Regime de alimentação a partir do texto da vantagem/descritivo. */
+export function classificarRegime(texto: string | null | undefined): Regime {
+  const t = semAcento(texto ?? "").slice(0, 600);
+  if (!t) return "Não informado";
+  if (t.includes("all inclusive") || t.includes("all-inclusive") || t.includes("tudo incluido")) return "All Inclusive";
+  if (t.includes("pensao completa")) return "Pensão completa";
+  if (t.includes("meia pensao")) return "Meia pensão";
+  if (t.includes("cafe da manha") || t.includes("com cafe")) return "Café da manhã";
+  if (t.includes("sem alimentacao") || t.includes("sem refeicao") || t.includes("somente hospedagem") || t.includes("so hospedagem")) return "Sem alimentação";
+  return "Não informado";
+}
+
+export interface ItemRelatorio {
+  data: string;
+  tipo: "nacional" | "internacional";
+  produto: string;
+  tipoDivulgacao: string;
+  grupoPeriodo: GrupoPeriodo;
+  temporada: string;
+  regime: Regime;
+}
+
 const chave = (t: string) => semAcento(t).replace(/[^a-z0-9]/g, "");
+
+/** Um item por produto divulgado, já com tipo de divulgação, período e regime. */
+export function itensDaLinha(l: LinhaRelatorio): ItemRelatorio[] {
+  const tipoDiv = tipoDeDivulgacao(l);
+  if (l.tipo === "nacional") {
+    const parte = (v: string | null | undefined) => (v ?? "").split(SEPARADOR).map((x) => x.trim());
+    const produtos = parte(l.produto);
+    const temps = parte(l.temporada);
+    const vants = parte(l.vantagem);
+    const n = Math.max(produtos.length, temps.length, vants.length, 1);
+    const saida: ItemRelatorio[] = [];
+    const vistos = new Set<string>();
+    for (let i = 0; i < n; i++) {
+      const nome = limparNome(produtos[i] || (produtos.length === 1 ? produtos[0] : ""));
+      if (!nome || nome === "---") continue;
+      const per = classificarPeriodo(temps[i] || (temps.length === 1 ? temps[0] : ""));
+      const regime = classificarRegime(vants[i] || (vants.length === 1 ? vants[0] : ""));
+      const k = chave(nome) + "|" + per.nome + "|" + regime;
+      if (vistos.has(k)) continue;
+      vistos.add(k);
+      saida.push({ data: l.data, tipo: l.tipo, produto: nome, tipoDivulgacao: tipoDiv, grupoPeriodo: per.grupo, temporada: per.nome, regime });
+    }
+    return saida;
+  }
+  const nome = produtosDaLinha(l)[0];
+  if (!nome) return [];
+  const regimeTexto = /regime:\s*([^\n]+)/i.exec(l.vantagem ?? "")?.[1] ?? l.vantagem;
+  return [
+    {
+      data: l.data,
+      tipo: l.tipo,
+      produto: nome,
+      tipoDivulgacao: tipoDiv,
+      grupoPeriodo: "Sem período informado",
+      temporada: "Sem período informado",
+      regime: classificarRegime(regimeTexto),
+    },
+  ];
+}
+
+export interface LinhaRotulo {
+  rotulo: string;
+  qtd: number;
+}
+
+function contar(itens: ItemRelatorio[], f: (i: ItemRelatorio) => string): LinhaRotulo[] {
+  const m = new Map<string, number>();
+  for (const i of itens) m.set(f(i), (m.get(f(i)) ?? 0) + 1);
+  return Array.from(m.entries())
+    .map(([rotulo, qtd]) => ({ rotulo, qtd }))
+    .sort((a, b) => b.qtd - a.qtd);
+}
+
+/** Mantém só as linhas que têm ao menos um produto no período/regime pedidos. */
+export function filtrarPorItens(linhas: LinhaRelatorio[], periodo: string, regime: string): LinhaRelatorio[] {
+  if (!periodo && !regime) return linhas;
+  return linhas.filter((l) => itensDaLinha(l).some((i) => (!periodo || i.grupoPeriodo === periodo) && (!regime || i.regime === regime)));
+}
+
+/** Contagens por período, temporada e regime (sobre os produtos que casam com o filtro). */
+export function agregarItens(linhas: LinhaRelatorio[], periodo = "", regime = "") {
+  const itens = linhas.flatMap(itensDaLinha).filter((i) => (!periodo || i.grupoPeriodo === periodo) && (!regime || i.regime === regime));
+  return {
+    itens,
+    porPeriodo: contar(itens, (i) => i.grupoPeriodo),
+    porTemporada: contar(
+      itens.filter((i) => i.temporada !== "Sem período informado"),
+      (i) => i.temporada
+    ),
+    porRegime: contar(itens, (i) => i.regime),
+  };
+}
 
 export interface LinhaProduto {
   nome: string;

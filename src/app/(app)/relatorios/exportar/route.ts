@@ -3,7 +3,7 @@ import { criarClienteServidor } from "@/lib/supabase/server";
 import { pode } from "@/lib/permissions";
 import type { Papel } from "@/types";
 import { divulgacoesDoPeriodo, lerFiltro } from "@/features/relatorios/dados";
-import { produtosDaLinha, tipoDeDivulgacao } from "@/features/relatorios/agregar";
+import { itensDaLinha } from "@/features/relatorios/agregar";
 
 export const dynamic = "force-dynamic";
 
@@ -25,15 +25,21 @@ export async function GET(req: NextRequest) {
   }
 
   const sp = req.nextUrl.searchParams;
-  const f = lerFiltro({ de: sp.get("de") ?? undefined, ate: sp.get("ate") ?? undefined, tipo: sp.get("tipo") ?? undefined, q: sp.get("q") ?? undefined });
+  const f = lerFiltro({
+    de: sp.get("de") ?? undefined,
+    ate: sp.get("ate") ?? undefined,
+    tipo: sp.get("tipo") ?? undefined,
+    q: sp.get("q") ?? undefined,
+    periodo: sp.get("periodo") ?? undefined,
+    regime: sp.get("regime") ?? undefined,
+  });
   const { linhas } = await divulgacoesDoPeriodo(f);
 
-  const saida = ["Data;Origem;Tipo de divulgação;Produto / destino;Temporada"];
+  const saida = ["Data;Origem;Tipo de divulgação;Produto / destino;Período;Temporada;Regime"];
   for (const l of linhas) {
-    const produtos = produtosDaLinha(l);
-    for (const p of produtos.length ? produtos : [""]) {
+    for (const i of itensDaLinha(l).filter((x) => (!f.periodo || x.grupoPeriodo === f.periodo) && (!f.regime || x.regime === f.regime))) {
       saida.push(
-        [l.data.split("-").reverse().join("/"), l.tipo === "nacional" ? "Nacional" : "Internacional", tipoDeDivulgacao(l), p, (l.temporada ?? "").split("\n")[0]]
+        [i.data.split("-").reverse().join("/"), i.tipo === "nacional" ? "Nacional" : "Internacional", i.tipoDivulgacao, i.produto, i.grupoPeriodo, i.temporada, i.regime]
           .map(celula)
           .join(";")
       );
