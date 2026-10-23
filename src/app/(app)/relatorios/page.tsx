@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-type Sp = { aba?: string; de?: string; ate?: string; tipo?: string; q?: string; periodo?: string; regime?: string; rd?: string };
+type Sp = { aba?: string; de?: string; ate?: string; tipo?: string; q?: string; periodo?: string; regime?: string; rd?: string; publico?: string };
 
 const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 const rotuloMes = (m: string) => `${MESES[Number(m.slice(5)) - 1]}/${m.slice(2, 4)}`;
@@ -324,7 +324,11 @@ async function RelatorioEmails(sp: Sp) {
     .order("enviado_em", { ascending: false })
     .limit(1000);
   const { data: sync } = await supabase.from("rd_sync").select("sincronizado_em, erro").eq("id", 1).maybeSingle();
-  const emails = (emailsBrutos as EmailLinha[] | null) ?? [];
+  // Público do e-mail: o nome da campanha traz a marca (B2B) ou (B2C).
+  const publicoDe = (nome: string) => (/b2b/i.test(nome) ? "B2B" : /b2c/i.test(nome) ? "B2C" : "Sem público no nome");
+  const todosEmails = (emailsBrutos as EmailLinha[] | null) ?? [];
+  const publicoSel = ["B2B", "B2C", "Sem público no nome"].includes(sp.publico ?? "") ? sp.publico! : "";
+  const emails = publicoSel ? todosEmails.filter((e) => publicoDe(e.nome) === publicoSel) : todosEmails;
   const ultima = (sync as { sincronizado_em: string | null; erro: string | null } | null) ?? null;
 
   // Divulgação do mesmo dia de cada e-mail (produto, período, regime).
@@ -344,6 +348,7 @@ async function RelatorioEmails(sp: Sp) {
     cliques: number;
   }
   const grupos = {
+    publico: new Map<string, Grupo>(),
     periodo: new Map<string, Grupo>(),
     regime: new Map<string, Grupo>(),
     produto: new Map<string, Grupo>(),
@@ -358,6 +363,7 @@ async function RelatorioEmails(sp: Sp) {
   };
   for (const e of emails) {
     if (!e.enviado_em) continue;
+    somar(grupos.publico, publicoDe(e.nome), e);
     const itens = itensPorDia.get(dataSP(e.enviado_em)) ?? [];
     for (const k of new Set(itens.map((i) => i.grupoPeriodo))) somar(grupos.periodo, k, e);
     for (const k of new Set(itens.map((i) => i.regime))) somar(grupos.regime, k, e);
@@ -411,6 +417,12 @@ async function RelatorioEmails(sp: Sp) {
       {aviso ? <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-900">{aviso}</p> : null}
       <form method="get" className="flex flex-wrap items-end gap-3">
         <FormFiltro f={{ ...f, tipo: "", periodo: "", regime: "", busca: "" }} aba="rd" />
+        <select name="publico" defaultValue={publicoSel} aria-label="Público" className={sel}>
+          <option value="">B2B e B2C</option>
+          <option value="B2B">Só B2B</option>
+          <option value="B2C">Só B2C</option>
+          <option value="Sem público no nome">Sem público no nome</option>
+        </select>
         <span className="ml-auto text-xs text-muted-foreground">
           {ultima?.sincronizado_em ? `E-mails atualizados em ${new Date(ultima.sincronizado_em).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : "Ainda sem e-mails: clique em buscar"}
         </span>
@@ -443,6 +455,7 @@ async function RelatorioEmails(sp: Sp) {
             Nas tabelas abaixo, cada e-mail é ligado às divulgações do <strong>mesmo dia</strong> da planilha. É uma aproximação: se o dia teve vários produtos, o e-mail conta para cada um.
           </p>
           <div className="grid gap-4 lg:grid-cols-2">
+            {tabelaGrupo("Por público (B2B × B2C)", grupos.publico)}
             {tabelaGrupo("Por período (feriado, férias, baixa temporada)", grupos.periodo)}
             {tabelaGrupo("Por regime (all inclusive, pensão…)", grupos.regime)}
           </div>
@@ -455,6 +468,7 @@ async function RelatorioEmails(sp: Sp) {
                 <thead>
                   <tr className="border-b text-left text-xs text-muted-foreground">
                     <th className="px-4 py-2 font-medium">E-mail / campanha</th>
+                    <th className="px-4 py-2 font-medium">Público</th>
                     <th className="px-4 py-2 font-medium">Enviado em</th>
                     <th className="px-4 py-2 text-right font-medium">Entregues</th>
                     <th className="px-4 py-2 text-right font-medium">Abertura</th>
@@ -470,6 +484,16 @@ async function RelatorioEmails(sp: Sp) {
                     return (
                       <tr key={e.campaign_id}>
                         <td className="max-w-[18rem] px-4 py-2 font-medium">{e.nome}</td>
+                        <td className="px-4 py-2">
+                          <span
+                            className={cn(
+                              "rounded px-1.5 py-0.5 text-[11px] font-semibold",
+                              publicoDe(e.nome) === "B2B" ? "bg-indigo-100 text-indigo-900" : publicoDe(e.nome) === "B2C" ? "bg-emerald-100 text-emerald-900" : "bg-muted text-muted-foreground"
+                            )}
+                          >
+                            {publicoDe(e.nome) === "Sem público no nome" ? "—" : publicoDe(e.nome)}
+                          </span>
+                        </td>
                         <td className="px-4 py-2 tabular-nums">{dia ? dataBr(dia) : "—"}</td>
                         <td className="px-4 py-2 text-right tabular-nums">{(e.entregues ?? 0).toLocaleString("pt-BR")}</td>
                         <td className="px-4 py-2 text-right tabular-nums">{e.taxa_abertura !== null ? `${e.taxa_abertura.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%` : "—"}</td>
