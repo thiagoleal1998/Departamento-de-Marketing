@@ -77,5 +77,11 @@ async function buscarDestino(d: DestinoMonitorado): Promise<AlertaDestino> {
 
 /** Busca, em paralelo, notícias de risco recentes para cada destino. Falhas viram "sem alerta". */
 export async function alertasDosDestinos(destinos: DestinoMonitorado[], max = 8): Promise<AlertaDestino[]> {
-  return Promise.all(destinos.slice(0, max).map(buscarDestino));
+  const lista = destinos.slice(0, max);
+  const saida: AlertaDestino[] = [];
+  // Em lotes, para não disparar dezenas de buscas de uma vez.
+  for (let i = 0; i < lista.length; i += 6) {
+    saida.push(...(await Promise.all(lista.slice(i, i + 6).map(buscarDestino))));
+  }
+  return saida;
 }

@@ -32,6 +32,8 @@ import { formatarData } from "@/lib/utils";
 import type { Chamado } from "@/types/database";
 
 export const dynamic = "force-dynamic";
+// A primeira abertura do dia pode levar mais tempo (a IA lê as ofertas da semana e as notícias são buscadas).
+export const maxDuration = 60;
 
 export default async function DashboardPage() {
   const usuario = await exigirUsuario();

@@ -59,7 +59,8 @@ const resumoDaOferta = (partes: (string | null)[]) => partes.filter(Boolean).joi
  * Destinos das ofertas de hoje para a busca de notícias. A IA lê cada oferta (nacional: um produto por vez;
  * internacional: cada linha) e diz o lugar real (cidade/região e estado/país). Sem IA, cai no método simples.
  */
-export async function destinosDeHoje(ofertas: Oferta[], lps: LpLocal[]): Promise<DestinoMonitorado[]> {
+export async function destinosDeHoje(ofertas: Oferta[], lps: LpLocal[], opcoes: { usarIA?: boolean } = {}): Promise<DestinoMonitorado[]> {
+  const usarIA = opcoes.usarIA !== false;
   const textos: { tipo: DestinoMonitorado["tipo"]; texto: string }[] = [];
   for (const o of ofertas) {
     if (o.tipo === "nacional") {
@@ -72,7 +73,12 @@ export async function destinosDeHoje(ofertas: Oferta[], lps: LpLocal[]): Promise
   }
   const unicos = Array.from(new Map(textos.map((t) => [t.texto, t])).values()).slice(0, 8);
 
-  const resolvidos = await Promise.all(unicos.map(async (t) => ({ t, lugares: await lugaresDoTexto(t.texto) })));
+  // Poucas consultas ao mesmo tempo: o plano gratuito da IA limita as chamadas por minuto.
+  const resolvidos: { t: (typeof unicos)[number]; lugares: Lugar[] | null }[] = [];
+  for (let i = 0; i < unicos.length; i += 3) {
+    const lote = unicos.slice(i, i + 3);
+    resolvidos.push(...(await Promise.all(lote.map(async (t) => ({ t, lugares: usarIA ? await lugaresDoTexto(t.texto) : null })))));
+  }
 
   const mapa = new Map<string, DestinoMonitorado>();
   for (const { t, lugares } of resolvidos) {
