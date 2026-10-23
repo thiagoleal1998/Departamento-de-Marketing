@@ -8,6 +8,8 @@ import { AbasDivulgacao, type AbaDivulgacao } from "@/features/divulgacao/abas-d
 import { NovaOferta, OfertasLista, type Dia } from "@/features/divulgacao/ofertas-lista";
 import { POR_PAGINA, historicoOfertas, ofertasDoPeriodo } from "@/features/divulgacao/data";
 import { dataBr, dataCurta, hojeSP, inicioDaSemana, somarDias, type Oferta } from "@/features/divulgacao/tipos";
+import { AtualizarPlanilha } from "@/features/divulgacao/atualizar-planilha";
+import { criarClienteServidor } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,12 +31,27 @@ export default async function DivulgacaoPage({ searchParams }: { searchParams: P
   const podeExcluir = ehLideranca(usuario.role);
   const hoje = hojeSP();
 
+  // Quando a planilha foi lida pela última vez (a tabela só existe depois da migration 0065).
+  let ultimaLeitura: string | null = null;
+  if (podeExcluir) {
+    const supabase = await criarClienteServidor();
+    const { data } = await supabase.from("divulgacao_sync").select("sincronizado_em").eq("id", 1).maybeSingle();
+    ultimaLeitura = (data as { sincronizado_em: string | null } | null)?.sincronizado_em ?? null;
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
         titulo="Divulgação diária"
         descricao="Ofertas do dia (nacional e internacional): produto, temporada, vantagem, concorrência e condições dos hotéis."
-        acoes={aba !== "condicoes" ? <NovaOferta dataPadrao={hoje} /> : undefined}
+        acoes={
+          aba !== "condicoes" ? (
+            <>
+              {podeExcluir ? <AtualizarPlanilha ultima={ultimaLeitura} /> : null}
+              <NovaOferta dataPadrao={hoje} />
+            </>
+          ) : undefined
+        }
       />
       <AbasDivulgacao ativa={aba} />
 

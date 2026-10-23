@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { criarClienteServidor } from "@/lib/supabase/server";
+import { sincronizarDivulgacao } from "./sincronizar";
 import type { DadosOferta } from "./tipos";
 
 type Resultado = { ok?: boolean; erro?: string };
@@ -64,4 +65,30 @@ export async function excluirOferta(id: string): Promise<Resultado> {
   if (error || !data || data.length === 0) return { erro: "Não foi possível excluir (apenas liderança pode)." };
   revalidatePath("/operacional/divulgacao");
   return { ok: true };
+}
+
+/** Lê a planilha agora (liderança). Limita a uma atualização a cada 5 minutos para poupar CPU. */
+export async function atualizarDaPlanilha(): Promise<{ erro?: string; inseridas?: number; atualizadas?: number; removidas?: number }> {
+  const supabase = await criarClienteServidor();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { erro: "Sessão expirada. Entre novamente." };
+  const { data: eu } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  const papel = (eu as { role: string } | null)?.role;
+  if (papel !== "gerente" && papel !== "lider") return { erro: "Só a liderança atualiza a partir da planilha." };
+
+  const { data: ult } = await supabase.from("divulgacao_sync").select("sincronizado_em").eq("id", 1).maybeSingle();
+  const ultimo = (ult as { sincronizado_em: string | null } | null)?.sincronizado_em;
+  if (ultimo && Date.now() - new Date(ultimo).getTime() < 5 * 60_000) {
+    return { erro: "A planilha foi lida há menos de 5 minutos. Aguarde um pouco." };
+  }
+  try {
+    const r = await sincronizarDivulgacao("manual");
+    revalidatePath("/operacional/divulgacao");
+    revalidatePath("/dashboard");
+    return r;
+  } catch (e) {
+    return { erro: e instanceof Error ? e.message : "Falha ao ler a planilha." };
+  }
 }

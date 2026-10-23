@@ -23,6 +23,10 @@
     {
       "path": "/api/cron/comercial?hora=1900",
       "schedule": "0 22 * * 1-5"
+    },
+    {
+      "path": "/api/cron/divulgacao",
+      "schedule": "30 13 * * *"
     }
   ],
   "git": {
