@@ -68,6 +68,11 @@ export function destinosDasOfertas(ofertas: Oferta[], lps: LpLocal[]): DestinoMo
       if (!linha) continue;
       const lugares = linha.length > 28 || linha.includes(":") ? lugaresDoTitulo(linha) : [linha];
       for (const l of lugares) adicionar({ nome: l, termo: l, busca: l, tipo: "internacional" });
+      // O descritivo costuma listar as paradas: "02 noites em Lisboa".
+      for (const m of (o.vantagem ?? "").matchAll(/noites?\s+(?:em|no|na)\s+([^\n,.(]{3,40})/gi)) {
+        const l = m[1].trim();
+        adicionar({ nome: l, termo: l, busca: l, tipo: "internacional" });
+      }
     }
   }
   return Array.from(mapa.values());

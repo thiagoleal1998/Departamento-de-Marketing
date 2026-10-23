@@ -4,7 +4,8 @@ import { ofertasDoPeriodo } from "@/features/divulgacao/data";
 import { hojeSP } from "@/features/divulgacao/tipos";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CATEGORIA_META } from "./classificar";
-import { destinosDasOfertas, type LpLocal } from "./destinos";
+import type { LpLocal } from "./destinos";
+import { destinosDeHoje } from "./lugares";
 import { alertasDosDestinos } from "./buscar";
 
 function haQuanto(iso: string): string {
@@ -23,7 +24,8 @@ export async function AlertasDestinos() {
 
   const supabase = await criarClienteServidor();
   const { data } = await supabase.from("landing_pages").select("nome, cidade, estado, pais").limit(1000);
-  const destinos = destinosDasOfertas(itens, (data as LpLocal[] | null) ?? []);
+  // A IA lê cada oferta e diz o lugar real (ex.: circuito Portugal e Madri → Porto, Lisboa, Madri).
+  const destinos = await destinosDeHoje(itens, (data as LpLocal[] | null) ?? []);
   if (destinos.length === 0) return null;
 
   const resultados = await alertasDosDestinos(destinos);
