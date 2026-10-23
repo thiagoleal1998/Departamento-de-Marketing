@@ -46,13 +46,14 @@ const SEPARADOR = /\n\s*-{3,}\s*\n/;
 export function blocosNacional(o: Oferta) {
   const parte = (v: string | null) => (v ?? "").split(SEPARADOR).map((x) => x.trim());
   const produtos = parte(o.produto);
-  const n = Math.max(1, produtos.length);
   const temps = parte(o.temporada);
   const vants = parte(o.vantagem);
   const aereos = parte(o.aereo);
   const periodos = parte(o.periodo_viagem);
+  // Um produto pode ter várias opções (ex.: Natal e Carnaval): o número de blocos é o maior entre os campos.
+  const n = Math.max(1, produtos.length, temps.length, vants.length, aereos.length, periodos.length);
   return Array.from({ length: n }, (_, i) => ({
-    produto: produtos[i] || null,
+    produto: produtos[i] || (produtos.length === 1 ? produtos[0] || null : null),
     temporada: temps[i] || (temps.length === 1 ? temps[0] || null : null),
     vantagem: vants[i] || (vants.length === 1 ? vants[0] || null : null),
     aereo: aereos[i] || (aereos.length === 1 ? aereos[0] || null : null),

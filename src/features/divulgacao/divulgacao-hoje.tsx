@@ -37,12 +37,28 @@ export async function DivulgacaoHoje() {
   // O e-mail do dia é o tipo de divulgação programado (e-mail técnico, e-mail de sábado…); lâmina não é e-mail.
   const emails = Array.from(new Set(inter.map((o) => (o.canal ?? "").trim()).filter((c) => /e-?mail/i.test(c))));
 
+  // Nacional: um item por produto (as várias opções do mesmo produto viram uma linha só, com as temporadas juntas).
+  const nacionais = nac.flatMap((o) => {
+    const porProduto = new Map<string, { temporadas: string[]; periodos: string[] }>();
+    for (const b of blocosNacional(o)) {
+      if (!b.produto) continue;
+      const nome = primeiraLinha(b.produto);
+      const item = porProduto.get(nome) ?? { temporadas: [], periodos: [] };
+      const t = b.temporada && primeiraLinha(b.temporada);
+      const p = b.periodo && primeiraLinha(b.periodo);
+      if (t && t !== "---" && !item.temporadas.includes(t)) item.temporadas.push(t);
+      if (p && p !== "---" && !item.periodos.includes(p)) item.periodos.push(p);
+      porProduto.set(nome, item);
+    }
+    return Array.from(porProduto.entries()).map(([titulo, v]) => ({
+      tag: "Nacional",
+      titulo,
+      detalhe: [v.temporadas.join(" · "), v.periodos.join(" · ")].filter(Boolean).join(" — "),
+    }));
+  });
+
   const ofertas = [
-    ...nac.flatMap((o) =>
-      blocosNacional(o)
-        .filter((b) => b.produto)
-        .map((b) => ({ tag: "Nacional", titulo: primeiraLinha(b.produto), detalhe: [b.temporada && primeiraLinha(b.temporada), b.periodo && primeiraLinha(b.periodo)].filter(Boolean).join(" · ") }))
-    ),
+    ...nacionais,
     ...inter
       .filter((o: Oferta) => o.produto && !/e-?mail/i.test(o.canal ?? ""))
       .map((o) => ({ tag: "Internacional", titulo: primeiraLinha(o.produto), detalhe: o.canal ?? "" })),

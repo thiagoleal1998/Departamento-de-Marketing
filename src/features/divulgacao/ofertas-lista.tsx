@@ -93,7 +93,11 @@ function OfertaCard({ o, podeExcluir, aoEditar }: { o: Oferta; podeExcluir: bool
         <div className="space-y-3">
           {blocos.map((b, i) => (
             <div key={i} className={cn("space-y-1", i > 0 && "border-t pt-3")}>
-              {b.produto ? <h3 className="text-base font-semibold leading-snug">{b.produto}</h3> : null}
+              {b.produto && b.produto !== blocos[i - 1]?.produto ? (
+                <h3 className="text-base font-semibold leading-snug">{b.produto}</h3>
+              ) : b.produto ? (
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Opção {i + 1}</p>
+              ) : null}
               <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
                 {b.temporada ? <span>🗓 {b.temporada}</span> : null}
                 {b.periodo ? <span>🧳 {b.periodo}</span> : null}
