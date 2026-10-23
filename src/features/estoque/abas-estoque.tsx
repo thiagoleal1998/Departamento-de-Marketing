@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/shared/link";
 import { Boxes, Store } from "lucide-react";
 import { cn } from "@/lib/utils";
 

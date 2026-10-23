@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/shared/link";
 import { NotebookPen, AlertTriangle, CalendarClock } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import { mapaDePerfis } from "@/features/chamados/data";

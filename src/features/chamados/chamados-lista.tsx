@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import Link from "next/link";
+import Link from "@/components/shared/link";
 import { LayoutGrid, List, Search, AlertCircle, X } from "lucide-react";
 import { alterarStatusChamado } from "./actions";
 import { Card, CardContent } from "@/components/ui/card";

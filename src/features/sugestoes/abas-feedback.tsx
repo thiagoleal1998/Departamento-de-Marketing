@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/shared/link";
 import { Columns3, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 

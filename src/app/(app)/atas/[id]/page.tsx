@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/shared/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Eye, Pencil } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";

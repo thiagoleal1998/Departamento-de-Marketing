@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/shared/link";
 import { ArrowRight, Mail, Newspaper, Tag } from "lucide-react";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { ofertasDoPeriodo } from "./data";

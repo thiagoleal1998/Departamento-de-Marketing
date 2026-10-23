@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { CalendarClock, CheckCircle2, ClipboardList, FolderKanban, Loader2, Package, Pencil, Reply } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/shared/link";
 import { atualizarProjetoPeloChat, dadosVinculo, responderVinculo } from "./vinculos-actions";
 import { STATUS_PROJETO_ROTULO, STATUS_TAREFA_ROTULO, type DadosVinculo, type RefItem } from "./vinculo-tipos";
 import { Select } from "@/components/ui/select";

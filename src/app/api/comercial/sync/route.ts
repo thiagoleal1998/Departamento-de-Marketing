@@ -27,14 +27,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ erro: "serviço indisponível" }, { status: 503 });
   }
 
-  // Evita rajadas: ignora se sincronizou há menos de 20 segundos.
+  // Evita rajadas (cada edição da planilha chama aqui): ignora se sincronizou há menos de 2 minutos.
+  // Os horários automáticos e o botão "Sincronizar" pegam o que ficar de fora.
   const { data } = await criarClienteAdmin()
     .from("comercial_sync")
     .select("sincronizado_em, erro")
     .eq("id", 1)
     .maybeSingle();
   const ultimo = data?.sincronizado_em ? new Date(data.sincronizado_em).getTime() : 0;
-  if (!data?.erro && Date.now() - ultimo < 20_000) {
+  if (!data?.erro && Date.now() - ultimo < 120_000) {
     return NextResponse.json({ ok: true, ignorado: true });
   }
 

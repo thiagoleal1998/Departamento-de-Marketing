@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/shared/link";
 import { LogIn, Clock, Palette, MessagesSquare, Search } from "lucide-react";
 import { obterConfig } from "@/lib/config";
 import { PortalForm } from "@/features/portal/portal-form";

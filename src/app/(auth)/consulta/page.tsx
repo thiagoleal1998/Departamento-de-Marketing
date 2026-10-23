@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/shared/link";
 import { ArrowLeft, LogIn } from "lucide-react";
 import { obterConfig } from "@/lib/config";
 import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";

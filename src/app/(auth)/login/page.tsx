@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/shared/link";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { LoginForm } from "@/features/auth/login-form";
 import { supabaseConfigurado } from "@/lib/supabase/env";

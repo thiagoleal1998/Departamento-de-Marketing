@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/shared/link";
 import { usePathname } from "next/navigation";
 import { ExternalLink, Loader2, MessageCircle, Send, X } from "lucide-react";
 import { criarClienteBrowser } from "@/lib/supabase/client";

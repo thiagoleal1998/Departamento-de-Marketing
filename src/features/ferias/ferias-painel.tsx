@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/shared/link";
 import { useState, useTransition } from "react";
 import { AlertTriangle, ChevronLeft, ChevronRight, Loader2, Palmtree, Pencil, Plus, Trash2, X } from "lucide-react";
 import { excluirFerias, salvarFerias } from "./actions";

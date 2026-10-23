@@ -115,7 +115,7 @@ const lerAgendaCache = unstable_cache(
     return lerAgenda(fonte, [dia1, dia2]);
   },
   ["agenda-ics"],
-  { revalidate: 600 }
+  { revalidate: 1800 }
 );
 
 /** Eventos de hoje e de amanhã nas agendas configuradas (reuniões, Thiago, Jonas). */

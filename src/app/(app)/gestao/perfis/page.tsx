@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/shared/link";
 import { redirect } from "next/navigation";
 import { Brain, ArrowRight } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";

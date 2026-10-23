@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/shared/link";
 import { MessagesSquare } from "lucide-react";
 import { historicoChatTarefa, type MensagemDaTarefa } from "@/features/chat/vinculos-actions";
 

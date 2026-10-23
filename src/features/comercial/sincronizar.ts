@@ -62,6 +62,7 @@ interface Existente {
   tag: string | null;
   hash: string;
   campos: CampoProduto[];
+  ordem: number | null;
 }
 
 export interface ResultadoSync {
@@ -107,7 +108,7 @@ export async function sincronizarComercial(origem: string): Promise<ResultadoSyn
 
     const { data } = await admin
       .from("comercial_produtos")
-      .select("chave, nome, tag, hash, campos");
+      .select("chave, nome, tag, hash, campos, ordem");
     const existentes = (data as Existente[] | null) ?? [];
     const primeiraCarga = existentes.length === 0; // não gera "alteração" na carga inicial
     const antigos = new Map(existentes.map((e) => [e.chave, e]));
@@ -150,9 +151,11 @@ export async function sincronizarComercial(origem: string): Promise<ResultadoSyn
     }
 
     // Ordem pode mudar sem alterar o conteúdo: mantém a ordem da planilha.
+    // (só grava quando a posição de fato mudou: antes isso fazia uma chamada ao banco por produto, a cada sincronização)
+    const gravarChaves = new Set(gravar.map((g) => g.chave));
     const ordens = produtos
-      .filter((p) => !gravar.some((g) => g.chave === p.chave))
-      .filter((p) => antigos.has(p.chave));
+      .filter((p) => !gravarChaves.has(p.chave))
+      .filter((p) => antigos.has(p.chave) && antigos.get(p.chave)?.ordem !== p.ordem);
     for (const p of ordens) {
       await admin.from("comercial_produtos").update({ ordem: p.ordem }).eq("chave", p.chave);
     }

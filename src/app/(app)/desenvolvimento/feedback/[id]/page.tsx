@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/shared/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, Target, Sparkles, Clock } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";

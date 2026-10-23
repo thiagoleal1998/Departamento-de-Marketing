@@ -3,7 +3,7 @@
 import { useDialogo } from "@/components/shared/dialogo-provider";
 
 import { useEffect, useState, useTransition } from "react";
-import Link from "next/link";
+import Link from "@/components/shared/link";
 import { X, Loader2, Save, ExternalLink, Check, Trash2 } from "lucide-react";
 import { excluirTarefa, salvarTarefa } from "./actions";
 import { ConteudoCard } from "./conteudo-card";

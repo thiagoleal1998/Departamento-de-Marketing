@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/shared/link";
 import { Loader2, MessagesSquare, Send } from "lucide-react";
 import { criarClienteBrowser } from "@/lib/supabase/client";
 import { historicoChatTarefa, type MensagemDaTarefa } from "@/features/chat/vinculos-actions";

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/shared/link";
 import { ArrowLeft } from "lucide-react";
 import { obterConfig } from "@/lib/config";
 import { AcompanharForm } from "@/features/portal/acompanhar-form";

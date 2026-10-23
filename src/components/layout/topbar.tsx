@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/shared/link";
 import { NomeMarca } from "@/components/shared/nome-marca";
 import { LogOut, MessagesSquare } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";

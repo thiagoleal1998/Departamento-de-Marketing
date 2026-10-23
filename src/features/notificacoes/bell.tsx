@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import Link from "next/link";
+import Link from "@/components/shared/link";
 import { Bell } from "lucide-react";
 import { marcarTodasLidas, marcarLida } from "./actions";
 import { formatarDataHora } from "@/lib/utils";
