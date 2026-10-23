@@ -1,7 +1,7 @@
 import { ExternalLink } from "lucide-react";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { ofertasDoPeriodo } from "@/features/divulgacao/data";
-import { diaSemana, dataCurta, hojeSP, inicioDaSemana, somarDias } from "@/features/divulgacao/tipos";
+import { diaSemana, dataCurta, hojeSP, somarDias } from "@/features/divulgacao/tipos";
 import { CATEGORIA_META } from "./classificar";
 import type { DestinoMonitorado, LpLocal } from "./destinos";
 import { destinosDoDia } from "./lugares";
@@ -88,13 +88,13 @@ function SlideSemana({ dias, porTermo, hoje, pendente }: { dias: DiaSemana[]; po
   const comOfertas = dias.filter((d) => d.destinos.length > 0);
   return (
     <>
-      <p className="text-sm text-muted-foreground">Destinos das ofertas de cada dia da semana e o que apareceu de risco nas últimas 72 horas.</p>
+      <p className="text-sm text-muted-foreground">Destinos das ofertas de hoje até daqui a 6 dias e o que apareceu de risco nas últimas 72 horas.</p>
       {pendente ? (
         <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">
           A IA que identifica os lugares estava ocupada e algumas ofertas ainda não foram lidas. Atualize a página em instantes para completar.
         </p>
       ) : null}
-      {comOfertas.length === 0 ? <p className="text-sm text-muted-foreground">Nenhum destino identificado nas ofertas desta semana.</p> : null}
+      {comOfertas.length === 0 ? <p className="text-sm text-muted-foreground">Nenhum destino identificado nas ofertas dos próximos dias.</p> : null}
       {comOfertas.map((d) => {
         const lista = d.destinos.map((x) => porTermo.get(x.termo.toLowerCase())).filter((x): x is AlertaDestino => !!x);
         const comAlerta = lista.filter((r) => r.noticias.length > 0);
@@ -134,8 +134,9 @@ function SlideSemana({ dias, porTermo, hoje, pendente }: { dias: DiaSemana[]; po
 /** Notícias de risco sobre os destinos das ofertas: slide de hoje e slide da semana. */
 export async function AlertasDestinos() {
   const hoje = hojeSP();
-  const seg = inicioDaSemana(hoje);
-  const { itens, indisponivel } = await ofertasDoPeriodo(seg, somarDias(seg, 6));
+  // O slide da semana olha para frente: de hoje até daqui a 6 dias (não mostra dias que já passaram).
+  const inicio = hoje;
+  const { itens, indisponivel } = await ofertasDoPeriodo(inicio, somarDias(inicio, 6));
   if (indisponivel || itens.length === 0) return null;
 
   const supabase = await criarClienteServidor();
@@ -145,7 +146,7 @@ export async function AlertasDestinos() {
   // Destinos de cada dia: a IA lê as ofertas do dia e diz o lugar real (mesma regra para hoje e para a semana toda).
   // Uma chamada por dia, guardada por 7 dias; começa por hoje, para o slide principal ficar pronto primeiro.
   const prazoFinal = Date.now() + 40_000;
-  const ordem = Array.from({ length: 7 }, (_, i) => somarDias(seg, i)).sort((a, b) => (a >= hoje ? 0 : 1) - (b >= hoje ? 0 : 1) || a.localeCompare(b));
+  const ordem = Array.from({ length: 7 }, (_, i) => somarDias(inicio, i));
   const porData = new Map<string, DiaSemana>();
   let pendente = false;
   for (const dia of ordem) {
@@ -158,7 +159,7 @@ export async function AlertasDestinos() {
     pendente = pendente || r.pendente;
     porData.set(dia, { data: dia, destinos: r.destinos });
   }
-  const dias: DiaSemana[] = Array.from({ length: 7 }, (_, i) => porData.get(somarDias(seg, i))!);
+  const dias: DiaSemana[] = Array.from({ length: 7 }, (_, i) => porData.get(somarDias(inicio, i))!);
 
   // Cada lugar é pesquisado uma vez só, mesmo que apareça em vários dias.
   const unicos = new Map<string, DestinoMonitorado>();
