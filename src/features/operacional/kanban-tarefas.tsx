@@ -33,6 +33,7 @@ export interface TarefaView {
   prioridade: number | null;
   tag: string | null;
   link: string | null;
+  link_site: string | null;
   conteudo: string | null;
   pasta_raiz: string | null;
   pasta_caminho: string | null;
@@ -298,7 +299,7 @@ export function KanbanTarefas({
                             </span>
                           ) : null}
                         </div>
-                        {t.link || t.origemHref ? (
+                        {t.link || t.link_site || t.origemHref ? (
                           <span className="mt-1.5 inline-flex items-center gap-1 text-xs text-primary">
                             <Link2 className="size-3" />
                             {t.origemLabel ?? "Com link"}

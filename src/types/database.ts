@@ -110,6 +110,8 @@ export interface Tarefa {
   pasta_caminho?: string | null;
   /** Segunda pessoa no card: enxerga e edita como o responsável. */
   colaborador_id?: string | null;
+  /** URL do nosso site (o `link` é a URL de referência). */
+  link_site?: string | null;
 }
 
 export interface Projeto {

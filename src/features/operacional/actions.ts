@@ -57,6 +57,7 @@ export interface DadosTarefa {
   pasta_raiz?: string | null;
   pasta_caminho?: string;
   colaborador_id?: string | null;
+  link_site?: string;
 }
 
 /** Limpa o caminho: sem letra de unidade no começo, sem barras sobrando. */
@@ -66,6 +67,7 @@ function limparPasta(raiz: string | null | undefined, caminho: string | undefine
 }
 
 const AVISO_PASTA = "O card foi salvo, mas o caminho da pasta não: falta rodar a migration 0069 no Supabase.";
+const AVISO_LINK_SITE = "O card foi salvo, mas o link do site não: falta rodar a migration 0071 no Supabase.";
 const AVISO_COLABORADOR = "O card foi salvo, mas o colaborador não: falta rodar a migration 0070 no Supabase.";
 
 /** Salva as propriedades e o conteúdo de um card (como a página do Notion). */
@@ -88,6 +90,8 @@ export async function salvarTarefa(
   if (d.conteudo.length > 50000) {
     return { erro: "O conteúdo está muito grande." };
   }
+  const linkSite = (d.link_site ?? "").trim();
+  if (linkSite && !/^https?:\/\//i.test(linkSite)) return { erro: "O link do site deve começar com http:// ou https://." };
 
   // A leitura passa pela RLS: só enxerga o card quem é da liderança ou o responsável atual.
   const { data: antes } = await supabase.from("tarefas").select("status, responsavel_id").eq("id", tarefaId).maybeSingle();
@@ -120,15 +124,19 @@ export async function salvarTarefa(
   }
 
   // Gravado à parte: sem a migration 0069 o restante do card continua salvando.
-  // Colaborador: também à parte (migration 0070). Quem entra agora é avisado.
   let avisoPasta: string | null = null;
+  if (d.link_site !== undefined) {
+    const { error: errSite } = await gravador.from("tarefas").update({ link_site: linkSite || null }).eq("id", tarefaId);
+    if (errSite) avisoPasta = AVISO_LINK_SITE;
+  }
+  // Colaborador: também à parte (migration 0070). Quem entra agora é avisado.
   if (d.colaborador_id !== undefined) {
     const { data: ant } = await supabase.from("tarefas").select("colaborador_id").eq("id", tarefaId).maybeSingle();
     const anterior = (ant as { colaborador_id: string | null } | null)?.colaborador_id ?? null;
     const novo = d.colaborador_id || null;
     if (novo !== anterior) {
       const { error: errColab } = await gravador.from("tarefas").update({ colaborador_id: novo }).eq("id", tarefaId);
-      if (errColab) avisoPasta = AVISO_COLABORADOR;
+      if (errColab) avisoPasta = avisoPasta ?? AVISO_COLABORADOR;
       else if (novo && novo !== user.id && servicoDisponivel()) {
         await criarClienteAdmin().from("notificacoes").insert({
           destinatario_id: novo,
@@ -216,6 +224,7 @@ export interface NovoCard {
   pasta_raiz?: string | null;
   pasta_caminho?: string;
   colaborador_id?: string | null;
+  link_site?: string;
 }
 
 /**
@@ -235,6 +244,8 @@ export async function criarTarefaCard(d: NovoCard): Promise<{ ok?: boolean; erro
   if (d.prioridade !== null && (d.prioridade < 1 || d.prioridade > 5)) return { erro: "Prioridade deve ser de 1 a 5." };
   const link = d.link.trim();
   if (link && !/^https?:\/\//i.test(link)) return { erro: "O link deve começar com http:// ou https://." };
+  const linkSite = (d.link_site ?? "").trim();
+  if (linkSite && !/^https?:\/\//i.test(linkSite)) return { erro: "O link do site deve começar com http:// ou https://." };
   if (!servicoDisponivel()) return { erro: "Criação de cards indisponível no momento." };
 
   const { data: eu } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
@@ -264,6 +275,8 @@ export async function criarTarefaCard(d: NovoCard): Promise<{ ok?: boolean; erro
     await admin.from("tarefas").update(limparPasta(d.pasta_raiz, d.pasta_caminho)).eq("id", id);
   }
 
+  // Sem a migration 0071 o card é criado do mesmo jeito, só sem o link do site.
+  if (linkSite) await admin.from("tarefas").update({ link_site: linkSite }).eq("id", id);
   if (d.colaborador_id && d.colaborador_id !== responsavel) {
     // Sem a migration 0070 o card é criado do mesmo jeito, só sem o colaborador.
     const { error: errColab } = await admin.from("tarefas").update({ colaborador_id: d.colaborador_id }).eq("id", id);

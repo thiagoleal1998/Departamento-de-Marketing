@@ -81,6 +81,7 @@ export default async function OperacionalPage({
       prioridade: t.prioridade ?? null,
       tag: t.tag ?? null,
       link: t.link ?? null,
+      link_site: t.link_site ?? null,
       conteudo: t.conteudo ?? null,
       pasta_raiz: t.pasta_raiz ?? null,
       pasta_caminho: t.pasta_caminho ?? null,

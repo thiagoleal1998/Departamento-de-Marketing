@@ -66,6 +66,7 @@ export function TarefaDetalhe({
   );
   const [tag, setTag] = useState(tarefa.tag ?? "");
   const [link, setLink] = useState(tarefa.link ?? "");
+  const [linkSite, setLinkSite] = useState(tarefa.link_site ?? "");
   const [conteudo, setConteudo] = useState(tarefa.conteudo ?? "");
   const [pasta, setPasta] = useState<{ raiz: RaizPasta; caminho: string }>({
     raiz: ehRaiz(tarefa.pasta_raiz) ? tarefa.pasta_raiz : "corporativo",
@@ -121,6 +122,7 @@ export function TarefaDetalhe({
         pasta_raiz: pasta.raiz,
         pasta_caminho: pasta.caminho,
         colaborador_id: colaboradorId || null,
+        link_site: linkSite,
       });
       if (res.erro) {
         setErro(res.erro);
@@ -152,6 +154,7 @@ export function TarefaDetalhe({
   const linkExterno = link.trim().toLowerCase().startsWith("http")
     ? link.trim()
     : null;
+  const linkSiteExterno = linkSite.trim().toLowerCase().startsWith("http") ? linkSite.trim() : null;
 
   return (
     <div
@@ -270,7 +273,7 @@ export function TarefaDetalhe({
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="td-url">URL</Label>
+              <Label htmlFor="td-url">URL de referência</Label>
               <div className="flex gap-2">
                 <Input
                   id="td-url"
@@ -286,6 +289,19 @@ export function TarefaDetalhe({
                       rel="noopener noreferrer"
                       aria-label="Abrir URL"
                     >
+                      <ExternalLink className="size-4" />
+                    </a>
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="td-url-site">URL do nosso site</Label>
+              <div className="flex gap-2">
+                <Input id="td-url-site" value={linkSite} onChange={(e) => setLinkSite(e.target.value)} placeholder="https://" />
+                {linkSiteExterno ? (
+                  <Button asChild variant="outline" size="icon">
+                    <a href={linkSiteExterno} target="_blank" rel="noopener noreferrer" aria-label="Abrir URL do nosso site">
                       <ExternalLink className="size-4" />
                     </a>
                   </Button>

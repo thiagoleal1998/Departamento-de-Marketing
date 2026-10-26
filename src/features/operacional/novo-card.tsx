@@ -41,6 +41,7 @@ export function NovoCardDialogo({
   const [prioridade, setPrioridade] = useState("");
   const [tag, setTag] = useState("");
   const [link, setLink] = useState("");
+  const [linkSite, setLinkSite] = useState("");
   const [pasta, setPasta] = useState<{ raiz: RaizPasta; caminho: string }>({ raiz: "corporativo", caminho: "" });
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, start] = useTransition();
@@ -70,6 +71,7 @@ export function NovoCardDialogo({
         tag,
         link,
         colaborador_id: colaborador || null,
+        link_site: linkSite,
         pasta_raiz: pasta.raiz,
         pasta_caminho: pasta.caminho,
       });
@@ -154,8 +156,12 @@ export function NovoCardDialogo({
             <Input id="nc-tag" value={tag} onChange={(e) => setTag(e.target.value)} maxLength={60} placeholder="Ex.: Landing page" />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="nc-link">Link</Label>
+            <Label htmlFor="nc-link">URL de referência</Label>
             <Input id="nc-link" type="url" inputMode="url" value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="nc-link-site">URL do nosso site</Label>
+            <Input id="nc-link-site" type="url" inputMode="url" value={linkSite} onChange={(e) => setLinkSite(e.target.value)} placeholder="https://" />
           </div>
           <CampoPasta id="nc-pasta" raiz={pasta.raiz} caminho={pasta.caminho} unidades={unidades} onChange={setPasta} />
         </div>
