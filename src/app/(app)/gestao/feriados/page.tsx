@@ -19,11 +19,12 @@ export default async function EscalaFeriadosPage() {
   const anoAtual = Number(hoje.slice(0, 4));
   const supabase = await criarClienteServidor();
 
-  const [escalaR, extrasR, feriasR, pessoasR] = await Promise.all([
+  const [escalaR, extrasR, feriasR, pessoasR, avisosR] = await Promise.all([
     supabase.from("escala_feriados").select("id, data, profile_id").gte("data", hoje).lte("data", `${anoAtual + 1}-12-31`),
     supabase.from("feriados_extras").select("id, data, nome").gte("data", hoje).lte("data", `${anoAtual + 1}-12-31`),
     supabase.from("ferias").select("profile_id, inicio, fim").gte("fim", hoje).lte("inicio", `${anoAtual + 1}-12-31`),
     supabase.from("profiles").select("id, nome").eq("ativo", true).order("nome", { ascending: true }),
+    supabase.from("escala_avisos").select("data").gte("data", hoje),
   ]);
 
   // Feriados que restam do ano em curso e todos os do ano seguinte, mais os extras cadastrados.
@@ -47,6 +48,7 @@ export default async function EscalaFeriadosPage() {
         ferias={(feriasR.data as PeriodoFerias[] | null) ?? []}
         hoje={hoje}
         indisponivel={Boolean(escalaR.error)}
+        avisados={((avisosR.data as { data: string }[] | null) ?? []).map((a) => a.data)}
       />
     </div>
   );

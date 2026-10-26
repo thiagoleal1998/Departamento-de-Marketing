@@ -1,14 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { AlertTriangle, CalendarPlus, Loader2, Plus, Trash2, X } from "lucide-react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { AlertTriangle, BellRing, CalendarPlus, Check, ChevronDown, Loader2, Trash2, UserPlus, Users } from "lucide-react";
 import { useDialogo } from "@/components/shared/dialogo-provider";
-import { adicionarFeriadoExtra, escalarPessoa, removerEscala, removerFeriadoExtra } from "./actions";
+import { adicionarFeriadoExtra, avisarFolga, definirEscala, removerFeriadoExtra } from "./actions";
 import { caiNoFimDeSemana, dataBr, diaDaSemana, type Feriado } from "./calendario";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 export interface Escalado {
@@ -29,6 +28,133 @@ const COR = {
   extra: "bg-sky-100 text-sky-900",
 } as const;
 
+const iniciais = (n: string) =>
+  n
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((x) => x[0]?.toUpperCase())
+    .join("");
+
+/** Menu para escolher quem fica de plantão: "Todo o time" + uma linha por pessoa; só grava ao salvar. */
+function MenuEscala({
+  pessoas,
+  atuais,
+  deFerias,
+  pendente,
+  onSalvar,
+  rotulo,
+}: {
+  pessoas: { id: string; nome: string }[];
+  atuais: string[];
+  deFerias: (id: string) => boolean;
+  pendente: boolean;
+  onSalvar: (ids: string[]) => void;
+  rotulo: string;
+}) {
+  const [aberto, setAberto] = useState(false);
+  const [sel, setSel] = useState<string[]>(atuais);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!aberto) return;
+    const fora = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setAberto(false);
+    };
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setAberto(false);
+    };
+    document.addEventListener("mousedown", fora);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("mousedown", fora);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [aberto]);
+
+  const todos = pessoas.length > 0 && sel.length === pessoas.length;
+  const alternar = (id: string) => setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  const mudou = sel.length !== atuais.length || sel.some((id) => !atuais.includes(id));
+
+  return (
+    <div className="relative" ref={ref}>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="h-8 gap-1.5 rounded-full text-xs"
+        aria-label={rotulo}
+        aria-expanded={aberto}
+        onClick={() => {
+          setSel(atuais);
+          setAberto((a) => !a);
+        }}
+      >
+        <UserPlus className="size-3.5" /> Escalar
+        <ChevronDown className={cn("size-3.5 transition-transform", aberto && "rotate-180")} />
+      </Button>
+      {aberto ? (
+        <div className="absolute left-0 z-50 mt-2 w-72 overflow-hidden rounded-xl border bg-popover p-1.5 text-popover-foreground shadow-xl">
+          <button
+            type="button"
+            onClick={() => setSel(todos ? [] : pessoas.map((p) => p.id))}
+            className={cn("flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm font-semibold transition-colors hover:bg-muted", todos && "bg-primary/10")}
+          >
+            <span className="grid size-8 place-items-center rounded-full bg-primary text-primary-foreground">
+              <Users className="size-4" />
+            </span>
+            <span className="flex-1">Todo o time</span>
+            {todos ? <Check className="size-4 text-primary" /> : null}
+          </button>
+          <div className="my-1 h-px bg-border" />
+          <ul className="max-h-64 overflow-y-auto">
+            {pessoas.map((p) => {
+              const on = sel.includes(p.id);
+              return (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    onClick={() => alternar(p.id)}
+                    className={cn("flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm transition-colors hover:bg-muted", on && "bg-primary/10")}
+                  >
+                    <span className={cn("grid size-8 place-items-center rounded-full text-xs font-semibold", on ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
+                      {iniciais(p.nome)}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate">{p.nome}</span>
+                      {deFerias(p.id) ? (
+                        <span className="flex items-center gap-1 text-[11px] text-amber-700">
+                          <AlertTriangle className="size-3" /> de férias nesta data
+                        </span>
+                      ) : null}
+                    </span>
+                    {on ? <Check className="size-4 text-primary" /> : null}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="mt-1 flex items-center justify-between gap-2 border-t p-2">
+            <span className="text-xs text-muted-foreground">{sel.length} escalado(s)</span>
+            <Button
+              type="button"
+              size="sm"
+              className="h-8"
+              disabled={pendente || !mudou}
+              onClick={() => {
+                onSalvar(sel);
+                setAberto(false);
+              }}
+            >
+              {pendente ? <Loader2 className="size-4 animate-spin" /> : null} Salvar escala
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 /** Escala de feriados: quem fica de plantão em cada data (aviso se a pessoa estiver de férias). */
 export function EscalaPainel({
   feriados,
@@ -37,6 +163,7 @@ export function EscalaPainel({
   ferias,
   hoje,
   indisponivel,
+  avisados = [],
 }: {
   feriados: Feriado[];
   escala: Escalado[];
@@ -44,6 +171,7 @@ export function EscalaPainel({
   ferias: PeriodoFerias[];
   hoje: string;
   indisponivel?: boolean;
+  avisados?: string[];
 }) {
   const { confirmar, avisar } = useDialogo();
   const [pendente, start] = useTransition();
@@ -56,17 +184,26 @@ export function EscalaPainel({
 
   const anos = Array.from(new Set(feriados.map((f) => f.data.slice(0, 4)))).sort();
 
-  function escalar(data: string, profileId: string) {
-    if (!profileId) return;
+  function salvarEscala(f: Feriado, ids: string[]) {
     start(async () => {
-      const r = await escalarPessoa(data, profileId);
-      if (r.erro) void avisar(r.erro, "Não foi possível escalar");
+      const r = await definirEscala(f.data, f.nome, ids);
+      if (r.erro) void avisar(r.erro, "Não foi possível salvar a escala");
+      else if (r.avisados) void avisar(`${r.avisados} pessoa(s) receberam a notificação de que foram escaladas.`, "Escala salva");
     });
   }
 
-  async function remover(e: Escalado) {
-    const r = await removerEscala(e.id);
-    if (r.erro) void avisar(r.erro, "Não foi possível remover");
+  async function avisarTime(f: Feriado) {
+    const ok = await confirmar({
+      titulo: "Avisar quem ficou de folga?",
+      descricao: `Quem não está na escala de ${f.nome} (${dataBr(f.data)}) receberá a notificação de que estará de folga.`,
+      confirmar: "Avisar",
+    });
+    if (!ok) return;
+    start(async () => {
+      const r = await avisarFolga(f.data, f.nome);
+      if (r.erro) void avisar(r.erro, "Não foi possível avisar");
+      else void avisar(`${r.avisados ?? 0} pessoa(s) avisadas de que estarão de folga.`, "Aviso enviado");
+    });
   }
 
   async function removerExtra(f: Feriado) {
@@ -93,7 +230,7 @@ export function EscalaPainel({
   return (
     <div className="space-y-6">
       {indisponivel ? (
-        <p className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">A escala ainda não foi ativada no banco. Rode a migration 0067 no Supabase para montar a escala (os feriados já aparecem abaixo).</p>
+        <p className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">A escala ainda não foi ativada no banco. Rode as migrations 0067 e 0068 no Supabase para montar a escala (os feriados já aparecem abaixo).</p>
       ) : null}
 
       <Card>
@@ -127,7 +264,6 @@ export function EscalaPainel({
               .filter((f) => f.data.startsWith(ano))
               .map((f) => {
                 const escalados = escala.filter((e) => e.data === f.data);
-                const livres = pessoas.filter((p) => !escalados.some((e) => e.profile_id === p.id));
                 const proximo = f.data >= hoje;
                 return (
                   <li key={f.data + f.nome} className={cn("rounded-xl border bg-card p-4", f.data === hoje && "border-primary")}>
@@ -158,40 +294,33 @@ export function EscalaPainel({
                         return (
                           <span
                             key={e.id}
-                            className={cn(
-                              "inline-flex items-center gap-1 rounded-full border py-1 pl-3 pr-1 text-sm",
-                              conflito ? "border-amber-400 bg-amber-50" : "bg-muted/50"
-                            )}
+                            className={cn("inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm", conflito ? "border-amber-400 bg-amber-50" : "bg-muted/50")}
                             title={conflito ? "Esta pessoa está de férias nesta data" : undefined}
                           >
                             {conflito ? <AlertTriangle className="size-3.5 text-amber-600" /> : null}
                             {nome.get(e.profile_id) ?? "—"}
                             {conflito ? <span className="text-[11px] text-amber-700">(de férias)</span> : null}
-                            <button type="button" onClick={() => void remover(e)} aria-label={`Tirar ${nome.get(e.profile_id) ?? ""} da escala`} className="rounded-full p-0.5 text-muted-foreground hover:bg-background hover:text-destructive">
-                              <X className="size-3.5" />
-                            </button>
                           </span>
                         );
                       })}
-                      {proximo && livres.length > 0 && !indisponivel ? (
-                        <span className="inline-flex items-center gap-1">
-                          <Plus className="size-3.5 text-muted-foreground" />
-                          <Select
-                            value=""
-                            onChange={(e) => escalar(f.data, e.target.value)}
-                            disabled={pendente}
-                            aria-label={`Escalar alguém em ${f.nome}`}
-                            className="h-8 w-44 text-xs"
-                          >
-                            <option value="">Escalar alguém…</option>
-                            {livres.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.nome}
-                                {deFerias(p.id, f.data) ? " (de férias)" : ""}
-                              </option>
-                            ))}
-                          </Select>
-                        </span>
+                      {proximo && !indisponivel ? (
+                        <>
+                          <MenuEscala
+                            key={escalados
+                              .map((e) => e.profile_id)
+                              .sort()
+                              .join(",")}
+                            pessoas={pessoas}
+                            atuais={escalados.map((e) => e.profile_id)}
+                            deFerias={(id) => deFerias(id, f.data)}
+                            pendente={pendente}
+                            onSalvar={(ids) => salvarEscala(f, ids)}
+                            rotulo={`Escalar pessoas em ${f.nome}`}
+                          />
+                          <Button type="button" variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" disabled={pendente} onClick={() => void avisarTime(f)}>
+                            <BellRing className="size-3.5" /> {avisados.includes(f.data) ? "Folga avisada · avisar de novo" : "Avisar folga"}
+                          </Button>
+                        </>
                       ) : null}
                     </div>
                   </li>
