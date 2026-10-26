@@ -56,6 +56,7 @@ export interface DadosTarefa {
   conteudo: string;
   pasta_raiz?: string | null;
   pasta_caminho?: string;
+  colaborador_id?: string | null;
 }
 
 /** Limpa o caminho: sem letra de unidade no começo, sem barras sobrando. */
@@ -65,6 +66,7 @@ function limparPasta(raiz: string | null | undefined, caminho: string | undefine
 }
 
 const AVISO_PASTA = "O card foi salvo, mas o caminho da pasta não: falta rodar a migration 0069 no Supabase.";
+const AVISO_COLABORADOR = "O card foi salvo, mas o colaborador não: falta rodar a migration 0070 no Supabase.";
 
 /** Salva as propriedades e o conteúdo de um card (como a página do Notion). */
 export async function salvarTarefa(
@@ -118,10 +120,28 @@ export async function salvarTarefa(
   }
 
   // Gravado à parte: sem a migration 0069 o restante do card continua salvando.
+  // Colaborador: também à parte (migration 0070). Quem entra agora é avisado.
   let avisoPasta: string | null = null;
+  if (d.colaborador_id !== undefined) {
+    const { data: ant } = await supabase.from("tarefas").select("colaborador_id").eq("id", tarefaId).maybeSingle();
+    const anterior = (ant as { colaborador_id: string | null } | null)?.colaborador_id ?? null;
+    const novo = d.colaborador_id || null;
+    if (novo !== anterior) {
+      const { error: errColab } = await gravador.from("tarefas").update({ colaborador_id: novo }).eq("id", tarefaId);
+      if (errColab) avisoPasta = AVISO_COLABORADOR;
+      else if (novo && novo !== user.id && servicoDisponivel()) {
+        await criarClienteAdmin().from("notificacoes").insert({
+          destinatario_id: novo,
+          tipo: "tarefa",
+          titulo: "Você foi incluído(a) como colaborador no card: " + titulo,
+          link: "/operacional?tarefa=" + tarefaId,
+        });
+      }
+    }
+  }
   if (d.pasta_caminho !== undefined) {
     const { error: errPasta } = await gravador.from("tarefas").update(limparPasta(d.pasta_raiz, d.pasta_caminho)).eq("id", tarefaId);
-    if (errPasta) avisoPasta = AVISO_PASTA;
+    if (errPasta) avisoPasta = avisoPasta ?? AVISO_PASTA;
   }
 
   if (data.etapa_id) {
@@ -195,6 +215,7 @@ export interface NovoCard {
   link: string;
   pasta_raiz?: string | null;
   pasta_caminho?: string;
+  colaborador_id?: string | null;
 }
 
 /**
@@ -243,6 +264,18 @@ export async function criarTarefaCard(d: NovoCard): Promise<{ ok?: boolean; erro
     await admin.from("tarefas").update(limparPasta(d.pasta_raiz, d.pasta_caminho)).eq("id", id);
   }
 
+  if (d.colaborador_id && d.colaborador_id !== responsavel) {
+    // Sem a migration 0070 o card é criado do mesmo jeito, só sem o colaborador.
+    const { error: errColab } = await admin.from("tarefas").update({ colaborador_id: d.colaborador_id }).eq("id", id);
+    if (!errColab && d.colaborador_id !== user.id) {
+      await admin.from("notificacoes").insert({
+        destinatario_id: d.colaborador_id,
+        tipo: "tarefa",
+        titulo: `Você foi incluído(a) como colaborador no card: ${titulo}`,
+        link: "/operacional?tarefa=" + id,
+      });
+    }
+  }
   if (responsavel && responsavel !== user.id) {
     await admin.from("notificacoes").insert({
       destinatario_id: responsavel,

@@ -108,6 +108,8 @@ export interface Tarefa {
   /** Pasta de rede: raiz (corporativo, publico, hd) e caminho sem a letra da unidade. */
   pasta_raiz?: string | null;
   pasta_caminho?: string | null;
+  /** Segunda pessoa no card: enxerga e edita como o responsável. */
+  colaborador_id?: string | null;
 }
 
 export interface Projeto {

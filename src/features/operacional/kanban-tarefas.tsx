@@ -24,6 +24,8 @@ export interface TarefaView {
   responsavel_id: string | null;
   responsavel_nome: string | null;
   responsaveis_notion: string | null;
+  colaborador_id: string | null;
+  colaborador_nome: string | null;
   /** Destino ao clicar em "abrir origem" (chamado/projeto). */
   origemHref: string | null;
   origemLabel: string | null;
@@ -149,7 +151,7 @@ export function KanbanTarefas({
   const visiveis = lista.filter(
     (t) =>
       (!filtroResp ||
-        (filtroResp === "__sem__" ? !t.responsavel_id : t.responsavel_id === filtroResp)) &&
+        (filtroResp === "__sem__" ? !t.responsavel_id : t.responsavel_id === filtroResp || t.colaborador_id === filtroResp)) &&
       (!termo ||
         t.titulo.toLowerCase().includes(termo) ||
         (t.descricao ?? "").toLowerCase().includes(termo) ||
@@ -288,6 +290,7 @@ export function KanbanTarefas({
                         <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
                           <span className="truncate">
                             {t.responsavel_nome ?? "Sem responsável"}
+                            {t.colaborador_nome ? ` + ${t.colaborador_nome.split(" ")[0]}` : ""}
                           </span>
                           {t.prazo ? (
                             <span className="shrink-0">

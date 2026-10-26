@@ -75,6 +75,8 @@ export default async function OperacionalPage({
         ? perfis.get(t.responsavel_id)?.nome ?? t.responsaveis_notion ?? null
         : t.responsaveis_notion ?? null,
       responsaveis_notion: t.responsaveis_notion ?? null,
+      colaborador_id: t.colaborador_id ?? null,
+      colaborador_nome: t.colaborador_id ? perfis.get(t.colaborador_id)?.nome ?? null : null,
       prazo: t.prazo,
       prioridade: t.prioridade ?? null,
       tag: t.tag ?? null,

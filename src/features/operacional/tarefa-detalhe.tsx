@@ -59,6 +59,7 @@ export function TarefaDetalhe({
   const [responsavelId, setResponsavelId] = useState(
     tarefa.responsavel_id ?? ""
   );
+  const [colaboradorId, setColaboradorId] = useState(tarefa.colaborador_id ?? "");
   const [prazo, setPrazo] = useState((tarefa.prazo ?? "").slice(0, 10));
   const [prioridade, setPrioridade] = useState(
     tarefa.prioridade ? String(tarefa.prioridade) : ""
@@ -119,6 +120,7 @@ export function TarefaDetalhe({
         conteudo,
         pasta_raiz: pasta.raiz,
         pasta_caminho: pasta.caminho,
+        colaborador_id: colaboradorId || null,
       });
       if (res.erro) {
         setErro(res.erro);
@@ -139,6 +141,8 @@ export function TarefaDetalhe({
         tag: tag.trim() || null,
         link: link.trim() || null,
         conteudo: conteudo || null,
+        colaborador_id: colaboradorId || null,
+        colaborador_nome: pessoas.find((p) => p.id === colaboradorId)?.nome ?? null,
         pasta_raiz: pasta.caminho.trim() ? pasta.raiz : null,
         pasta_caminho: pasta.caminho.trim().replace(/^\\+/, "") || null,
       });
@@ -217,6 +221,19 @@ export function TarefaDetalhe({
                     {p.nome}
                   </option>
                 ))}
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="td-colab">Colaborador</Label>
+              <Select id="td-colab" value={colaboradorId} onChange={(e) => setColaboradorId(e.target.value)}>
+                <option value="">Sem colaborador</option>
+                {pessoas
+                  .filter((p) => p.id !== responsavelId)
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nome}
+                    </option>
+                  ))}
               </Select>
             </div>
             <div className="space-y-1.5">

@@ -36,6 +36,7 @@ export function NovoCardDialogo({
   const [descricao, setDescricao] = useState("");
   const [status, setStatus] = useState<TarefaStatus>(statusInicial);
   const [responsavel, setResponsavel] = useState(usuarioId);
+  const [colaborador, setColaborador] = useState("");
   const [prazo, setPrazo] = useState("");
   const [prioridade, setPrioridade] = useState("");
   const [tag, setTag] = useState("");
@@ -68,6 +69,7 @@ export function NovoCardDialogo({
         prioridade: prioridade ? Number(prioridade) : null,
         tag,
         link,
+        colaborador_id: colaborador || null,
         pasta_raiz: pasta.raiz,
         pasta_caminho: pasta.caminho,
       });
@@ -117,6 +119,19 @@ export function NovoCardDialogo({
                   {p.nome}
                 </option>
               ))}
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="nc-colab">Colaborador</Label>
+            <Select id="nc-colab" value={colaborador} onChange={(e) => setColaborador(e.target.value)}>
+              <option value="">Sem colaborador</option>
+              {pessoas
+                .filter((p) => p.id !== (lideranca ? responsavel : usuarioId))
+                .map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nome}
+                  </option>
+                ))}
             </Select>
           </div>
           <div className="space-y-1.5">
