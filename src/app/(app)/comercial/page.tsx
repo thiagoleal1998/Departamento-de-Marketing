@@ -5,6 +5,7 @@ import { ehLideranca } from "@/lib/permissions";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { ListaProdutos, type ProdutoView } from "@/features/comercial/cards";
 import { BotaoSincronizar } from "@/features/comercial/botao-sincronizar";
+import { BotaoMarcarVisto } from "@/features/comercial/botao-visto";
 import { ConferenciaPainel } from "@/features/comercial/conferencia-painel";
 import { conferir, type LpSistema } from "@/features/comercial/conferencia";
 import { achaComplexos, mesclarDuplicados, nomeCorreto } from "@/features/comercial/ajustes";
@@ -58,13 +59,20 @@ interface Linha {
 export default async function ComercialPage({
   searchParams,
 }: {
-  searchParams: Promise<{ aba?: string; alterados?: string }>;
+  searchParams: Promise<{ aba?: string; alterados?: string; vistas?: string }>;
 }) {
-  const { aba: abaRaw, alterados } = await searchParams;
+  const { aba: abaRaw, alterados, vistas: verVistas } = await searchParams;
   const usuario = await exigirUsuario();
   const supabase = await criarClienteServidor();
 
-  const desde = new Date(Date.now() - DIAS_DESTAQUE * 86_400_000).toISOString();
+  // O destaque dura DIAS_DESTAQUE dias, mas só mostra o que mudou depois de a pessoa marcar como visto.
+  const desdeJanela = new Date(Date.now() - DIAS_DESTAQUE * 86_400_000).toISOString();
+  const visto = usuario.comercial_visto_em ?? null;
+  const incluirVistas = verVistas === "1";
+  const desde = !incluirVistas && visto && visto > desdeJanela ? visto : desdeJanela;
+  const { count: jaVistas } = visto && visto > desdeJanela
+    ? await supabase.from("comercial_alteracoes").select("id", { count: "exact", head: true }).gte("detectado_em", desdeJanela).lte("detectado_em", visto).neq("tipo", "removido")
+    : { count: 0 };
   const [{ data: prodData }, { data: altData }, { data: infoData }, { data: lpData }] = await Promise.all([
     supabase.from("comercial_produtos").select("chave, secao, nome, ordem, tag, tag_cor, campos").order("ordem", { ascending: true }).limit(2000),
     supabase.from("comercial_alteracoes").select("*").gte("detectado_em", desde).order("detectado_em", { ascending: false }).limit(500),
@@ -193,6 +201,15 @@ export default async function ComercialPage({
             <AlertTriangle className="size-5" />
             {totalAlterados} produto(s) com condições alteradas nos últimos {DIAS_DESTAQUE} dias
             {removidos.length > 0 ? ` · ${removidos.length} removido(s) da planilha` : ""}
+            <span className="ml-auto">
+              {incluirVistas ? (
+                <Link href="/comercial" className="text-xs font-medium underline">
+                  Ocultar o que já vi
+                </Link>
+              ) : (
+                <BotaoMarcarVisto />
+              )}
+            </span>
           </p>
           <ul className="space-y-1 text-sm">
             {resumo.map((a) => (
@@ -218,6 +235,15 @@ export default async function ComercialPage({
             ))}
           </ul>
         </div>
+      ) : null}
+
+      {totalAlterados === 0 && removidos.length === 0 && (jaVistas ?? 0) > 0 && !incluirVistas ? (
+        <p className="text-xs text-muted-foreground">
+          Você já viu as alterações recentes.{" "}
+          <Link href="/comercial?vistas=1" className="font-medium underline">
+            Ver as {jaVistas} dos últimos {DIAS_DESTAQUE} dias
+          </Link>
+        </p>
       ) : null}
 
       {secoes.length === 0 ? (
