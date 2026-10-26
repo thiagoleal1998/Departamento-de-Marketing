@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { obterConfig, estiloDeCor } from "@/lib/config";
@@ -15,6 +15,8 @@ export const metadata: Metadata = {
   // A logo (estrela) configurada na marca é servida como favicon.
   icons: { icon: "/marca-icone.png", apple: "/marca-icone.png" },
 };
+
+export const viewport: Viewport = { width: "device-width", initialScale: 1 };
 
 export default async function RootLayout({
   children,

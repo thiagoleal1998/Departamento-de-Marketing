@@ -9,7 +9,8 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/dashboard",
     scope: "/",
     display: "standalone",
-    orientation: "portrait",
+    // Livre: o tablet precisa girar para o modo horizontal (travar em retrato deixava o app espremido no meio).
+    orientation: "any",
     background_color: "#ffffff",
     theme_color: "#16a34a",
     lang: "pt-BR",
