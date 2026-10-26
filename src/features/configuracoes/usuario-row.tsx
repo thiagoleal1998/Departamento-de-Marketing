@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
-import { Save, CheckCircle2, Loader2, X } from "lucide-react";
+import { useActionState, useEffect, useRef, useState } from "react";
+import { Camera, Save, CheckCircle2, Loader2, Trash2, X } from "lucide-react";
+import { processarImagem } from "@/lib/imagem-avatar";
 import {
   atualizarPerfilUsuario,
   type EstadoEdicaoUsuario,
@@ -42,9 +43,30 @@ export function UsuarioRow({
   const [ativo, setAtivo] = useState(p.ativo);
   const [visaoExecutiva, setVisaoExecutiva] = useState(p.visao_executiva ?? false);
 
+  // Foto: "" = manter | data URL = nova | "__remover__" = tirar.
+  const [avatarValor, setAvatarValor] = useState("");
+  const [processando, setProcessando] = useState(false);
+  const inputFoto = useRef<HTMLInputElement>(null);
+  const foto = avatarValor === "__remover__" ? null : avatarValor || p.avatar_url;
+
+  async function escolherFoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const arquivo = e.target.files?.[0];
+    if (!arquivo) return;
+    setProcessando(true);
+    try {
+      setAvatarValor(await processarImagem(arquivo));
+    } catch {
+      // arquivo ilegível: mantém a foto atual
+    } finally {
+      setProcessando(false);
+      if (inputFoto.current) inputFoto.current.value = "";
+    }
+  }
+
   const [flash, setFlash] = useState(false);
   useEffect(() => {
     if (estado.ok) {
+      setAvatarValor("");
       setFlash(true);
       const t = setTimeout(() => setFlash(false), 4000);
       return () => clearTimeout(t);
@@ -77,8 +99,23 @@ export function UsuarioRow({
         <form action={formAction} className="space-y-4">
           <input type="hidden" name="id" value={p.id} />
 
+          <input type="hidden" name="avatar_url" value={avatarValor} />
+          <input ref={inputFoto} type="file" accept="image/*" onChange={escolherFoto} className="hidden" />
+
           <div className="flex items-center gap-3">
-            <Avatar nome={nome} src={p.avatar_url} className="size-10" />
+            <div className="flex shrink-0 flex-col items-center gap-1">
+              <Avatar nome={nome} src={foto} className="size-14" />
+              <div className="flex items-center gap-1">
+                <Button type="button" variant="ghost" size="sm" className="h-6 gap-1 px-1.5 text-xs" onClick={() => inputFoto.current?.click()} disabled={processando}>
+                  {processando ? <Loader2 className="size-3 animate-spin" /> : <Camera className="size-3" />} Foto
+                </Button>
+                {foto ? (
+                  <Button type="button" variant="ghost" size="icon" className="size-6" aria-label="Remover foto" onClick={() => setAvatarValor("__remover__")}>
+                    <Trash2 className="size-3" />
+                  </Button>
+                ) : null}
+              </div>
+            </div>
             <div className="grid flex-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor={`nome-${p.id}`}>Nome</Label>

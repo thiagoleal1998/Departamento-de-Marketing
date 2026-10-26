@@ -48,6 +48,16 @@ export async function atualizarPerfilUsuario(
   const visao_executiva = formData.get("visao_executiva") === "on";
   if (!nome) return { erro: "Informe o nome." };
 
+  // Foto: "" mantém a atual, "__remover__" tira, data URL/URL define uma nova.
+  const avatarRaw = String(formData.get("avatar_url") ?? "");
+  const foto: { avatar_url?: string | null } = {};
+  if (avatarRaw === "__remover__") foto.avatar_url = null;
+  else if (avatarRaw) {
+    if (!avatarRaw.startsWith("data:image/") && !avatarRaw.startsWith("http")) return { erro: "Imagem inválida." };
+    if (avatarRaw.length > 700_000) return { erro: "A imagem é muito grande. Tente uma foto menor." };
+    foto.avatar_url = avatarRaw;
+  }
+
   // E-mail atual (antes de atualizar) para saber se mudou.
   const { data: atual } = await supabase
     .from("profiles")
@@ -58,11 +68,11 @@ export async function atualizarPerfilUsuario(
 
   let { error } = await supabase
     .from("profiles")
-    .update({ nome, email, role, cargo, area_id, ativo, visao_executiva })
+    .update({ nome, email, role, cargo, area_id, ativo, visao_executiva, ...foto })
     .eq("id", id);
   // Antes da migration 0054 a coluna não existe: salva o resto normalmente.
   if (error && (error.code === "42703" || error.code === "PGRST204")) {
-    ({ error } = await supabase.from("profiles").update({ nome, email, role, cargo, area_id, ativo }).eq("id", id));
+    ({ error } = await supabase.from("profiles").update({ nome, email, role, cargo, area_id, ativo, ...foto }).eq("id", id));
   }
   if (error) {
     return { erro: "Não foi possível salvar. Tente novamente." };
@@ -75,6 +85,7 @@ export async function atualizarPerfilUsuario(
   }
 
   revalidatePath("/configuracoes");
+  revalidatePath("/", "layout");
   return { ok: true };
 }
 
