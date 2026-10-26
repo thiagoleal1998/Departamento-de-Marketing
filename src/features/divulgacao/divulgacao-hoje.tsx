@@ -16,7 +16,7 @@ export async function DivulgacaoHoje() {
   const { itens, indisponivel } = await ofertasDoPeriodo(hoje, hoje);
   if (indisponivel) return null; // migration ainda não aplicada: o quadro simplesmente não aparece
 
-  // E-mails programados para hoje no Calendário de e-mail (nome, status e responsável).
+  // E-mails programados para hoje no Calendário geral (nome, status e responsável).
   const supabase = await criarClienteServidor();
   const { data: calendario } = await supabase
     .from("calendario_conteudo")

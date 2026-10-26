@@ -20,8 +20,8 @@ export default async function CalendarioPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        titulo="Calendário de e-mail"
-        descricao="E-mails programados por dia, status e responsável. Os outros conteúdos (redes sociais, ofertas, podcasts) continuam aqui: troque o filtro de tipo."
+        titulo="Calendário geral"
+        descricao="E-mails, redes sociais, ofertas, podcasts e visitas do time em um só calendário. Clique em um dia para ver tudo o que está programado ou para incluir um item."
       />
       {itens.length === 0 ? (
         <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed p-10 text-center text-sm text-muted-foreground">
