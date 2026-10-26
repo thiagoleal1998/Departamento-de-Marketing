@@ -142,6 +142,7 @@ export function TarefaDetalhe({
         prioridade: prioridade ? parseInt(prioridade, 10) : null,
         tag: tag.trim() || null,
         link: link.trim() || null,
+        link_site: linkSite.trim() || null,
         conteudo: conteudo || null,
         colaborador_id: colaboradorId || null,
         colaborador_nome: pessoas.find((p) => p.id === colaboradorId)?.nome ?? null,
