@@ -84,15 +84,15 @@ export async function criarReuniao(formData: FormData) {
   if (error || !nova) return;
 
   if (anterior) {
-    const [{ data: itens }, vivo] = await Promise.all([
-      supabase
-        .from("reuniao_itens")
-        .select("*")
-        .eq("reuniao_id", anterior.id)
-        .eq("secao", "ata")
-        .order("ordem", { ascending: true }),
-      estadoVivoPorSerie(),
-    ]);
+    const { data: itens } = await supabase
+      .from("reuniao_itens")
+      .select("*")
+      .eq("reuniao_id", anterior.id)
+      .eq("secao", "ata")
+      .order("ordem", { ascending: true });
+    const vivo = await estadoVivoPorSerie(
+      ((itens ?? []) as { serie: string; titulo: string }[]).map((i) => ({ serie: String(i.serie), titulo: String(i.titulo) }))
+    );
     const copiar = ((itens ?? []) as Record<string, unknown>[])
       .map((it) => {
         const v = vivo.get(String(it.serie));

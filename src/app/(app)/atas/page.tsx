@@ -82,12 +82,10 @@ export default async function AtasPage({
 }) {
   const { aba: abaRaw } = await searchParams;
   const usuario = await exigirUsuario();
-  const [{ reunioes, itens }, perfis, vivo, membros] = await Promise.all([
-    carregarAtas(),
-    mapaDePerfis(),
-    estadoVivoPorSerie(),
-    carregarMembros(),
-  ]);
+  const [{ reunioes, itens }, perfis, membros] = await Promise.all([carregarAtas(), mapaDePerfis(), carregarMembros()]);
+  // Só os itens da ata mais recente precisam do andamento real (é o que aparece nas pendências).
+  const idUltima = reunioes[reunioes.length - 1]?.id;
+  const vivo = await estadoVivoPorSerie(itens.filter((it) => it.reuniao_id === idUltima && it.secao === "ata"));
   const lideranca = ehLideranca(usuario.role);
   const hojeBR = new Date().toLocaleDateString("en-CA", { timeZone: FUSO });
   const aba =
