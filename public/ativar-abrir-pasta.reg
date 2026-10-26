@@ -1,0 +1,8 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CURRENT_USER\Software\Classes\lvpasta]
+@="URL:Abrir pasta do Painel de Marketing"
+"URL Protocol"=""
+
+[HKEY_CURRENT_USER\Software\Classes\lvpasta\shell\open\command]
+@="powershell.exe -NoProfile -WindowStyle Hidden -Command \"$p=[uri]::UnescapeDataString('%1'.Substring(8)); if(Test-Path -LiteralPath $p -PathType Container){ & explorer.exe $p }\""

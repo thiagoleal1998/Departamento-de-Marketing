@@ -41,8 +41,10 @@ export function separarCaminho(texto: string, raizAtual: RaizPasta, unidades: Un
 
 export const caminhoCompleto = (raiz: RaizPasta, caminho: string, unidades: Unidades) => `${unidades[raiz]}:\\${caminho}`;
 
-/** Conteúdo de um atalho .url do Windows: abrir o arquivo leva direto à pasta no Explorer. */
-export function atalhoWindows(raiz: RaizPasta, caminho: string, unidades: Unidades): string {
-  const partes = caminho.split("\\").filter(Boolean).map(encodeURIComponent).join("/");
-  return `[InternetShortcut]\r\nURL=file:///${unidades[raiz]}:/${partes}\r\n`;
+/**
+ * Link que abre a pasta no Explorador de Arquivos. O navegador não abre pastas por conta própria, então o
+ * Windows precisa conhecer o protocolo "lvpasta:" (ativado uma vez no perfil, com public/ativar-abrir-pasta.reg).
+ */
+export function linkPasta(raiz: RaizPasta, caminho: string, unidades: Unidades): string {
+  return "lvpasta:" + encodeURIComponent(caminhoCompleto(raiz, caminho, unidades)).replace(/'/g, "%27");
 }

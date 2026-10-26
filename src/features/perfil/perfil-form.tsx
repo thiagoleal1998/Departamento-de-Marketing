@@ -211,6 +211,17 @@ export function PerfilForm({
               </div>
             ))}
           </div>
+          <div className="rounded-lg border bg-muted/40 p-3 text-sm">
+            <p className="font-medium">Abrir a pasta direto no Explorador de Arquivos</p>
+            <p className="mt-1 text-muted-foreground">
+              Para o botão de pasta do card abrir o Explorador na pasta certa, ative uma vez neste computador: baixe o arquivo, abra-o e confirme. Não precisa ser administrador. Depois, o navegador pergunta uma vez se pode abrir; marque para sempre permitir.
+            </p>
+            <Button asChild variant="outline" size="sm" className="mt-2">
+              <a href="/ativar-abrir-pasta.reg" download>
+                Baixar ativação (Windows)
+              </a>
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Check, Copy, FolderOpen } from "lucide-react";
-import { RAIZES, atalhoWindows, caminhoCompleto, ehRaiz, separarCaminho, type RaizPasta, type Unidades } from "@/lib/pastas";
+import { RAIZES, caminhoCompleto, linkPasta, ehRaiz, separarCaminho, type RaizPasta, type Unidades } from "@/lib/pastas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,15 +35,6 @@ export function CampoPasta({
     }
   }
 
-  function abrir() {
-    const blob = new Blob([atalhoWindows(raiz, caminho.trim(), unidades)], { type: "application/octet-stream" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "abrir-pasta.url";
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
 
   return (
     <div className="space-y-1.5 sm:col-span-2">
@@ -73,8 +64,10 @@ export function CampoPasta({
             <Button type="button" variant="outline" size="icon" onClick={() => void copiar()} aria-label="Copiar caminho" title="Copiar caminho">
               {copiado ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
             </Button>
-            <Button type="button" variant="outline" size="icon" onClick={abrir} aria-label="Abrir pasta" title="Baixa um atalho que abre a pasta no Explorer">
-              <FolderOpen className="size-4" />
+            <Button asChild variant="outline" size="icon">
+              <a href={linkPasta(raiz, caminho.trim(), unidades)} aria-label="Abrir pasta" title="Abre a pasta no Explorador de Arquivos">
+                <FolderOpen className="size-4" />
+              </a>
             </Button>
           </>
         ) : null}
