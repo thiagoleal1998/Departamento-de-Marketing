@@ -7,6 +7,7 @@ import { ExternalLink, Loader2, MessageCircle, Send, X } from "lucide-react";
 import { criarClienteBrowser } from "@/lib/supabase/client";
 import { enviarMensagem, marcarConversaLida } from "./actions";
 import { abrirConversaFlutuante } from "./flutuante-actions";
+import { BarraResposta, BotaoResponder, Citacao } from "./citacao";
 import { cn } from "@/lib/utils";
 
 interface Msg {
@@ -14,6 +15,7 @@ interface Msg {
   autor_id: string;
   texto: string;
   created_at: string;
+  resposta_a?: string | null;
 }
 
 const hora = (iso: string) => new Date(iso).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
@@ -38,9 +40,19 @@ export function ChatFlutuante({
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [respondendoA, setRespondendoA] = useState<Msg | null>(null);
   const fim = useRef<HTMLDivElement>(null);
 
   const nomes = new Map(pessoas.map((p) => [p.id, p.nome]));
+  const quem = (m: Msg) => (m.autor_id === usuarioId ? "Você" : nomes.get(m.autor_id) ?? "—");
+
+  function irPara(id: string) {
+    const el = document.getElementById("cf-msg-" + id);
+    if (!el) return;
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    el.classList.add("ring-2", "ring-primary");
+    setTimeout(() => el.classList.remove("ring-2", "ring-primary"), 1500);
+  }
 
   // Lembra com quem foi a última conversa.
   useEffect(() => {
@@ -60,6 +72,7 @@ export function ChatFlutuante({
     }
     setCarregando(true);
     setErro(null);
+    setRespondendoA(null);
     const r = await abrirConversaFlutuante(alvo === "geral" ? null : alvo);
     setCarregando(false);
     if (r.erro || !r.conversaId) {
@@ -100,10 +113,11 @@ export function ChatFlutuante({
     if (!conversaId || !texto.trim() || enviando) return;
     setErro(null);
     setEnviando(true);
-    const r = await enviarMensagem(conversaId, texto);
+    const r = await enviarMensagem(conversaId, texto, respondendoA?.id ?? null);
     setEnviando(false);
     if (r.erro) return setErro(r.erro);
     setTexto("");
+    setRespondendoA(null);
   }
 
   // Na tela de Chat completa o atalho é desnecessário.
@@ -170,13 +184,23 @@ export function ChatFlutuante({
             ) : (
               mensagens.map((m) => {
                 const minha = m.autor_id === usuarioId;
+                const original = m.resposta_a ? mensagens.find((x) => x.id === m.resposta_a) : undefined;
+                const botao = <BotaoResponder nome={quem(m)} onClick={() => setRespondendoA(m)} />;
                 return (
-                  <div key={m.id} className={cn("flex", minha ? "justify-end" : "justify-start")}>
-                    <div className={cn("max-w-[85%] rounded-2xl px-3 py-1.5 text-sm", minha ? "bg-primary text-primary-foreground" : "bg-muted")}>
+                  <div key={m.id} className={cn("group flex gap-1", minha ? "justify-end" : "justify-start")}>
+                    {minha ? botao : null}
+                    <div
+                      id={"cf-msg-" + m.id}
+                      className={cn("max-w-[85%] rounded-2xl px-3 py-1.5 text-sm transition-shadow", minha ? "bg-primary text-primary-foreground" : "bg-muted")}
+                    >
                       {!minha && com === "geral" ? <p className="text-[11px] font-semibold opacity-70">{nomes.get(m.autor_id) ?? "—"}</p> : null}
+                      {m.resposta_a ? (
+                        <Citacao nome={original ? quem(original) : "Mensagem anterior"} texto={original?.texto ?? null} minha={minha} onIr={original ? () => irPara(original.id) : undefined} />
+                      ) : null}
                       <p className="whitespace-pre-wrap break-words">{m.texto}</p>
                       <p className={cn("mt-0.5 text-right text-[10px]", minha ? "opacity-80" : "text-muted-foreground")}>{hora(m.created_at)}</p>
                     </div>
+                    {!minha ? botao : null}
                   </div>
                 );
               })
@@ -185,6 +209,7 @@ export function ChatFlutuante({
           </div>
 
           {erro ? <p className="border-t bg-destructive/10 px-3 py-1.5 text-xs text-destructive">{erro}</p> : null}
+          {respondendoA ? <BarraResposta nome={quem(respondendoA)} texto={respondendoA.texto} onCancelar={() => setRespondendoA(null)} /> : null}
           <form
             className="flex items-end gap-2 border-t p-2"
             onSubmit={(e) => {

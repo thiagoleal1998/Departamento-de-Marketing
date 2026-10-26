@@ -8,7 +8,8 @@ import { avisarNovaMensagem } from "./aviso";
 /** Envia uma mensagem (a entrega em tempo real vem do Supabase Realtime). */
 export async function enviarMensagem(
   conversaId: string,
-  texto: string
+  texto: string,
+  respostaA: string | null = null
 ): Promise<{ ok?: boolean; erro?: string }> {
   const supabase = await criarClienteServidor();
   const {
@@ -20,9 +21,19 @@ export async function enviarMensagem(
   if (!limpo) return { erro: "Digite uma mensagem." };
   if (limpo.length > 2000) return { erro: "Mensagem muito longa (máx. 2000)." };
 
-  const { error } = await supabase
-    .from("chat_mensagens")
-    .insert({ conversa_id: conversaId, autor_id: user.id, texto: limpo });
+  // Resposta a uma mensagem: precisa ser da mesma conversa (a leitura já passa pela regra de acesso).
+  let original: { id: string; texto: string } | null = null;
+  if (respostaA) {
+    const { data: o } = await supabase.from("chat_mensagens").select("id, texto").eq("id", respostaA).eq("conversa_id", conversaId).maybeSingle();
+    original = (o as { id: string; texto: string } | null) ?? null;
+  }
+
+  const base: { conversa_id: string; autor_id: string; texto: string; resposta_a?: string } = { conversa_id: conversaId, autor_id: user.id, texto: limpo };
+  let { error } = await supabase.from("chat_mensagens").insert(original ? { ...base, resposta_a: original.id } : base);
+  // Antes da migration 0075 a coluna não existe: envia sem a citação.
+  if (error && original && (error.code === "42703" || error.code === "PGRST204")) {
+    ({ error } = await supabase.from("chat_mensagens").insert(base));
+  }
   if (error) {
     return {
       erro:
@@ -31,7 +42,7 @@ export async function enviarMensagem(
           : "Não foi possível enviar. Tente novamente.",
     };
   }
-  await avisarNovaMensagem(supabase, user.id, conversaId, limpo);
+  await avisarNovaMensagem(supabase, user.id, conversaId, original ? `↪ “${original.texto.slice(0, 40)}${original.texto.length > 40 ? "…" : ""}” — ${limpo}` : limpo);
 
   return { ok: true };
 }

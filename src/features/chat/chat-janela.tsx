@@ -17,6 +17,7 @@ import { SolicitacaoForm } from "./solicitacao-form";
 import { refsDe, type DadosVinculo, type ItemEstoqueChat, type RefItem } from "./vinculo-tipos";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { BarraResposta, BotaoResponder, Citacao } from "./citacao";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,6 +32,7 @@ export interface MensagemView {
   estoque_itens?: RefItem[] | null;
   projeto_id?: string | null;
   solicitacao_id?: string | null;
+  resposta_a?: string | null;
 }
 
 export interface ProjetoOpcao {
@@ -73,6 +75,16 @@ export function ChatJanela({
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, startTransition] = useTransition();
   const fimRef = useRef<HTMLDivElement>(null);
+  // Responder a uma mensagem específica (aparece citada acima da resposta).
+  const [respondendoA, setRespondendoA] = useState<MensagemView | null>(null);
+  const quem = (m: MensagemView) => (m.autor_id === meuId ? "Você" : nomes[m.autor_id] ?? "—");
+  function irPara(id: string) {
+    const el = document.getElementById("cj-msg-" + id);
+    if (!el) return;
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    el.classList.add("ring-2", "ring-primary");
+    setTimeout(() => el.classList.remove("ring-2", "ring-primary"), 1500);
+  }
 
   // Vínculos (estoque / tarefa) da próxima mensagem.
   const [vincular, setVincular] = useState(false);
@@ -234,10 +246,11 @@ export function ChatJanela({
                 }
               : null,
           })
-        : await enviarMensagem(conversaId, conteudo);
+        : await enviarMensagem(conversaId, conteudo, respondendoA?.id ?? null);
       if (res.erro) setErro(res.erro);
       else {
         setTexto("");
+        setRespondendoA(null);
         limparVinculo();
         document.querySelectorAll<HTMLTextAreaElement>("form textarea").forEach((t) => (t.style.height = "auto"));
       }
@@ -264,14 +277,18 @@ export function ChatJanela({
         ) : (
           mensagens.map((m) => {
             const minha = m.autor_id === meuId;
+            const original = m.resposta_a ? mensagens.find((x) => x.id === m.resposta_a) : undefined;
+            const botao = <BotaoResponder nome={quem(m)} onClick={() => setRespondendoA(m)} />;
             return (
               <div
                 key={m.id}
-                className={cn("flex", minha ? "justify-end" : "justify-start")}
+                className={cn("group flex gap-1", minha ? "justify-end" : "justify-start")}
               >
+                {minha ? botao : null}
                 <div
+                  id={"cj-msg-" + m.id}
                   className={cn(
-                    "max-w-[80%] rounded-2xl px-3 py-2 text-sm",
+                    "max-w-[80%] rounded-2xl px-3 py-2 text-sm transition-shadow",
                     minha
                       ? "rounded-br-sm bg-primary text-primary-foreground"
                       : "rounded-bl-sm bg-muted"
@@ -281,6 +298,9 @@ export function ChatJanela({
                     <p className="mb-0.5 text-xs font-semibold opacity-80">
                       {nomes[m.autor_id] ?? "—"}
                     </p>
+                  ) : null}
+                  {m.resposta_a ? (
+                    <Citacao nome={original ? quem(original) : "Mensagem anterior"} texto={original?.texto ?? null} minha={minha} onIr={original ? () => irPara(original.id) : undefined} />
                   ) : null}
                   <p className="whitespace-pre-wrap break-words">{m.texto}</p>
                   {m.solicitacao_id && mensagens.find((x) => x.solicitacao_id === m.solicitacao_id)?.id === m.id ? (
@@ -325,6 +345,7 @@ export function ChatJanela({
                     {hora(m.created_at)}
                   </p>
                 </div>
+                {!minha ? botao : null}
               </div>
             );
           })
@@ -332,6 +353,7 @@ export function ChatJanela({
         <div ref={fimRef} />
       </div>
 
+      {respondendoA ? <BarraResposta nome={quem(respondendoA)} texto={respondendoA.texto} onCancelar={() => setRespondendoA(null)} /> : null}
       <form onSubmit={enviar} className="border-t p-3">
         {erro ? <p className="mb-2 text-xs text-destructive">{erro}</p> : null}
 

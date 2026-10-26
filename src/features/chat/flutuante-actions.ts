@@ -3,12 +3,14 @@
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { CONVERSA_GERAL } from "./constantes";
 
+type Mensagem = { id: string; autor_id: string; texto: string; created_at: string; resposta_a?: string | null };
+
 /** Abre (ou cria) a conversa direta com a pessoa — ou a sala geral, se `outroId` for nulo — e devolve as últimas mensagens. */
 export async function abrirConversaFlutuante(
   outroId: string | null
 ): Promise<{
   conversaId?: string;
-  mensagens?: { id: string; autor_id: string; texto: string; created_at: string }[];
+  mensagens?: Mensagem[];
   erro?: string;
 }> {
   const supabase = await criarClienteServidor();
@@ -25,16 +27,12 @@ export async function abrirConversaFlutuante(
     conversaId = data as string;
   }
 
-  const { data: msgs, error } = await supabase
-    .from("chat_mensagens")
-    .select("id, autor_id, texto, created_at")
-    .eq("conversa_id", conversaId)
-    .order("created_at", { ascending: false })
-    .limit(40);
+  // Com a coluna de resposta (migration 0075); sem ela, carrega do jeito antigo.
+  const consulta = (colunas: string) =>
+    supabase.from("chat_mensagens").select(colunas).eq("conversa_id", conversaId).order("created_at", { ascending: false }).limit(40);
+  let { data: msgs, error } = await consulta("id, autor_id, texto, created_at, resposta_a");
+  if (error) ({ data: msgs, error } = await consulta("id, autor_id, texto, created_at"));
   if (error) return { erro: "Não foi possível carregar as mensagens." };
 
-  return {
-    conversaId,
-    mensagens: ((msgs ?? []) as { id: string; autor_id: string; texto: string; created_at: string }[]).reverse(),
-  };
+  return { conversaId, mensagens: ((msgs ?? []) as unknown as Mensagem[]).reverse() };
 }
