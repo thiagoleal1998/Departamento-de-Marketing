@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { AlertTriangle, BellRing, CalendarPlus, Check, ChevronDown, Loader2, Trash2, UserPlus, Users } from "lucide-react";
+import { AlertTriangle, BellRing, CalendarPlus, Check, ChevronDown, Loader2, Palmtree, Trash2, UserPlus, Users } from "lucide-react";
 import { useDialogo } from "@/components/shared/dialogo-provider";
 import { adicionarFeriadoExtra, avisarFolga, definirEscala, removerFeriadoExtra } from "./actions";
 import { caiNoFimDeSemana, dataBr, diaDaSemana, type Feriado } from "./calendario";
@@ -105,6 +105,17 @@ function MenuEscala({
             </span>
             <span className="flex-1">Todo o time</span>
             {todos ? <Check className="size-4 text-primary" /> : null}
+          </button>
+          <button
+            type="button"
+            onClick={() => setSel([])}
+            className={cn("flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm font-semibold transition-colors hover:bg-muted", sel.length === 0 && "bg-primary/10")}
+          >
+            <span className="grid size-8 place-items-center rounded-full bg-emerald-100 text-emerald-700">
+              <Palmtree className="size-4" />
+            </span>
+            <span className="flex-1">Todos de folga</span>
+            {sel.length === 0 ? <Check className="size-4 text-primary" /> : null}
           </button>
           <div className="my-1 h-px bg-border" />
           <ul className="max-h-64 overflow-y-auto">
@@ -288,7 +299,7 @@ export function EscalaPainel({
 
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <span className="text-xs font-medium text-muted-foreground">Escala:</span>
-                      {escalados.length === 0 ? <span className="text-xs text-muted-foreground">ninguém escalado</span> : null}
+                      {escalados.length === 0 ? <span className="text-xs text-muted-foreground">ninguém escalado (todos de folga)</span> : null}
                       {escalados.map((e) => {
                         const conflito = deFerias(e.profile_id, f.data);
                         return (
