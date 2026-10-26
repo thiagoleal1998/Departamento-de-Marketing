@@ -8,6 +8,7 @@ import { X, Loader2, Save, ExternalLink, Check, Trash2 } from "lucide-react";
 import { excluirTarefa, salvarTarefa } from "./actions";
 import { ConteudoCard } from "./conteudo-card";
 import { CampoPasta } from "./campo-pasta";
+import { criadaEm } from "@/lib/codigo-tarefa";
 import { ehRaiz, type RaizPasta, type Unidades } from "@/lib/pastas";
 import { AnexosTarefa } from "./anexos-tarefa";
 import { ItensEstoqueTarefa } from "./itens-estoque-tarefa";
@@ -172,12 +173,20 @@ export function TarefaDetalhe({
       >
         {/* Cabeçalho */}
         <div className="flex items-start gap-3 border-b p-5">
-          <Input
-            value={titulo}
-            onChange={(e) => setTitulo(e.target.value)}
-            aria-label="Título"
-            className="h-auto border-0 px-0 text-xl font-semibold shadow-none focus-visible:ring-0"
-          />
+          <div className="min-w-0 flex-1">
+            {tarefa.codigo || tarefa.criada_em ? (
+              <p className="mb-1 flex flex-wrap items-center gap-x-3 text-xs text-muted-foreground">
+                {tarefa.codigo ? <span className="font-semibold tracking-wide text-foreground/80">{tarefa.codigo}</span> : null}
+                {criadaEm(tarefa.criada_em) ? <span>Criado em {criadaEm(tarefa.criada_em)}</span> : null}
+              </p>
+            ) : null}
+            <Input
+              value={titulo}
+              onChange={(e) => setTitulo(e.target.value)}
+              aria-label="Título"
+              className="h-auto border-0 px-0 text-xl font-semibold shadow-none focus-visible:ring-0"
+            />
+          </div>
           <Button
             type="button"
             variant="ghost"

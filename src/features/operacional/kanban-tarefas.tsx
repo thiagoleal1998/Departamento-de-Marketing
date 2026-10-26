@@ -34,6 +34,9 @@ export interface TarefaView {
   tag: string | null;
   link: string | null;
   link_site: string | null;
+  /** TAFMKT - 001/2026 e a data de criação do card. */
+  codigo: string | null;
+  criada_em: string | null;
   conteudo: string | null;
   pasta_raiz: string | null;
   pasta_caminho: string | null;
@@ -155,6 +158,7 @@ export function KanbanTarefas({
         (filtroResp === "__sem__" ? !t.responsavel_id : t.responsavel_id === filtroResp || t.colaborador_id === filtroResp)) &&
       (!termo ||
         t.titulo.toLowerCase().includes(termo) ||
+        (t.codigo ?? "").toLowerCase().includes(termo) ||
         (t.descricao ?? "").toLowerCase().includes(termo) ||
         (t.responsavel_nome ?? "").toLowerCase().includes(termo) ||
         (t.tag ?? "").toLowerCase().includes(termo))
@@ -280,6 +284,7 @@ export function KanbanTarefas({
                     <div className="flex items-start gap-1.5">
                       <GripVertical className="mt-0.5 size-4 shrink-0 cursor-grab text-muted-foreground/50" />
                       <div className="min-w-0 flex-1">
+                        {t.codigo ? <p className="mb-0.5 text-[10px] font-semibold tracking-wide text-muted-foreground">{t.codigo}</p> : null}
                         <p className="text-sm font-medium leading-tight">
                           {t.titulo}
                         </p>
