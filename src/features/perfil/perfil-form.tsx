@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { iniciais } from "@/lib/utils";
+import { RAIZES, type Unidades } from "@/lib/pastas";
 import { PAPEL_LABEL, type Papel } from "@/types";
 
 const estadoInicial: EstadoPerfil = {};
@@ -53,7 +54,9 @@ export function PerfilForm({
   email,
   papel,
   avatarUrl,
+  unidades,
 }: {
+  unidades: Unidades;
   nome: string;
   cargo: string | null;
   email: string;
@@ -178,6 +181,35 @@ export function PerfilForm({
             <span className="text-xs text-muted-foreground">
               (definido pelo gerente)
             </span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="space-y-3 pt-6">
+          <div>
+            <h2 className="text-base font-semibold">Minhas pastas de rede</h2>
+            <p className="text-sm text-muted-foreground">
+              Informe a letra que o seu computador usa para cada local. Assim, o caminho das pastas nos cards aparece certo para você.
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {RAIZES.map((r) => (
+              <div key={r.chave} className="space-y-1.5">
+                <Label htmlFor={"unidade_" + r.chave}>{r.label}</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id={"unidade_" + r.chave}
+                    name={"unidade_" + r.chave}
+                    defaultValue={unidades[r.chave]}
+                    maxLength={1}
+                    required
+                    className="w-16 text-center text-lg font-semibold uppercase"
+                  />
+                  <span className="text-lg text-muted-foreground">:\</span>
+                </div>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>

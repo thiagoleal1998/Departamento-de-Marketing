@@ -56,6 +56,18 @@ export async function atualizarMeuPerfil(
 
   if (error) return { erro: "Não foi possível salvar. Tente novamente." };
 
+  // Letras das unidades de rede (X:, Y:…), gravadas à parte: sem a migration 0069 o restante do perfil salva igual.
+  if (formData.has("unidade_corporativo")) {
+    const letras: Record<string, string> = {};
+    for (const raiz of ["corporativo", "publico", "hd"]) {
+      const l = String(formData.get("unidade_" + raiz) ?? "").trim().toUpperCase();
+      if (!/^[A-Z]$/.test(l)) return { erro: "Use uma única letra para cada unidade (ex.: X)." };
+      letras[raiz] = l;
+    }
+    const { error: errUnidades } = await supabase.from("profiles").update({ pasta_unidades: letras }).eq("id", user.id);
+    if (errUnidades) return { erro: "Perfil salvo, mas as unidades não: falta rodar a migration 0069 no Supabase." };
+  }
+
   revalidatePath("/perfil");
   revalidatePath("/", "layout");
   return { ok: true };

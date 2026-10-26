@@ -28,6 +28,8 @@ export interface Profile {
   ativo: boolean;
   /** Acessa a visão geral da diretoria (/executivo) e aprova as tarefas dela. */
   visao_executiva?: boolean;
+  /** Letra da unidade de rede de cada raiz de pasta (ex.: { corporativo: "X" }). */
+  pasta_unidades?: Record<string, string> | null;
   created_at: string;
 }
 
@@ -103,6 +105,9 @@ export interface Tarefa {
   status_notion?: string | null;
   tag?: string | null;
   conteudo?: string | null;
+  /** Pasta de rede: raiz (corporativo, publico, hd) e caminho sem a letra da unidade. */
+  pasta_raiz?: string | null;
+  pasta_caminho?: string | null;
 }
 
 export interface Projeto {

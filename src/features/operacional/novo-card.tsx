@@ -4,6 +4,8 @@ import { useEffect, useState, useTransition } from "react";
 import { Loader2, X } from "lucide-react";
 import { criarTarefaCard } from "./actions";
 import { TAREFA_STATUS_META, type TarefaStatus } from "@/types";
+import { CampoPasta } from "./campo-pasta";
+import type { RaizPasta, Unidades } from "@/lib/pastas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,9 +19,11 @@ export function NovoCardDialogo({
   statusInicial,
   usuarioId,
   lideranca,
+  unidades,
   aoFechar,
   aoCriar,
 }: {
+  unidades: Unidades;
   pessoas: { id: string; nome: string }[];
   colunas: TarefaStatus[];
   statusInicial: TarefaStatus;
@@ -36,6 +40,7 @@ export function NovoCardDialogo({
   const [prioridade, setPrioridade] = useState("");
   const [tag, setTag] = useState("");
   const [link, setLink] = useState("");
+  const [pasta, setPasta] = useState<{ raiz: RaizPasta; caminho: string }>({ raiz: "corporativo", caminho: "" });
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, start] = useTransition();
 
@@ -63,6 +68,8 @@ export function NovoCardDialogo({
         prioridade: prioridade ? Number(prioridade) : null,
         tag,
         link,
+        pasta_raiz: pasta.raiz,
+        pasta_caminho: pasta.caminho,
       });
       if (r.erro || !r.id) return setErro(r.erro ?? "Não foi possível criar o card.");
       aoCriar(r.id);
@@ -135,6 +142,7 @@ export function NovoCardDialogo({
             <Label htmlFor="nc-link">Link</Label>
             <Input id="nc-link" type="url" inputMode="url" value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://" />
           </div>
+          <CampoPasta id="nc-pasta" raiz={pasta.raiz} caminho={pasta.caminho} unidades={unidades} onChange={setPasta} />
         </div>
 
         <div className="space-y-1.5">

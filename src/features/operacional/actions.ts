@@ -5,6 +5,7 @@ import { criarClienteServidor } from "@/lib/supabase/server";
 import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { avisarDiretoria } from "@/features/executivo/avisos";
 import { tarefaParaEtapaStatus } from "@/features/projetos/tarefa";
+import { ehRaiz } from "@/lib/pastas";
 import type { TarefaStatus } from "@/types";
 
 /** Move uma tarefa para outra coluna do kanban (novo status). */
@@ -53,7 +54,17 @@ export interface DadosTarefa {
   tag: string;
   link: string;
   conteudo: string;
+  pasta_raiz?: string | null;
+  pasta_caminho?: string;
 }
+
+/** Limpa o caminho: sem letra de unidade no começo, sem barras sobrando. */
+function limparPasta(raiz: string | null | undefined, caminho: string | undefined) {
+  const c = (caminho ?? "").trim().replace(/\//g, "\\").replace(/^[A-Za-z]:\\*/, "").replace(/^\\+/, "").slice(0, 500);
+  return { pasta_raiz: c && ehRaiz(raiz) ? raiz : c ? "corporativo" : null, pasta_caminho: c || null };
+}
+
+const AVISO_PASTA = "O card foi salvo, mas o caminho da pasta não: falta rodar a migration 0069 no Supabase.";
 
 /** Salva as propriedades e o conteúdo de um card (como a página do Notion). */
 export async function salvarTarefa(
@@ -106,6 +117,13 @@ export async function salvarTarefa(
     return { erro: "Você não tem permissão para editar este card." };
   }
 
+  // Gravado à parte: sem a migration 0069 o restante do card continua salvando.
+  let avisoPasta: string | null = null;
+  if (d.pasta_caminho !== undefined) {
+    const { error: errPasta } = await gravador.from("tarefas").update(limparPasta(d.pasta_raiz, d.pasta_caminho)).eq("id", tarefaId);
+    if (errPasta) avisoPasta = AVISO_PASTA;
+  }
+
   if (data.etapa_id) {
     await supabase
       .from("projeto_etapas")
@@ -127,6 +145,7 @@ export async function salvarTarefa(
     });
   }
   revalidatePath("/operacional");
+  if (avisoPasta) return { erro: avisoPasta };
   return { ok: true };
 }
 
@@ -174,6 +193,8 @@ export interface NovoCard {
   prioridade: number | null;
   tag: string;
   link: string;
+  pasta_raiz?: string | null;
+  pasta_caminho?: string;
 }
 
 /**
@@ -217,6 +238,10 @@ export async function criarTarefaCard(d: NovoCard): Promise<{ ok?: boolean; erro
     .single();
   if (error || !data) return { erro: "Não foi possível criar o card. Tente novamente." };
   const id = (data as { id: string }).id;
+  if (d.pasta_caminho?.trim()) {
+    // Sem a migration 0069 o card é criado do mesmo jeito; o caminho pode ser informado depois de rodá-la.
+    await admin.from("tarefas").update(limparPasta(d.pasta_raiz, d.pasta_caminho)).eq("id", id);
+  }
 
   if (responsavel && responsavel !== user.id) {
     await admin.from("notificacoes").insert({

@@ -7,6 +7,8 @@ import Link from "@/components/shared/link";
 import { X, Loader2, Save, ExternalLink, Check, Trash2 } from "lucide-react";
 import { excluirTarefa, salvarTarefa } from "./actions";
 import { ConteudoCard } from "./conteudo-card";
+import { CampoPasta } from "./campo-pasta";
+import { ehRaiz, type RaizPasta, type Unidades } from "@/lib/pastas";
 import { AnexosTarefa } from "./anexos-tarefa";
 import { ItensEstoqueTarefa } from "./itens-estoque-tarefa";
 import { ConversaDoCard } from "./conversa-card";
@@ -38,7 +40,9 @@ export function TarefaDetalhe({
   onExcluida,
   podeExcluir = false,
   usuarioId,
+  unidades,
 }: {
+  unidades: Unidades;
   usuarioId: string;
   tarefa: TarefaView;
   pessoas: PessoaOpcao[];
@@ -62,6 +66,10 @@ export function TarefaDetalhe({
   const [tag, setTag] = useState(tarefa.tag ?? "");
   const [link, setLink] = useState(tarefa.link ?? "");
   const [conteudo, setConteudo] = useState(tarefa.conteudo ?? "");
+  const [pasta, setPasta] = useState<{ raiz: RaizPasta; caminho: string }>({
+    raiz: ehRaiz(tarefa.pasta_raiz) ? tarefa.pasta_raiz : "corporativo",
+    caminho: tarefa.pasta_caminho ?? "",
+  });
   const [erro, setErro] = useState<string | null>(null);
   const [salvo, setSalvo] = useState(false);
   const [pendente, startTransition] = useTransition();
@@ -109,6 +117,8 @@ export function TarefaDetalhe({
         tag,
         link,
         conteudo,
+        pasta_raiz: pasta.raiz,
+        pasta_caminho: pasta.caminho,
       });
       if (res.erro) {
         setErro(res.erro);
@@ -129,6 +139,8 @@ export function TarefaDetalhe({
         tag: tag.trim() || null,
         link: link.trim() || null,
         conteudo: conteudo || null,
+        pasta_raiz: pasta.caminho.trim() ? pasta.raiz : null,
+        pasta_caminho: pasta.caminho.trim().replace(/^\\+/, "") || null,
       });
     });
   }
@@ -263,6 +275,7 @@ export function TarefaDetalhe({
                 ) : null}
               </div>
             </div>
+            <CampoPasta id="td-pasta" raiz={pasta.raiz} caminho={pasta.caminho} unidades={unidades} onChange={setPasta} />
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="td-desc">Descrição</Label>
               <Textarea

@@ -8,6 +8,7 @@ import {
   type TarefaView,
 } from "@/features/operacional/kanban-tarefas";
 import { PageHeader } from "@/components/shared/page-header";
+import { unidadesDe } from "@/lib/pastas";
 import type { Tarefa } from "@/types/database";
 
 export const dynamic = "force-dynamic";
@@ -79,6 +80,8 @@ export default async function OperacionalPage({
       tag: t.tag ?? null,
       link: t.link ?? null,
       conteudo: t.conteudo ?? null,
+      pasta_raiz: t.pasta_raiz ?? null,
+      pasta_caminho: t.pasta_caminho ?? null,
       podeExcluir: lideranca || t.responsavel_id === usuario.id,
       origemHref,
       origemLabel,
@@ -107,6 +110,7 @@ export default async function OperacionalPage({
         abrirId={abrirId ?? null}
         usuarioId={usuario.id}
         lideranca={lideranca}
+        unidades={unidadesDe(usuario.pasta_unidades)}
         tarefas={view}
         pessoas={Array.from(perfis.values()).map((p) => ({
           id: p.id,

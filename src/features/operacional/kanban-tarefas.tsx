@@ -13,6 +13,7 @@ import { Select } from "@/components/ui/select";
 import { EmptyState } from "@/components/shared/empty-state";
 import { cn, formatarData } from "@/lib/utils";
 import { usePuxarParaRolar } from "@/lib/puxar-para-rolar";
+import type { Unidades } from "@/lib/pastas";
 import { TAREFA_STATUS_META, type TarefaStatus } from "@/types";
 
 export interface TarefaView {
@@ -31,6 +32,8 @@ export interface TarefaView {
   tag: string | null;
   link: string | null;
   conteudo: string | null;
+  pasta_raiz: string | null;
+  pasta_caminho: string | null;
   /** Liderança ou responsável: pode excluir o card. */
   podeExcluir?: boolean;
 }
@@ -57,7 +60,9 @@ export function KanbanTarefas({
   abrirId = null,
   usuarioId,
   lideranca = false,
+  unidades,
 }: {
+  unidades: Unidades;
   usuarioId: string;
   lideranca?: boolean;
   tarefas: TarefaView[];
@@ -96,6 +101,7 @@ export function KanbanTarefas({
         statusInicial={criando}
         usuarioId={usuarioId}
         lideranca={lideranca}
+        unidades={unidades}
         aoFechar={() => setCriando(null)}
         aoCriar={(id) => {
           setCriando(null);
@@ -323,6 +329,7 @@ export function KanbanTarefas({
           key={aberto.id}
           tarefa={aberto}
           usuarioId={usuarioId}
+          unidades={unidades}
           pessoas={pessoas}
           onFechar={() => setAberta(null)}
           podeExcluir={aberto.podeExcluir ?? false}
