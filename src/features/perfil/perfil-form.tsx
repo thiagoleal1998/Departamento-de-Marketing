@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { iniciais } from "@/lib/utils";
 import { RAIZES, type Unidades } from "@/lib/pastas";
 import { processarImagem } from "@/lib/imagem-avatar";
+import { FotoDrive } from "./foto-drive";
 import { PAPEL_LABEL, type Papel } from "@/types";
 
 const estadoInicial: EstadoPerfil = {};
@@ -119,6 +120,9 @@ export function PerfilForm({
             <p className="text-xs text-muted-foreground">
               JPG ou PNG. A imagem é ajustada automaticamente.
             </p>
+            <div className="w-full sm:w-80">
+              <FotoDrive id="foto-drive" onFoto={setAvatarValor} />
+            </div>
           </div>
         </CardContent>
       </Card>

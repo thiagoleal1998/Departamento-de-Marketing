@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { Camera, Save, CheckCircle2, Loader2, Trash2, X } from "lucide-react";
 import { processarImagem } from "@/lib/imagem-avatar";
+import { FotoDrive } from "@/features/perfil/foto-drive";
 import {
   atualizarPerfilUsuario,
   type EstadoEdicaoUsuario,
@@ -139,6 +140,8 @@ export function UsuarioRow({
               </div>
             </div>
           </div>
+
+          <FotoDrive id={`drive-${p.id}`} onFoto={setAvatarValor} />
 
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="space-y-1.5">
