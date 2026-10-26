@@ -125,10 +125,18 @@ export async function agendaHojeEAmanha(): Promise<ResultadoAgenda> {
   const lidas = await Promise.all(FONTES_AGENDA.map(async (f) => ({ f, r: await lerAgendaCache(f.id, hoje, amanha) })));
 
   const indisponiveis = lidas.filter((x) => !x.r.ok).map((x) => x.f);
+  const agora = horaSP(new Date());
+  // Em "hoje", o que já passou da hora sai: some quando termina (sem horário de fim, quando começa).
+  const jaPassou = (e: Bruto) => {
+    if (e.dia !== hoje || !e.hora) return false;
+    if (!e.horaFim) return e.hora < agora;
+    if (e.horaFim < e.hora) return false; // termina só no dia seguinte
+    return e.horaFim <= agora;
+  };
   const dias: AgendaDoDia[] = [hoje, amanha].map((dia) => {
     const mapa = new Map<string, EventoAgenda>();
     for (const { f, r } of lidas) {
-      for (const e of r.eventos.filter((x) => x.dia === dia)) {
+      for (const e of r.eventos.filter((x) => x.dia === dia && !jaPassou(x))) {
         // O mesmo compromisso costuma estar em mais de uma agenda: junta num só.
         const chave = `${e.titulo.toLowerCase()}|${e.hora ?? "dia"}`;
         const existente = mapa.get(chave);
