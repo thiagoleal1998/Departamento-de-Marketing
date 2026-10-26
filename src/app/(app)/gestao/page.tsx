@@ -12,6 +12,8 @@ import { pode } from "@/lib/permissions";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { mapaDePerfis } from "@/features/chamados/data";
 import { GestaoAbas } from "@/features/perfis/gestao-abas";
+import { feriadosDoAno } from "@/features/feriados/calendario";
+import { hojeSP } from "@/features/divulgacao/tipos";
 import { PageHeader } from "@/components/shared/page-header";
 import { DataCard } from "@/components/shared/data-card";
 import { BarChartH, type BarraDado } from "@/components/shared/bar-chart";
@@ -52,11 +54,30 @@ export default async function GestaoPage() {
   if (!pode(usuario.role, "ver_relatorios_gerais")) redirect("/dashboard");
 
   const supabase = await criarClienteServidor();
-  const [{ data }, perfis] = await Promise.all([
+  const hoje = hojeSP();
+  const ano = Number(hoje.slice(0, 4));
+  const [{ data }, perfis, escalaR, extrasR, avisosR, pessoasR] = await Promise.all([
     supabase.from("chamados").select("*"),
     mapaDePerfis(),
+    supabase.from("escala_feriados").select("data, profile_id").gte("data", `${ano}-01-01`).lte("data", `${ano}-12-31`),
+    supabase.from("feriados_extras").select("data").gte("data", `${ano}-01-01`).lte("data", `${ano}-12-31`),
+    supabase.from("escala_avisos").select("data").gte("data", `${ano}-01-01`).lte("data", `${ano}-12-31`),
+    supabase.from("profiles").select("id, nome").eq("ativo", true).order("nome", { ascending: true }),
   ]);
   const chamados = (data as Chamado[] | null) ?? [];
+
+  // Feriados do ano: só entram na conta os que já têm escala montada (ou folga avisada), para não contar como
+  // "folga" os que passaram antes de a escala existir.
+  const escala = (escalaR.data as { data: string; profile_id: string }[] | null) ?? [];
+  const datasFeriado = new Set([...feriadosDoAno(ano).map((f) => f.data), ...((extrasR.data as { data: string }[] | null) ?? []).map((e) => e.data)]);
+  const registradas = new Set([...escala.map((e) => e.data), ...((avisosR.data as { data: string }[] | null) ?? []).map((a) => a.data)]);
+  const contados = [...registradas].filter((d) => datasFeriado.has(d) && d <= hoje);
+  const proximos = [...registradas].filter((d) => datasFeriado.has(d) && d > hoje);
+  const feriadosPorPessoa = ((pessoasR.data as { id: string; nome: string }[] | null) ?? []).map((p) => {
+    const trabalhou = contados.filter((d) => escala.some((e) => e.data === d && e.profile_id === p.id)).length;
+    const escalado = proximos.filter((d) => escala.some((e) => e.data === d && e.profile_id === p.id)).length;
+    return { nome: p.nome, trabalhou, folgou: contados.length - trabalhou, escalado, folgaProx: proximos.length - escalado };
+  });
 
   const finalizados = chamados.filter(
     (c) => c.status === "resolvido" || c.status === "fechado"
@@ -156,6 +177,45 @@ export default async function GestaoPage() {
           descricao="Da abertura à conclusão"
         />
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Feriados em {ano}: quem trabalhou e quem folgou</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {contados.length === 0 && proximos.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhuma escala de feriado montada em {ano}. Monte em Escala de feriados.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-xs text-muted-foreground">
+                    <th className="py-2 pr-4 font-medium">Pessoa</th>
+                    <th className="px-3 py-2 text-center font-medium">Trabalhou</th>
+                    <th className="px-3 py-2 text-center font-medium">Folgou</th>
+                    <th className="px-3 py-2 text-center font-medium">Escalado (próximos)</th>
+                    <th className="px-3 py-2 text-center font-medium">De folga (próximos)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {feriadosPorPessoa.map((p) => (
+                    <tr key={p.nome} className="border-b last:border-0">
+                      <td className="py-2 pr-4 font-medium">{p.nome}</td>
+                      <td className="px-3 py-2 text-center tabular-nums">{p.trabalhou}</td>
+                      <td className="px-3 py-2 text-center tabular-nums">{p.folgou}</td>
+                      <td className="px-3 py-2 text-center tabular-nums">{p.escalado}</td>
+                      <td className="px-3 py-2 text-center tabular-nums">{p.folgaProx}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="mt-3 text-xs text-muted-foreground">
+                Conta os feriados que já aconteceram e têm escala registrada ({contados.length}) e os próximos já escalados ({proximos.length}).
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {graficos.map((g) => (
