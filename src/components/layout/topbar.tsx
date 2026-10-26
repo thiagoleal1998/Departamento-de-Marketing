@@ -8,6 +8,7 @@ import { sair } from "@/features/auth/actions";
 import { NotificacoesBell } from "@/features/notificacoes/bell";
 import { AtivarPush } from "@/features/notificacoes/ativar-push";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { AtualizarPagina } from "@/components/layout/atualizar-pagina";
 import { obterNotificacoes } from "@/features/notificacoes/data";
 import { PAPEL_LABEL } from "@/types";
 import type { Profile } from "@/types/database";
@@ -32,6 +33,7 @@ export async function Topbar({
 
       <div className="flex items-center gap-2 sm:gap-3">
         <AtivarPush />
+        <AtualizarPagina />
         <ThemeToggle />
         <Link
           href="/chat"
