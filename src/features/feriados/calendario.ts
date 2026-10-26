@@ -46,7 +46,8 @@ export function feriadosDoAno(ano: number): Feriado[] {
     { data: iso(p + 60 * DIA), nome: "Corpus Christi", tipo: "facultativo" },
     { data: iso(utc(ano, 9, 7)), nome: "Independência do Brasil", tipo: "nacional" },
     { data: iso(utc(ano, 10, 12)), nome: "Nossa Senhora Aparecida", tipo: "nacional" },
-    { data: iso(utc(ano, 10, 28)), nome: "Dia do Servidor Público", tipo: "facultativo" },
+    // Em 2026 o ponto facultativo foi transferido para sexta (30/10), emendando com Finados.
+    { data: iso(utc(ano, 10, ano === 2026 ? 30 : 28)), nome: "Dia do Servidor Público", tipo: "facultativo" },
     { data: iso(utc(ano, 11, 2)), nome: "Finados", tipo: "nacional" },
     { data: iso(utc(ano, 11, 15)), nome: "Proclamação da República", tipo: "nacional" },
     { data: iso(utc(ano, 11, 20)), nome: "Dia da Consciência Negra", tipo: "nacional" },
