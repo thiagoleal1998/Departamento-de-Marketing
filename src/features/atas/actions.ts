@@ -245,8 +245,8 @@ export async function atualizarDataReuniao(reuniaoId: string, data: string): Pro
 }
 
 /**
- * Editar um item da ata mais recente (já concluída) mantém a tarefa do kanban em dia.
- * Atas antigas só mudam o histórico.
+ * Todo item aberto da ata mais recente tem um card no kanban (criado na hora, sem esperar a conclusão da
+ * reunião). Editar um item da ata já concluída mantém o card em dia. Atas antigas só mudam o histórico.
  */
 async function refletirNaTarefa(
   supabase: Awaited<ReturnType<typeof criarClienteServidor>>,
@@ -255,15 +255,35 @@ async function refletirNaTarefa(
 ) {
   try {
     const { data: reu } = await supabase.from("reunioes").select("estado").eq("id", reuniaoId).maybeSingle();
-    if (!reu || reu.estado === "em_andamento") return; // em andamento: vira tarefa ao concluir
+    if (!reu) return;
     const { data: ultima } = await supabase.from("reunioes").select("id").order("data", { ascending: false }).limit(1).maybeSingle();
     if (ultima?.id !== reuniaoId) return;
     const { data: it } = await supabase.from("reuniao_itens").select("*").eq("id", itemId).maybeSingle();
     if (!it) return;
     const { data: t } = await supabase.from("tarefas").select("id").eq("ata_serie", it.serie).maybeSingle();
-    if (!t) return;
     const descricao =
       [it.detalhamento, it.plano_acao ? `Plano de ação: ${it.plano_acao}` : null].filter(Boolean).join("\n\n") || null;
+    // Toda pendência da ata aparece no quadro de Tarefas, mesmo com a reunião ainda em andamento.
+    if (!t) {
+      if (it.secao === "ata" && itemAberto(it.status)) {
+        await supabase.from("tarefas").insert({
+          titulo: it.titulo,
+          descricao,
+          status: itemParaTarefa(it.status),
+          responsavel_id: it.responsavel_id,
+          responsaveis_notion: it.responsavel_id ? null : it.responsaveis_texto ?? null,
+          prazo: it.prazo,
+          prioridade: it.prioridade,
+          link: it.link,
+          tag: "Ata",
+          ata_serie: it.serie,
+        });
+        revalidatePath("/operacional");
+      }
+      return;
+    }
+    // Em andamento: não sobrescreve o que o responsável já mexeu no quadro; a ata concluída é que atualiza.
+    if (reu.estado === "em_andamento") return;
     await supabase
       .from("tarefas")
       .update({
