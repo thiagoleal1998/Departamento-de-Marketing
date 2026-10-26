@@ -1,5 +1,3 @@
-import Link from "@/components/shared/link";
-import { Plus } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import { ehLideranca } from "@/lib/permissions";
 import { listarChamados, mapaDePerfis } from "@/features/chamados/data";
@@ -8,7 +6,6 @@ import {
   type ChamadoView,
 } from "@/features/chamados/chamados-lista";
 import { PageHeader } from "@/components/shared/page-header";
-import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
@@ -50,14 +47,7 @@ export default async function ChamadosPage({
     <div className="space-y-6">
       <PageHeader
         titulo="Chamados"
-        descricao="Solicitações de trabalho com controle, prazo e acompanhamento."
-        acoes={
-          <Button asChild>
-            <Link href="/chamados/novo">
-              <Plus className="size-4" /> Abrir chamado
-            </Link>
-          </Button>
-        }
+        descricao="Solicitações de trabalho recebidas pelo portal, com controle, prazo e acompanhamento."
       />
       <ChamadosLista
         chamados={view}

@@ -8,6 +8,7 @@ import {
   HeartHandshake,
   ArrowRight,
   ListTodo,
+  Lightbulb,
 } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
@@ -152,12 +153,7 @@ export default async function DashboardPage() {
               <EmptyState
                 icone={Ticket}
                 titulo="Nenhum chamado ainda"
-                descricao="Quando houver solicitações, elas aparecerão aqui."
-                acao={
-                  <Button asChild size="sm">
-                    <Link href="/chamados/novo">Abrir chamado</Link>
-                  </Button>
-                }
+                descricao="Quando chegarem solicitações pelo portal, elas aparecerão aqui."
               />
             ) : (
               <ul className="divide-y">
@@ -197,8 +193,8 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-2">
             <Button asChild variant="outline" className="w-full justify-start">
-              <Link href="/chamados/novo">
-                <Ticket className="size-4" /> Abrir chamado
+              <Link href="/sugestoes">
+                <Lightbulb className="size-4" /> Enviar feedback
               </Link>
             </Button>
             <Button asChild variant="outline" className="w-full justify-start">
