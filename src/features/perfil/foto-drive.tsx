@@ -52,7 +52,7 @@ export function FotoDrive({ onFoto, id }: { onFoto: (dataUrl: string) => void; i
         </Button>
       </div>
       {erro ? <p className="text-xs text-destructive">{erro}</p> : null}
-      {ok ? <p className="text-xs text-emerald-600">Foto puxada. Clique em Salvar para confirmar.</p> : null}
+      {ok ? <p className="text-xs text-emerald-600">Foto puxada. Ajuste o enquadramento e clique em Salvar para confirmar.</p> : null}
     </div>
   );
 }

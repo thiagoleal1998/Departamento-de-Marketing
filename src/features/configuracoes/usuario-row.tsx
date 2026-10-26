@@ -2,8 +2,9 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { Camera, Save, CheckCircle2, Loader2, Trash2, X } from "lucide-react";
-import { processarImagem } from "@/lib/imagem-avatar";
+import { lerComoDataUrl } from "@/lib/imagem-avatar";
 import { FotoDrive } from "@/features/perfil/foto-drive";
+import { EditorFoto } from "@/features/perfil/editor-foto";
 import {
   atualizarPerfilUsuario,
   type EstadoEdicaoUsuario,
@@ -47,6 +48,7 @@ export function UsuarioRow({
   // Foto: "" = manter | data URL = nova | "__remover__" = tirar.
   const [avatarValor, setAvatarValor] = useState("");
   const [processando, setProcessando] = useState(false);
+  const [editorSrc, setEditorSrc] = useState<string | null>(null);
   const inputFoto = useRef<HTMLInputElement>(null);
   const foto = avatarValor === "__remover__" ? null : avatarValor || p.avatar_url;
 
@@ -55,7 +57,7 @@ export function UsuarioRow({
     if (!arquivo) return;
     setProcessando(true);
     try {
-      setAvatarValor(await processarImagem(arquivo));
+      setEditorSrc(await lerComoDataUrl(arquivo));
     } catch {
       // arquivo ilegível: mantém a foto atual
     } finally {
@@ -110,6 +112,11 @@ export function UsuarioRow({
                 <Button type="button" variant="ghost" size="sm" className="h-6 gap-1 px-1.5 text-xs" onClick={() => inputFoto.current?.click()} disabled={processando}>
                   {processando ? <Loader2 className="size-3 animate-spin" /> : <Camera className="size-3" />} Foto
                 </Button>
+                {foto?.startsWith("data:") ? (
+                  <Button type="button" variant="ghost" size="sm" className="h-6 px-1.5 text-xs" onClick={() => setEditorSrc(foto)}>
+                    Ajustar
+                  </Button>
+                ) : null}
                 {foto ? (
                   <Button type="button" variant="ghost" size="icon" className="size-6" aria-label="Remover foto" onClick={() => setAvatarValor("__remover__")}>
                     <Trash2 className="size-3" />
@@ -141,7 +148,17 @@ export function UsuarioRow({
             </div>
           </div>
 
-          <FotoDrive id={`drive-${p.id}`} onFoto={setAvatarValor} />
+          <FotoDrive id={`drive-${p.id}`} onFoto={setEditorSrc} />
+          {editorSrc ? (
+            <EditorFoto
+              src={editorSrc}
+              onCancelar={() => setEditorSrc(null)}
+              onAplicar={(url) => {
+                setAvatarValor(url);
+                setEditorSrc(null);
+              }}
+            />
+          ) : null}
 
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="space-y-1.5">

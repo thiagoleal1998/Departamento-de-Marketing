@@ -2,7 +2,7 @@
 
 import { criarClienteServidor } from "@/lib/supabase/server";
 
-const MAX_BYTES = 500_000;
+const MAX_BYTES = 1_500_000;
 
 /** Pega o id do arquivo em um link do Google Drive (…/file/d/ID/view, …open?id=ID, …uc?id=ID). */
 function idDoDrive(url: string): string | null {
@@ -19,7 +19,7 @@ function idDoDrive(url: string): string | null {
 }
 
 /**
- * Busca a foto de um link do Google Drive e devolve como imagem pronta para salvar (data URL, 256px).
+ * Busca a foto de um link do Google Drive (miniatura de 800 px) para a pessoa enquadrar no editor de foto.
  * O arquivo precisa estar compartilhado como "Qualquer pessoa com o link". Só o endereço de miniatura do
  * próprio Drive é consultado, montado a partir do id do arquivo.
  */
@@ -35,7 +35,7 @@ export async function puxarFotoDoDrive(url: string): Promise<{ foto?: string; er
 
   const naoAcessivel = "Não consegui abrir a imagem. No Drive, compartilhe o arquivo como “Qualquer pessoa com o link” e tente de novo.";
   try {
-    const r = await fetch(`https://drive.google.com/thumbnail?id=${id}&sz=w256`, {
+    const r = await fetch(`https://drive.google.com/thumbnail?id=${id}&sz=w800`, {
       cache: "no-store",
       signal: AbortSignal.timeout(10_000),
     });

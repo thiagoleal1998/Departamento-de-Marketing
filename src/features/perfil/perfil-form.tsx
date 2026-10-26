@@ -12,8 +12,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { iniciais } from "@/lib/utils";
 import { RAIZES, type Unidades } from "@/lib/pastas";
-import { processarImagem } from "@/lib/imagem-avatar";
+import { lerComoDataUrl } from "@/lib/imagem-avatar";
 import { FotoDrive } from "./foto-drive";
+import { EditorFoto } from "./editor-foto";
 import { PAPEL_LABEL, type Papel } from "@/types";
 
 const estadoInicial: EstadoPerfil = {};
@@ -41,6 +42,7 @@ export function PerfilForm({
 
   // "" = manter atual | data URL = nova foto | "__remover__" = remover
   const [avatarValor, setAvatarValor] = useState("");
+  const [editorSrc, setEditorSrc] = useState<string | null>(null);
   const [processando, setProcessando] = useState(false);
 
   const removido = avatarValor === "__remover__";
@@ -55,8 +57,7 @@ export function PerfilForm({
     if (!file) return;
     setProcessando(true);
     try {
-      const dataUrl = await processarImagem(file);
-      setAvatarValor(dataUrl);
+      setEditorSrc(await lerComoDataUrl(file));
     } catch {
       // ignora falha de leitura
     } finally {
@@ -106,6 +107,11 @@ export function PerfilForm({
                 )}
                 Escolher foto
               </Button>
+              {preview?.startsWith("data:") ? (
+                <Button type="button" variant="ghost" size="sm" onClick={() => setEditorSrc(preview)}>
+                  Ajustar
+                </Button>
+              ) : null}
               {preview ? (
                 <Button
                   type="button"
@@ -118,10 +124,20 @@ export function PerfilForm({
               ) : null}
             </div>
             <p className="text-xs text-muted-foreground">
-              JPG ou PNG. A imagem é ajustada automaticamente.
+              JPG ou PNG. Depois de escolher, você enquadra a foto com zoom.
             </p>
             <div className="w-full sm:w-80">
-              <FotoDrive id="foto-drive" onFoto={setAvatarValor} />
+              <FotoDrive id="foto-drive" onFoto={setEditorSrc} />
+              {editorSrc ? (
+                <EditorFoto
+                  src={editorSrc}
+                  onCancelar={() => setEditorSrc(null)}
+                  onAplicar={(url) => {
+                    setAvatarValor(url);
+                    setEditorSrc(null);
+                  }}
+                />
+              ) : null}
             </div>
           </div>
         </CardContent>
