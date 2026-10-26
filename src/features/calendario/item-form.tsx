@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { SeletorLembretes } from "@/components/shared/seletor-lembretes";
+import { normalizarLembretes } from "@/lib/lembretes";
 
 export const TIPOS = ["E-mail Marketing", "Redes Sociais", "Oferta", "Podcast", "Visita"];
 const STATUS = ["Não iniciada", "Em andamento", "Editando", "Em aprovação - Gustavo", "Em Aprovação - Marco", "Agendado", "Postado", "Concluído"];
@@ -69,8 +71,9 @@ export function ItemCalendarioForm({
           objetivo: item.objetivo ?? "",
           publico: item.publico,
           tags: item.tags ?? "",
+          lembretes: normalizarLembretes(item.lembretes),
         }
-      : { nome: "", data: dataPadrao, status: "Não iniciada", tipo: "E-mail Marketing", canais: ["RD Station"], responsaveis: [], tipo_post: "", objetivo: "", publico: [], tags: "" }
+      : { nome: "", data: dataPadrao, status: "Não iniciada", tipo: "E-mail Marketing", canais: ["RD Station"], responsaveis: [], tipo_post: "", objetivo: "", publico: [], tags: "", lembretes: [] }
   );
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, start] = useTransition();
@@ -171,6 +174,7 @@ export function ItemCalendarioForm({
               <Marcas rotulo="Responsável" opcoes={responsaveis} valor={d.responsaveis} aoMudar={(v) => set("responsaveis", v)} />
             </div>
           ) : null}
+          <SeletorLembretes valor={d.lembretes ?? []} onChange={(v) => set("lembretes", v)} rotuloData="dia do item" semData={!d.data} />
           <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor="cal-tags">Tags</Label>
             <Input id="cal-tags" value={d.tags} onChange={(e) => set("tags", e.target.value)} maxLength={300} />

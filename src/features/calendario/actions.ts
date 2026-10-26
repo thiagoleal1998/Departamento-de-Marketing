@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
+import { normalizarLembretes } from "@/lib/lembretes";
 
 type Resultado = { ok?: boolean; erro?: string };
 
@@ -17,6 +18,7 @@ export interface DadosItemCalendario {
   objetivo: string;
   publico: string[];
   tags: string;
+  lembretes?: number[];
 }
 
 const lista = (v: string[], max = 12) => Array.from(new Set(v.map((x) => x.trim()).filter(Boolean))).slice(0, max);
@@ -56,6 +58,15 @@ export async function salvarItemCalendario(id: string | null, d: DadosItemCalend
     : admin.from("calendario_conteudo").insert(dados).select("id");
   const { data, error } = await q;
   if (error || !data || data.length === 0) return { erro: "Não foi possível salvar. Tente novamente." };
+
+  // Lembretes gravados à parte: sem a migration 0073 o item salva do mesmo jeito.
+  if (d.lembretes !== undefined) {
+    const { error: errLemb } = await admin
+      .from("calendario_conteudo")
+      .update({ lembretes: normalizarLembretes(d.lembretes) })
+      .eq("id", (data[0] as { id: string }).id);
+    if (errLemb) return { erro: "O item foi salvo, mas os lembretes não: falta rodar a migration 0073 no Supabase." };
+  }
 
   revalidatePath("/operacional/calendario");
   revalidatePath("/executivo");

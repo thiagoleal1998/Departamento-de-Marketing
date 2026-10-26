@@ -9,6 +9,7 @@ import { excluirTarefa, salvarTarefa } from "./actions";
 import { ConteudoCard } from "./conteudo-card";
 import { CampoPasta } from "./campo-pasta";
 import { criadaEm } from "@/lib/codigo-tarefa";
+import { SeletorLembretes } from "@/components/shared/seletor-lembretes";
 import { ehRaiz, type RaizPasta, type Unidades } from "@/lib/pastas";
 import { AnexosTarefa } from "./anexos-tarefa";
 import { ItensEstoqueTarefa } from "./itens-estoque-tarefa";
@@ -68,6 +69,7 @@ export function TarefaDetalhe({
   const [tag, setTag] = useState(tarefa.tag ?? "");
   const [link, setLink] = useState(tarefa.link ?? "");
   const [linkSite, setLinkSite] = useState(tarefa.link_site ?? "");
+  const [lembretes, setLembretes] = useState<number[]>(tarefa.lembretes);
   const [conteudo, setConteudo] = useState(tarefa.conteudo ?? "");
   const [pasta, setPasta] = useState<{ raiz: RaizPasta; caminho: string }>({
     raiz: ehRaiz(tarefa.pasta_raiz) ? tarefa.pasta_raiz : "corporativo",
@@ -124,6 +126,7 @@ export function TarefaDetalhe({
         pasta_caminho: pasta.caminho,
         colaborador_id: colaboradorId || null,
         link_site: linkSite,
+        lembretes,
       });
       if (res.erro) {
         setErro(res.erro);
@@ -144,6 +147,7 @@ export function TarefaDetalhe({
         tag: tag.trim() || null,
         link: link.trim() || null,
         link_site: linkSite.trim() || null,
+        lembretes,
         conteudo: conteudo || null,
         colaborador_id: colaboradorId || null,
         colaborador_nome: pessoas.find((p) => p.id === colaboradorId)?.nome ?? null,
@@ -318,6 +322,7 @@ export function TarefaDetalhe({
                 ) : null}
               </div>
             </div>
+            <SeletorLembretes valor={lembretes} onChange={setLembretes} rotuloData="prazo" semData={!prazo} />
             <CampoPasta id="td-pasta" raiz={pasta.raiz} caminho={pasta.caminho} unidades={unidades} onChange={setPasta} />
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="td-desc">Descrição</Label>

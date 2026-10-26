@@ -37,6 +37,7 @@ export interface TarefaView {
   /** TAFMKT - 001/2026 e a data de criação do card. */
   codigo: string | null;
   criada_em: string | null;
+  lembretes: number[];
   conteudo: string | null;
   pasta_raiz: string | null;
   pasta_caminho: string | null;

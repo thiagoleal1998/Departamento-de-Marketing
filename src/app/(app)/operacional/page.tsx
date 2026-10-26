@@ -10,6 +10,7 @@ import {
 import { PageHeader } from "@/components/shared/page-header";
 import { unidadesDe } from "@/lib/pastas";
 import { codigoTarefa } from "@/lib/codigo-tarefa";
+import { normalizarLembretes } from "@/lib/lembretes";
 import type { Tarefa } from "@/types/database";
 
 export const dynamic = "force-dynamic";
@@ -85,6 +86,7 @@ export default async function OperacionalPage({
       link_site: t.link_site ?? null,
       codigo: codigoTarefa(t.numero, t.ano),
       criada_em: t.created_at,
+      lembretes: normalizarLembretes(t.lembretes),
       conteudo: t.conteudo ?? null,
       pasta_raiz: t.pasta_raiz ?? null,
       pasta_caminho: t.pasta_caminho ?? null,

@@ -12,7 +12,7 @@ export default async function CalendarioPage() {
   const supabase = await criarClienteServidor();
   const { data } = await supabase
     .from("calendario_conteudo")
-    .select("id, nome, data, status, tipo, canais, responsaveis, tipo_post, objetivo, publico, tags")
+    .select("*")
     .order("data", { ascending: true, nullsFirst: false })
     .limit(3000);
   const itens = (data as ItemCalendario[] | null) ?? [];

@@ -115,6 +115,8 @@ export interface Tarefa {
   /** Código TAFMKT - numero/ano (migration 0072). */
   numero?: number | null;
   ano?: number | null;
+  /** Dias antes do prazo em que o sistema avisa (migration 0073). */
+  lembretes?: number[] | null;
 }
 
 export interface Projeto {

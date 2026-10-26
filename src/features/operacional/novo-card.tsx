@@ -5,6 +5,7 @@ import { Loader2, X } from "lucide-react";
 import { criarTarefaCard } from "./actions";
 import { TAREFA_STATUS_META, type TarefaStatus } from "@/types";
 import { CampoPasta } from "./campo-pasta";
+import { SeletorLembretes } from "@/components/shared/seletor-lembretes";
 import type { RaizPasta, Unidades } from "@/lib/pastas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +43,7 @@ export function NovoCardDialogo({
   const [tag, setTag] = useState("");
   const [link, setLink] = useState("");
   const [linkSite, setLinkSite] = useState("");
+  const [lembretes, setLembretes] = useState<number[]>([]);
   const [pasta, setPasta] = useState<{ raiz: RaizPasta; caminho: string }>({ raiz: "corporativo", caminho: "" });
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, start] = useTransition();
@@ -72,6 +74,7 @@ export function NovoCardDialogo({
         link,
         colaborador_id: colaborador || null,
         link_site: linkSite,
+        lembretes,
         pasta_raiz: pasta.raiz,
         pasta_caminho: pasta.caminho,
       });
@@ -163,6 +166,7 @@ export function NovoCardDialogo({
             <Label htmlFor="nc-link-site">URL do nosso site</Label>
             <Input id="nc-link-site" type="url" inputMode="url" value={linkSite} onChange={(e) => setLinkSite(e.target.value)} placeholder="https://" />
           </div>
+          <SeletorLembretes valor={lembretes} onChange={setLembretes} rotuloData="prazo" semData={!prazo} />
           <CampoPasta id="nc-pasta" raiz={pasta.raiz} caminho={pasta.caminho} unidades={unidades} onChange={setPasta} />
         </div>
 

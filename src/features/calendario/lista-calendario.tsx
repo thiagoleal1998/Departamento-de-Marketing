@@ -21,6 +21,7 @@ export interface ItemCalendario {
   objetivo: string | null;
   publico: string[];
   tags: string | null;
+  lembretes?: number[] | null;
 }
 
 const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
