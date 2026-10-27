@@ -8,6 +8,7 @@ import { ItemCalendarioForm, RESPONSAVEIS_PADRAO, TIPOS, rotuloTipo } from "./it
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { ehResponsavel } from "@/lib/responsaveis";
 
 export interface ItemCalendario {
   id: string;
@@ -59,9 +60,10 @@ const diaExtenso = (data: string) => {
 };
 
 /** Calendário geral: grade mensal (ou lista) com os conteúdos e eventos do time, com filtros. */
-export function ListaCalendario({ itens, usuarioId, lideranca = false }: { itens: ItemCalendario[]; usuarioId: string; lideranca?: boolean }) {
-  // Gerente e líder excluem qualquer item; o colaborador, só o que ele mesmo criou.
-  const podeExcluirItem = (i: ItemCalendario) => lideranca || i.criado_por === usuarioId;
+export function ListaCalendario({ itens, usuarioId, usuarioNome, lideranca = false }: { itens: ItemCalendario[]; usuarioId: string; usuarioNome: string; lideranca?: boolean }) {
+  // Gerente e líder excluem qualquer item; o colaborador, o que ele criou. Itens antigos não guardam o autor:
+  // para esses vale quem está entre os responsáveis.
+  const podeExcluirItem = (i: ItemCalendario) => lideranca || i.criado_por === usuarioId || (!i.criado_por && ehResponsavel(usuarioNome, i.responsaveis));
   const { confirmar, avisar } = useDialogo();
   const hoje = hojeSP();
   const [formulario, setFormulario] = useState<{ item?: ItemCalendario; data: string } | null>(null);

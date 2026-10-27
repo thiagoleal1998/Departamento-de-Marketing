@@ -5,6 +5,7 @@ import { criarClienteServidor } from "@/lib/supabase/server";
 import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { normalizarLembretes } from "@/lib/lembretes";
 import { registrarAcao } from "@/features/atividade/registro";
+import { ehResponsavel } from "@/lib/responsaveis";
 
 type Resultado = { ok?: boolean; erro?: string };
 
@@ -92,10 +93,16 @@ export async function excluirItemCalendario(id: string): Promise<Resultado> {
   if (!servicoDisponivel()) return { erro: "Exclusão indisponível no momento." };
 
   const admin = criarClienteAdmin();
-  const { data: item } = await admin.from("calendario_conteudo").select("nome, criado_por").eq("id", id).maybeSingle();
-  const atual = item as { nome: string; criado_por: string | null } | null;
-  // Gerente e líder excluem qualquer item; o colaborador, só o que ele mesmo criou.
-  if (!lideranca && atual?.criado_por !== user.id) return { erro: "Você só pode excluir os itens que você mesmo criou." };
+  const { data: item } = await admin.from("calendario_conteudo").select("nome, criado_por, responsaveis").eq("id", id).maybeSingle();
+  const atual = item as { nome: string; criado_por: string | null; responsaveis: string[] | null } | null;
+  // Gerente e líder excluem qualquer item; o colaborador, o que ele criou. Os itens antigos não guardam o autor:
+  // para esses vale quem está entre os responsáveis.
+  if (!lideranca) {
+    const { data: perfil } = await admin.from("profiles").select("nome").eq("id", user.id).maybeSingle();
+    const meuNome = (perfil as { nome: string } | null)?.nome ?? "";
+    const meu = atual?.criado_por === user.id || (!atual?.criado_por && ehResponsavel(meuNome, atual?.responsaveis));
+    if (!meu) return { erro: "Você só pode excluir os itens que você mesmo criou." };
+  }
 
   const { error } = await admin.from("calendario_conteudo").delete().eq("id", id);
   if (error) return { erro: "Não foi possível excluir." };

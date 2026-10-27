@@ -29,7 +29,7 @@ export default async function CalendarioPage() {
           Nenhum item ainda. Rode a migration 0048 para importar o calendário do Notion.
         </div>
       ) : (
-        <ListaCalendario itens={itens} usuarioId={usuario.id} lideranca={ehLideranca(usuario.role)} />
+        <ListaCalendario itens={itens} usuarioId={usuario.id} usuarioNome={usuario.nome} lideranca={ehLideranca(usuario.role)} />
       )}
     </div>
   );
