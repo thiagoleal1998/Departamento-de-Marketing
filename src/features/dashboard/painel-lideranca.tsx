@@ -114,13 +114,16 @@ async function carregar(supabase: Supabase) {
         .select("id", head)
         .in("status", ["nova", "em_analise"])
     ),
+    // Mesma conta da Consulta e da página inicial: sem os grupos Antigas, Epic e Feriados (ficam fora dos números).
+    // Os grupos com valor vazio entram (o filtro "not in" do banco descartaria os vazios).
     contar(
       supabase
         .from("landing_pages")
         .select("id", head)
         .eq("status_patrocinio", "ativo")
+        .or("grupo.is.null,grupo.not.in.(antigas,epic,feriados)")
     ),
-    contar(supabase.from("landing_pages").select("id", head)),
+    contar(supabase.from("landing_pages").select("id", head).or("grupo.is.null,grupo.not.in.(antigas,epic,feriados)")),
     contar(
       supabase
         .from("conteudos_site")
