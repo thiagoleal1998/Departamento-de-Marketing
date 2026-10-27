@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { SeletorLembretes } from "@/components/shared/seletor-lembretes";
 import { normalizarLembretes } from "@/lib/lembretes";
 
-export const TIPOS = ["E-mail Marketing", "Redes Sociais", "Oferta", "Podcast", "Visita", "ULV", "Treinamento Agentes"];
+export const TIPOS = ["E-mail Marketing", "Redes Sociais", "Oferta", "Podcast", "Visita", "ULV", "Treinamento Agentes", "Gravação"];
 /** Nome por extenso do tipo (o valor guardado continua curto). */
 /** Pessoas que sempre aparecem como responsáveis (além das que já constam em algum item). */
 export const RESPONSAVEIS_PADRAO = ["Cesar", "Gustavo", "Jéssica", "Shay", "Thiago"];

@@ -102,6 +102,7 @@ const TIPO_COR: Record<string, { chip: string; ponto: string; borda: string }> =
   "VT's": { chip: "bg-fuchsia-100 text-fuchsia-900 dark:bg-fuchsia-950 dark:text-fuchsia-200", ponto: "bg-fuchsia-500", borda: "border-l-fuchsia-500" },
   ULV: { chip: "bg-sky-100 text-sky-900 dark:bg-sky-950 dark:text-sky-200", ponto: "bg-sky-500", borda: "border-l-sky-500" },
   "Treinamento Agentes": { chip: "bg-teal-100 text-teal-900 dark:bg-teal-950 dark:text-teal-200", ponto: "bg-teal-500", borda: "border-l-teal-500" },
+  "Gravação": { chip: "bg-red-100 text-red-900 dark:bg-red-950 dark:text-red-200", ponto: "bg-red-500", borda: "border-l-red-500" },
 };
 const COR_PADRAO = { chip: "bg-muted text-foreground", ponto: "bg-muted-foreground/60", borda: "border-l-muted-foreground/40" };
 export const corTipo = (t: string | null) => (t && TIPO_COR[t]) || COR_PADRAO;
