@@ -79,6 +79,11 @@ export function ChatJanela({
   const fimRef = useRef<HTMLDivElement>(null);
   // Responder a uma mensagem específica (aparece citada acima da resposta).
   const [respondendoA, setRespondendoA] = useState<MensagemView | null>(null);
+  const caixaRef = useRef<HTMLTextAreaElement>(null);
+  // Ao clicar em Responder, o cursor já vai para a caixa de mensagem.
+  useEffect(() => {
+    if (respondendoA) caixaRef.current?.focus();
+  }, [respondendoA]);
   const { lista: reacoes, reagir } = useReacoes(conversaId, meuId);
   const { digitando, avisarDigitando, parouDeDigitar } = useDigitando(conversaId, meuId);
   const quem = (m: MensagemView) => (m.autor_id === meuId ? "Você" : nomes[m.autor_id] ?? "—");
@@ -594,6 +599,7 @@ export function ChatJanela({
             <span className="hidden lg:inline">Solicitar criação</span>
           </Button>
           <Textarea
+            ref={caixaRef}
             value={texto}
             onChange={(e) => {
               setTexto(e.target.value);

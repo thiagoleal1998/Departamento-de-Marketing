@@ -48,6 +48,11 @@ export function ChatFlutuante({
   const [porConversa, setPorConversa] = useState<Record<string, number> | null>(null);
   const [aviso, setAviso] = useState<{ chave: string; autor: string; texto: string } | null>(null);
   const fim = useRef<HTMLDivElement>(null);
+  const caixa = useRef<HTMLTextAreaElement>(null);
+  // Ao clicar em Responder, o cursor já vai para a caixa de mensagem.
+  useEffect(() => {
+    if (respondendoA) caixa.current?.focus();
+  }, [respondendoA]);
   // Na tela de Chat completa (onde este atalho some) quem escuta a conversa é o próprio chat.
   const ativoAgora = aberto && !caminho?.startsWith("/chat");
   const { lista: reacoes, reagir } = useReacoes(ativoAgora ? conversaId : null, usuarioId);
@@ -305,6 +310,7 @@ export function ChatFlutuante({
             }}
           >
             <textarea
+              ref={caixa}
               value={texto}
               onChange={(e) => {
                 setTexto(e.target.value);
