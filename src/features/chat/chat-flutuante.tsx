@@ -10,6 +10,7 @@ import { abrirConversaFlutuante, naoLidasPorConversa } from "./flutuante-actions
 import { CONVERSA_GERAL } from "./constantes";
 import { BarraResposta, BotaoResponder, Citacao } from "./citacao";
 import { ReacoesDaMensagem, SeletorReacao, useReacoes } from "./reacoes";
+import { IndicadorDigitando, useDigitando } from "./digitando";
 import { cn } from "@/lib/utils";
 
 interface Msg {
@@ -47,7 +48,10 @@ export function ChatFlutuante({
   const [porConversa, setPorConversa] = useState<Record<string, number> | null>(null);
   const [aviso, setAviso] = useState<{ chave: string; autor: string; texto: string } | null>(null);
   const fim = useRef<HTMLDivElement>(null);
-  const { lista: reacoes, reagir } = useReacoes(aberto ? conversaId : null, usuarioId);
+  // Na tela de Chat completa (onde este atalho some) quem escuta a conversa é o próprio chat.
+  const ativoAgora = aberto && !caminho?.startsWith("/chat");
+  const { lista: reacoes, reagir } = useReacoes(ativoAgora ? conversaId : null, usuarioId);
+  const { digitando, avisarDigitando, parouDeDigitar } = useDigitando(ativoAgora ? conversaId : null, usuarioId);
   const atual = useRef({ aberto, com });
   atual.current = { aberto, com };
 
@@ -166,6 +170,7 @@ export function ChatFlutuante({
     if (r.erro) return setErro(r.erro);
     setTexto("");
     setRespondendoA(null);
+    parouDeDigitar();
   }
 
   function escolher(chave: string) {
@@ -290,6 +295,7 @@ export function ChatFlutuante({
           </div>
 
           {erro ? <p className="border-t bg-destructive/10 px-3 py-1.5 text-xs text-destructive">{erro}</p> : null}
+          {conversaId ? <IndicadorDigitando ids={digitando} nomeDe={(id) => nomes.get(id) ?? "Alguém"} /> : null}
           {respondendoA ? <BarraResposta nome={quem(respondendoA)} texto={respondendoA.texto} onCancelar={() => setRespondendoA(null)} /> : null}
           <form
             className="flex items-end gap-2 border-t p-2"
@@ -300,7 +306,11 @@ export function ChatFlutuante({
           >
             <textarea
               value={texto}
-              onChange={(e) => setTexto(e.target.value)}
+              onChange={(e) => {
+                setTexto(e.target.value);
+                if (e.target.value.trim()) avisarDigitando();
+                else parouDeDigitar();
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();

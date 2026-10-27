@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { BarraResposta, BotaoResponder, Citacao } from "./citacao";
 import { ReacoesDaMensagem, SeletorReacao, useReacoes } from "./reacoes";
+import { IndicadorDigitando, useDigitando } from "./digitando";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -79,6 +80,7 @@ export function ChatJanela({
   // Responder a uma mensagem específica (aparece citada acima da resposta).
   const [respondendoA, setRespondendoA] = useState<MensagemView | null>(null);
   const { lista: reacoes, reagir } = useReacoes(conversaId, meuId);
+  const { digitando, avisarDigitando, parouDeDigitar } = useDigitando(conversaId, meuId);
   const quem = (m: MensagemView) => (m.autor_id === meuId ? "Você" : nomes[m.autor_id] ?? "—");
   function irPara(id: string) {
     const el = document.getElementById("cj-msg-" + id);
@@ -253,6 +255,7 @@ export function ChatJanela({
       else {
         setTexto("");
         setRespondendoA(null);
+        parouDeDigitar();
         limparVinculo();
         document.querySelectorAll<HTMLTextAreaElement>("form textarea").forEach((t) => (t.style.height = "auto"));
       }
@@ -362,6 +365,7 @@ export function ChatJanela({
         <div ref={fimRef} />
       </div>
 
+      <IndicadorDigitando ids={digitando} nomeDe={(id) => nomes[id] ?? "Alguém"} />
       {respondendoA ? <BarraResposta nome={quem(respondendoA)} texto={respondendoA.texto} onCancelar={() => setRespondendoA(null)} /> : null}
       <form onSubmit={enviar} className="border-t p-3">
         {erro ? <p className="mb-2 text-xs text-destructive">{erro}</p> : null}
@@ -593,6 +597,8 @@ export function ChatJanela({
             value={texto}
             onChange={(e) => {
               setTexto(e.target.value);
+              if (e.target.value.trim()) avisarDigitando();
+              else parouDeDigitar();
               // cresce com o texto (até um limite)
               e.target.style.height = "auto";
               e.target.style.height = Math.min(e.target.scrollHeight, 160) + "px";
