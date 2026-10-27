@@ -12,7 +12,26 @@ export async function listarProjetos(categoria?: string): Promise<Projeto[]> {
   let consulta = supabase.from("projetos").select("*");
   if (categoria) consulta = consulta.eq("categoria", categoria);
   const { data } = await consulta.order("created_at", { ascending: false });
-  return (data as Projeto[] | null) ?? [];
+  return ordenarPorData((data as Projeto[] | null) ?? []);
+}
+
+/**
+ * Em ordem de data: primeiro o que ainda vai acontecer (ou está acontecendo), do mais próximo ao mais distante;
+ * depois o que já passou, do mais recente ao mais antigo; por último os projetos sem data.
+ */
+function ordenarPorData(projetos: Projeto[]): Projeto[] {
+  const hoje = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  const inicio = (p: Projeto) => p.data_inicio ?? p.data_fim;
+  const fim = (p: Projeto) => p.data_fim ?? p.data_inicio;
+  const grupo = (p: Projeto) => (!inicio(p) ? 2 : (fim(p) as string) >= hoje ? 0 : 1);
+  return projetos.slice().sort((a, b) => {
+    const ga = grupo(a);
+    const gb = grupo(b);
+    if (ga !== gb) return ga - gb;
+    if (ga === 0) return (inicio(a) as string).localeCompare(inicio(b) as string) || a.nome.localeCompare(b.nome, "pt-BR");
+    if (ga === 1) return (fim(b) as string).localeCompare(fim(a) as string) || a.nome.localeCompare(b.nome, "pt-BR");
+    return a.nome.localeCompare(b.nome, "pt-BR");
+  });
 }
 
 export async function obterProjeto(id: string): Promise<Projeto | null> {
