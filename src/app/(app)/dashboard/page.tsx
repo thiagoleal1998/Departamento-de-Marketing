@@ -18,6 +18,7 @@ import { DivulgacaoHoje } from "@/features/divulgacao/divulgacao-hoje";
 import { AlertasDestinos } from "@/features/noticias/alertas-destinos";
 import { AgendaHoje } from "@/features/agenda/agenda-hoje";
 import { PresencaOnline } from "@/features/atividade/presenca-online";
+import { CalendarioMes } from "@/features/calendario/calendario-mes";
 import { EsqueletoAgenda, EsqueletoAlertas, EsqueletoDivulgacao, EsqueletoPainel } from "@/components/shared/esqueleto";
 import { PageHeader } from "@/components/shared/page-header";
 import { DataCard } from "@/components/shared/data-card";
@@ -101,6 +102,10 @@ export default async function DashboardPage() {
               </Suspense>
             </div>
           </div>
+          {/* Calendário do mês e do seguinte, alternando sozinho. */}
+          <Suspense fallback={<div className="h-80 animate-pulse rounded-2xl bg-muted/50" />}>
+            <CalendarioMes />
+          </Suspense>
         </div>
       ) : (
         <PageHeader titulo={`Olá, ${usuario.nome.split(" ")[0]} 👋`} descricao="Aqui está o resumo do seu dia." />

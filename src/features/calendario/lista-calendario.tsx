@@ -44,7 +44,7 @@ export interface ProjetoNoCalendario {
 
 /** Palavra que identifica o tipo de projeto no calendário (FAMTOUR, EVENTO…). */
 const SELO_PROJETO: Record<string, string> = { Eventos: "EVENTO", Feira: "FEIRA", Famtour: "FAMTOUR", "Projetos de Marketing": "PROJETO", "VT's": "VT" };
-const seloDe = (tipo: string | null) => (tipo && SELO_PROJETO[tipo]) || "PROJETO";
+export const seloDe = (tipo: string | null) => (tipo && SELO_PROJETO[tipo]) || "PROJETO";
 
 const MAX_DIAS_PROJETO = 60;
 const diasEntre = (ini: string, fim: string) => {
@@ -56,7 +56,7 @@ const diasEntre = (ini: string, fim: string) => {
 };
 
 /** Cada projeto com data vira um item em cada dia do período dele. */
-function itensDosProjetos(projetos: ProjetoNoCalendario[]): ItemCalendario[] {
+export function itensDosProjetos(projetos: ProjetoNoCalendario[]): ItemCalendario[] {
   return projetos.flatMap((p) => {
     const ini = p.inicio ?? p.fim;
     const fim = p.fim ?? p.inicio;
@@ -104,8 +104,8 @@ const TIPO_COR: Record<string, { chip: string; ponto: string; borda: string }> =
   "Treinamento Agentes": { chip: "bg-teal-100 text-teal-900 dark:bg-teal-950 dark:text-teal-200", ponto: "bg-teal-500", borda: "border-l-teal-500" },
 };
 const COR_PADRAO = { chip: "bg-muted text-foreground", ponto: "bg-muted-foreground/60", borda: "border-l-muted-foreground/40" };
-const corTipo = (t: string | null) => (t && TIPO_COR[t]) || COR_PADRAO;
-const concluido = (s: string) => /postado|conclu/i.test(s);
+export const corTipo = (t: string | null) => (t && TIPO_COR[t]) || COR_PADRAO;
+export const concluido = (s: string) => /postado|conclu/i.test(s);
 
 const iso = (a: number, m: number, d: number) => new Date(Date.UTC(a, m, d)).toISOString().slice(0, 10);
 const hojeSP = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
