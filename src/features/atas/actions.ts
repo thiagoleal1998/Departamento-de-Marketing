@@ -163,6 +163,10 @@ export async function salvarItem(itemId: string, reuniaoId: string, d: DadosItem
     status: d.status,
     link: d.link.trim() || null,
   };
+  // O status só vai para o card do quadro se a pessoa o mudou aqui (senão a edição de outro campo desfaria o que
+  // o responsável já moveu no quadro).
+  const { data: antes } = await supabase.from("reuniao_itens").select("status").eq("id", itemId).maybeSingle();
+  const statusMudou = (antes as { status: StatusItem | null } | null)?.status !== d.status;
   let { error } = await supabase
     .from("reuniao_itens")
     .update({ ...base, categoria: d.categoria || null, motivo: d.motivo || null })
@@ -172,7 +176,7 @@ export async function salvarItem(itemId: string, reuniaoId: string, d: DadosItem
     ({ error } = await supabase.from("reuniao_itens").update(base).eq("id", itemId));
   }
   if (error) return { erro: "Não foi possível salvar. Tente novamente." };
-  await refletirNaTarefa(supabase, itemId, reuniaoId);
+  await refletirNaTarefa(supabase, itemId, reuniaoId, statusMudou);
   revalidatePath(`/atas/${reuniaoId}`);
   revalidatePath("/atas");
   return { ok: true };
@@ -251,7 +255,8 @@ export async function atualizarDataReuniao(reuniaoId: string, data: string): Pro
 async function refletirNaTarefa(
   supabase: Awaited<ReturnType<typeof criarClienteServidor>>,
   itemId: string,
-  reuniaoId: string
+  reuniaoId: string,
+  statusMudou = true
 ) {
   try {
     const { data: reu } = await supabase.from("reunioes").select("estado").eq("id", reuniaoId).maybeSingle();
@@ -282,20 +287,22 @@ async function refletirNaTarefa(
       }
       return;
     }
-    // Em andamento: não sobrescreve o que o responsável já mexeu no quadro; a ata concluída é que atualiza.
-    if (reu.estado === "em_andamento") return;
+    // Prazo, responsável, título e demais campos editados na ata valem também para o card. Com a reunião em
+    // andamento, o status só segue para o card se foi alterado agora (o que o responsável moveu no quadro fica).
+    const comStatus = reu.estado !== "em_andamento" || statusMudou;
     await supabase
       .from("tarefas")
       .update({
         titulo: it.titulo,
         descricao,
-        status: itemParaTarefa(it.status),
+        ...(comStatus ? { status: itemParaTarefa(it.status) } : {}),
         responsavel_id: it.responsavel_id,
         prazo: it.prazo,
         prioridade: it.prioridade,
         link: it.link,
       })
       .eq("id", t.id);
+    revalidatePath("/operacional");
   } catch {
     // a ata já foi salva; a sincronização com o kanban é complementar
   }
