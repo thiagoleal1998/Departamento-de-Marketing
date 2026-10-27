@@ -19,6 +19,7 @@ import { AlertasDestinos } from "@/features/noticias/alertas-destinos";
 import { AgendaHoje } from "@/features/agenda/agenda-hoje";
 import { CalendarioMes } from "@/features/calendario/calendario-mes";
 import { NoticiasTurismo } from "@/features/noticias/noticias-turismo";
+import { NoticiasGerais } from "@/features/noticias/noticias-gerais";
 import { EsqueletoAgenda, EsqueletoAlertas, EsqueletoDivulgacao, EsqueletoPainel } from "@/components/shared/esqueleto";
 import { PageHeader } from "@/components/shared/page-header";
 import { DataCard } from "@/components/shared/data-card";
@@ -97,14 +98,6 @@ export default async function DashboardPage() {
               </Suspense>
             </div>
           </div>
-          {/* Calendário do mês e do seguinte, alternando sozinho. */}
-          <Suspense fallback={<div className="h-80 animate-pulse rounded-2xl bg-muted/50" />}>
-            <CalendarioMes />
-          </Suspense>
-          {/* Principais notícias do turismo (Panrotas e outras fontes do setor). */}
-          <Suspense fallback={<div className="h-72 animate-pulse rounded-2xl bg-muted/50" />}>
-            <NoticiasTurismo />
-          </Suspense>
         </div>
       ) : (
         <PageHeader titulo={`Olá, ${usuario.nome.split(" ")[0]} 👋`} descricao="Aqui está o resumo do seu dia." />
@@ -114,6 +107,23 @@ export default async function DashboardPage() {
         <Suspense fallback={<EsqueletoPainel />}>
           <PainelLideranca />
         </Suspense>
+      ) : null}
+
+      {lideranca ? (
+        <>
+          {/* Calendário do mês e do seguinte, alternando sozinho (abaixo do que precisa de atenção). */}
+          <Suspense fallback={<div className="h-80 animate-pulse rounded-2xl bg-muted/50" />}>
+            <CalendarioMes />
+          </Suspense>
+          {/* Principais notícias do turismo (Panrotas e outras fontes do setor). */}
+          <Suspense fallback={<div className="h-72 animate-pulse rounded-2xl bg-muted/50" />}>
+            <NoticiasTurismo />
+          </Suspense>
+          {/* Principais notícias de política e economia dos grandes jornais. */}
+          <Suspense fallback={<div className="h-96 animate-pulse rounded-2xl bg-muted/50" />}>
+            <NoticiasGerais />
+          </Suspense>
+        </>
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
