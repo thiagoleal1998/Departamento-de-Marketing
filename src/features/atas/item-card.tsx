@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ExternalLink } from "lucide-react";
+import { useRouter } from "next/navigation";
+import Link from "@/components/shared/link";
+import { ChevronDown, ExternalLink, KanbanSquare, NotebookPen, Pencil, X } from "lucide-react";
+import { ItemEditor, type PessoaOpcao } from "./editor-reuniao";
+import type { ItemAta } from "./tipos";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +24,15 @@ export interface ItemCardDados {
   detalhamento: string | null;
   plano: string | null;
   link: string | null;
+  /** Responsável exibido no detalhe (o resumo já fica sob o nome da pessoa). */
+  responsavelDetalhe?: string | null;
+}
+
+/** Ações do item nas pendências: abrir a tarefa no quadro, abrir na ata e (liderança) editar ali mesmo. */
+export interface AcoesItem {
+  tarefaHref: string | null;
+  ataHref: string | null;
+  editor: { item: ItemAta; reuniaoId: string; pessoas: PessoaOpcao[] } | null;
 }
 
 const TOM: Record<string, string> = {
@@ -29,8 +43,10 @@ const TOM: Record<string, string> = {
 };
 
 /** Item da ata: resumo fechado; ao clicar, abre o card completo no próprio bloco. */
-export function ItemCard({ it }: { it: ItemCardDados }) {
+export function ItemCard({ it, acoes }: { it: ItemCardDados; acoes?: AcoesItem }) {
+  const router = useRouter();
   const [aberto, setAberto] = useState(false);
+  const [editando, setEditando] = useState(false);
 
   return (
     <div
@@ -91,7 +107,7 @@ export function ItemCard({ it }: { it: ItemCardDados }) {
           ) : null}
           <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
             <dt className="text-muted-foreground">Responsável</dt>
-            <dd>{it.responsavel ?? "—"}</dd>
+            <dd>{it.responsavelDetalhe ?? it.responsavel ?? "—"}</dd>
             <dt className="text-muted-foreground">Prazo</dt>
             <dd>{it.prazo}</dd>
             <dt className="text-muted-foreground">Prioridade</dt>
@@ -114,6 +130,33 @@ export function ItemCard({ it }: { it: ItemCardDados }) {
             >
               <ExternalLink className="size-3.5" /> Abrir link
             </a>
+          ) : null}
+
+          {acoes ? (
+            <div className="flex flex-wrap gap-2 border-t pt-3">
+              {acoes.editor ? (
+                <Button type="button" size="sm" variant={editando ? "secondary" : "default"} className="h-8" onClick={() => setEditando((v) => !v)}>
+                  {editando ? <X className="size-3.5" /> : <Pencil className="size-3.5" />} {editando ? "Fechar edição" : "Editar"}
+                </Button>
+              ) : null}
+              {acoes.tarefaHref ? (
+                <Button asChild size="sm" variant="outline" className="h-8">
+                  <Link href={acoes.tarefaHref}>
+                    <KanbanSquare className="size-3.5" /> Abrir tarefa
+                  </Link>
+                </Button>
+              ) : null}
+              {acoes.ataHref ? (
+                <Button asChild size="sm" variant="outline" className="h-8">
+                  <Link href={acoes.ataHref}>
+                    <NotebookPen className="size-3.5" /> Abrir na ata
+                  </Link>
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
+          {editando && acoes?.editor ? (
+            <ItemEditor it={acoes.editor.item} reuniaoId={acoes.editor.reuniaoId} pessoas={acoes.editor.pessoas} editavel aoSalvo={() => router.refresh()} />
           ) : null}
         </div>
       ) : null}

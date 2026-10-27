@@ -3,6 +3,8 @@ import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import type { StatusItem } from "./data";
 
 export interface EstadoVivo {
+  /** Tarefa do quadro ligada ao item (para abrir o card direto). */
+  tarefa_id: string | null;
   status: StatusItem;
   prazo: string | null;
   responsavel_id: string | null;
@@ -55,15 +57,15 @@ async function cruzarPorTitulo(mapa: Map<string, EstadoVivo>, itens: { serie: st
   }
 
   // Cards sem vínculo com ata, do mais novo para o mais antigo (vale o mais recente de cada título).
-  const porTitulo = new Map<string, { status: string; prazo: string | null; responsavel_id: string | null; prioridade: number | null; created_at: string }>();
+  const porTitulo = new Map<string, { id: string; status: string; prazo: string | null; responsavel_id: string | null; prioridade: number | null; created_at: string }>();
   for (let off = 0; off < 10_000; off += 1000) {
     const { data } = await admin
       .from("tarefas")
-      .select("titulo, status, prazo, responsavel_id, prioridade, created_at")
+      .select("id, titulo, status, prazo, responsavel_id, prioridade, created_at")
       .is("ata_serie", null)
       .order("created_at", { ascending: false })
       .range(off, off + 999);
-    const lote = (data as { titulo: string; status: string; prazo: string | null; responsavel_id: string | null; prioridade: number | null; created_at: string }[] | null) ?? [];
+    const lote = (data as { id: string; titulo: string; status: string; prazo: string | null; responsavel_id: string | null; prioridade: number | null; created_at: string }[] | null) ?? [];
     for (const t of lote) {
       const k = normalizar(t.titulo);
       if (k && !porTitulo.has(k)) porTitulo.set(k, t);
@@ -76,6 +78,7 @@ async function cruzarPorTitulo(mapa: Map<string, EstadoVivo>, itens: { serie: st
     const desde = primeira.get(it.serie);
     if (!t || (desde && t.created_at.slice(0, 10) < desde)) continue;
     mapa.set(it.serie, {
+      tarefa_id: t.id,
       status: tarefaParaItem(t.status),
       prazo: t.prazo,
       responsavel_id: t.responsavel_id,
@@ -89,10 +92,11 @@ export async function estadoVivoPorSerie(itens: { serie: string; titulo: string 
   if (!servicoDisponivel()) return mapa;
   const { data } = await criarClienteAdmin()
     .from("tarefas")
-    .select("ata_serie, status, prazo, responsavel_id, prioridade")
+    .select("id, ata_serie, status, prazo, responsavel_id, prioridade")
     .not("ata_serie", "is", null);
   for (const t of (data as
     | {
+        id: string;
         ata_serie: string;
         status: string;
         prazo: string | null;
@@ -101,6 +105,7 @@ export async function estadoVivoPorSerie(itens: { serie: string; titulo: string 
       }[]
     | null) ?? []) {
     mapa.set(t.ata_serie, {
+      tarefa_id: t.id,
       status: tarefaParaItem(t.status),
       prazo: t.prazo,
       responsavel_id: t.responsavel_id,

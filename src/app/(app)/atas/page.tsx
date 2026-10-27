@@ -6,6 +6,7 @@ import { ehLideranca } from "@/lib/permissions";
 import { estadoVivoPorSerie } from "@/features/atas/vivo";
 import { criarReuniao } from "@/features/atas/actions";
 import { ItemCard, type ItemCardDados } from "@/features/atas/item-card";
+import { listarPessoasOpcoes } from "@/features/operacional/cadastros-data";
 import { Relatorios } from "@/features/atas/relatorios";
 import { calcularRelatorio } from "@/features/atas/relatorios-calculo";
 import { Button } from "@/components/ui/button";
@@ -87,6 +88,7 @@ export default async function AtasPage({
   const idUltima = reunioes[reunioes.length - 1]?.id;
   const vivo = await estadoVivoPorSerie(itens.filter((it) => it.reuniao_id === idUltima && it.secao === "ata"));
   const lideranca = ehLideranca(usuario.role);
+  const pessoasOpcoes = lideranca ? await listarPessoasOpcoes() : [];
   const hojeBR = new Date().toLocaleDateString("en-CA", { timeZone: FUSO });
   const aba =
     abaRaw === "reunioes" ? "reunioes" : abaRaw === "relatorios" ? "relatorios" : "pendencias";
@@ -256,11 +258,19 @@ export default async function AtasPage({
                         .map((it) => (
                           <ItemCard
                             key={it.id}
-                            it={paraCard(it, agora, {
-                              situacao: true,
-                              vezes: vezesPorSerie.get(it.serie),
-                              responsavel: null,
-                            })}
+                            it={{
+                              ...paraCard(it, agora, {
+                                situacao: true,
+                                vezes: vezesPorSerie.get(it.serie),
+                                responsavel: null,
+                              }),
+                              responsavelDetalhe: nome === "Sem responsável" ? null : nome,
+                            }}
+                            acoes={{
+                              tarefaHref: vivo.get(it.serie)?.tarefa_id ? "/operacional?tarefa=" + vivo.get(it.serie)!.tarefa_id : null,
+                              ataHref: lideranca && ultima ? `/atas/${ultima.id}?editar=1#item-${it.id}` : null,
+                              editor: lideranca && ultima ? { item: it, reuniaoId: ultima.id, pessoas: pessoasOpcoes } : null,
+                            }}
                           />
                         ))}
                     </CardContent>

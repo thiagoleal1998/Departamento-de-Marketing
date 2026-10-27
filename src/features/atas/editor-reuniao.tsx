@@ -45,16 +45,19 @@ function paraInput(iso: string | null): string {
 }
 const deInput = (v: string) => (v ? `${v}:00-03:00` : null);
 
-function ItemEditor({
+export function ItemEditor({
   it,
   reuniaoId,
   pessoas,
   editavel,
+  aoSalvo,
 }: {
   it: ItemAta;
   reuniaoId: string;
   pessoas: PessoaOpcao[];
   editavel: boolean;
+  /** Chamado depois de salvar com sucesso (ex.: atualizar a lista de pendências). */
+  aoSalvo?: () => void;
 }) {
   const router = useRouter();
   const { confirmar } = useDialogo();
@@ -89,6 +92,7 @@ function ItemEditor({
         motivo: (motivo || null) as MotivoAlteracao | null,
       });
       setMsg(r.erro ? { ok: false, texto: r.erro } : { ok: true, texto: "Salvo" });
+      if (!r.erro) aoSalvo?.();
     });
   }
 
@@ -343,7 +347,9 @@ export function EditorReuniao({
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Itens da ata ({itens.length})</h2>
         {itens.map((it) => (
-          <ItemEditor key={it.id} it={it} reuniaoId={reuniaoId} pessoas={pessoas} editavel={editavel} />
+          <div key={it.id} id={"item-" + it.id} className="scroll-mt-24">
+            <ItemEditor it={it} reuniaoId={reuniaoId} pessoas={pessoas} editavel={editavel} />
+          </div>
         ))}
         {editavel ? (
           <div className="flex gap-2">
