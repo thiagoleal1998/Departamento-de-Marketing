@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, List, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { useDialogo } from "@/components/shared/dialogo-provider";
 import { excluirItemCalendario } from "./actions";
-import { ItemCalendarioForm, TIPOS, rotuloTipo } from "./item-form";
+import { ItemCalendarioForm, RESPONSAVEIS_PADRAO, TIPOS, rotuloTipo } from "./item-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -71,7 +71,7 @@ export function ListaCalendario({ itens, podeExcluir = false }: { itens: ItemCal
 
   // Todos os tipos possíveis aparecem no filtro e na legenda, mesmo sem itens ainda.
   const tipos = useMemo(() => Array.from(new Set([...TIPOS, ...itens.map((i) => i.tipo).filter((x): x is string => !!x)])).sort((a, b) => a.localeCompare(b, "pt-BR")), [itens]);
-  const resps = useMemo(() => Array.from(new Set(itens.flatMap((i) => i.responsaveis))).sort(), [itens]);
+  const resps = useMemo(() => Array.from(new Set([...RESPONSAVEIS_PADRAO, ...itens.flatMap((i) => i.responsaveis)])).sort((a, b) => a.localeCompare(b, "pt-BR")), [itens]);
   const statuses = useMemo(() => Array.from(new Set(itens.map((i) => i.status))).sort(), [itens]);
 
   const visiveis = useMemo(() => {

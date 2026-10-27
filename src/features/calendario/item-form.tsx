@@ -13,6 +13,8 @@ import { normalizarLembretes } from "@/lib/lembretes";
 
 export const TIPOS = ["E-mail Marketing", "Redes Sociais", "Oferta", "Podcast", "Visita", "ULV"];
 /** Nome por extenso do tipo (o valor guardado continua curto). */
+/** Pessoas que sempre aparecem como responsáveis (além das que já constam em algum item). */
+export const RESPONSAVEIS_PADRAO = ["Cesar", "Gustavo", "Jéssica", "Shay", "Thiago"];
 export const rotuloTipo = (t: string) => (t === "ULV" ? "ULV (Universidade LV)" : t);
 const STATUS = ["Não iniciada", "Em andamento", "Editando", "Em aprovação - Gustavo", "Em Aprovação - Marco", "Agendado", "Postado", "Concluído"];
 const CANAIS = ["RD Station", "Instagram", "Tiktok", "Whatsapp", "Youtube", "Facebook", "Close Friends"];
@@ -111,7 +113,7 @@ export function ItemCalendarioForm({
     setD((p) => ({ ...p, tipo: t, canais: p.canais.length === 0 && t === "E-mail Marketing" ? ["RD Station"] : p.canais }));
   }
 
-  const responsaveis = Array.from(new Set([...responsaveisConhecidos, ...d.responsaveis])).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  const responsaveis = Array.from(new Set([...RESPONSAVEIS_PADRAO, ...responsaveisConhecidos, ...d.responsaveis])).sort((a, b) => a.localeCompare(b, "pt-BR"));
 
   return (
     <div className="fixed inset-0 z-[90] flex items-start justify-center overflow-y-auto bg-black/50 p-3 sm:p-8" onMouseDown={(e) => e.target === e.currentTarget && aoFechar()}>
