@@ -42,6 +42,10 @@ export interface ProjetoNoCalendario {
   fim: string | null;
 }
 
+/** Palavra que identifica o tipo de projeto no calendário (FAMTOUR, EVENTO…). */
+const SELO_PROJETO: Record<string, string> = { Eventos: "EVENTO", Feira: "FEIRA", Famtour: "FAMTOUR", "Projetos de Marketing": "PROJETO", "VT's": "VT" };
+const seloDe = (tipo: string | null) => (tipo && SELO_PROJETO[tipo]) || "PROJETO";
+
 const MAX_DIAS_PROJETO = 60;
 const diasEntre = (ini: string, fim: string) => {
   const dias: string[] = [];
@@ -188,7 +192,10 @@ export function ListaCalendario({ itens: itensDoCalendario, projetos = [], usuar
   const cartao = (i: ItemCalendario) => (
     <li key={i.id} className={cn("space-y-1.5 rounded-lg border border-l-4 bg-card p-3", corTipo(i.tipo).borda)}>
       <div className="flex items-start justify-between gap-2">
-        <p className="text-sm font-medium leading-snug">{i.nome}</p>
+        <p className="text-sm font-medium leading-snug">
+          {i.href ? <span className={cn("mr-1.5 inline-block rounded px-1.5 py-0.5 align-middle text-[10px] font-extrabold tracking-wider text-white", corTipo(i.tipo).ponto)}>{seloDe(i.tipo)}</span> : null}
+          {i.nome}
+        </p>
         <span className={cn("shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium", corStatus(i.status))}>{i.status}</span>
       </div>
       <div className="flex justify-end gap-1">
@@ -333,9 +340,10 @@ export function ListaCalendario({ itens: itensDoCalendario, projetos = [], usuar
                           key={i.id}
                           href={i.href}
                           title={`${i.nome} · ${i.tipo} · ${i.status}`}
-                          className={cn("block w-full truncate rounded px-1.5 py-0.5 text-left text-[11px] font-semibold ring-1 ring-inset ring-current/20 transition-opacity hover:opacity-80", corTipo(i.tipo).chip, concluido(i.status) && "opacity-60")}
+                          className={cn("flex w-full items-center gap-1 truncate rounded px-1.5 py-0.5 text-left text-[11px] font-semibold text-white shadow-sm transition-opacity hover:opacity-85", corTipo(i.tipo).ponto, concluido(i.status) && "opacity-60")}
                         >
-                          {i.nome}
+                          <span className="shrink-0 rounded-sm bg-black/25 px-1 text-[9px] font-extrabold tracking-wider">{seloDe(i.tipo)}</span>
+                          <span className="truncate">{i.nome}</span>
                         </Link>
                       ) : (
                         <button
