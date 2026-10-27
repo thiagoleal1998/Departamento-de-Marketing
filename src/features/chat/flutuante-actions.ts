@@ -3,6 +3,41 @@
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { CONVERSA_GERAL } from "./constantes";
 
+/**
+ * Mensagens não lidas por conversa, já no formato do chat rápido: "geral" para a sala geral e o id da outra
+ * pessoa para as conversas diretas.
+ */
+export async function naoLidasPorConversa(): Promise<Record<string, number>> {
+  const supabase = await criarClienteServidor();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return {};
+  try {
+    const { data } = await supabase.rpc("chat_nao_lidas");
+    const linhas = ((data as { conversa_id: string; qtd: number }[] | null) ?? []).filter((l) => Number(l.qtd) > 0);
+    const resultado: Record<string, number> = {};
+    const diretas = linhas.filter((l) => l.conversa_id !== CONVERSA_GERAL);
+    if (diretas.length > 0) {
+      const { data: membros } = await supabase
+        .from("chat_membros")
+        .select("conversa_id, usuario_id")
+        .in("conversa_id", diretas.map((l) => l.conversa_id))
+        .neq("usuario_id", user.id);
+      const outro = new Map(((membros as { conversa_id: string; usuario_id: string }[] | null) ?? []).map((m) => [m.conversa_id, m.usuario_id]));
+      for (const l of diretas) {
+        const p = outro.get(l.conversa_id);
+        if (p) resultado[p] = Number(l.qtd);
+      }
+    }
+    const geral = linhas.find((l) => l.conversa_id === CONVERSA_GERAL);
+    if (geral) resultado.geral = Number(geral.qtd);
+    return resultado;
+  } catch {
+    return {};
+  }
+}
+
 type Mensagem = { id: string; autor_id: string; texto: string; created_at: string; resposta_a?: string | null };
 
 /** Abre (ou cria) a conversa direta com a pessoa — ou a sala geral, se `outroId` for nulo — e devolve as últimas mensagens. */

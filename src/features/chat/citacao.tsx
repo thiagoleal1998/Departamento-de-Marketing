@@ -51,7 +51,7 @@ export function BotaoResponder({ onClick, nome }: { onClick: () => void; nome: s
       onClick={onClick}
       aria-label={`Responder a ${nome}`}
       title="Responder"
-      className="grid size-6 shrink-0 place-items-center self-center rounded-full text-muted-foreground opacity-60 transition hover:bg-muted hover:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+      className="grid size-6 shrink-0 place-items-center self-center rounded-full text-muted-foreground opacity-50 transition hover:bg-muted hover:opacity-100 group-hover:opacity-100"
     >
       <CornerUpLeft className="size-3.5" />
     </button>

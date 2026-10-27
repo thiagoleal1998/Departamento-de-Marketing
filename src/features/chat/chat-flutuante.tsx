@@ -6,7 +6,8 @@ import { usePathname } from "next/navigation";
 import { ExternalLink, Loader2, MessageCircle, Send, X } from "lucide-react";
 import { criarClienteBrowser } from "@/lib/supabase/client";
 import { enviarMensagem, marcarConversaLida } from "./actions";
-import { abrirConversaFlutuante } from "./flutuante-actions";
+import { abrirConversaFlutuante, naoLidasPorConversa } from "./flutuante-actions";
+import { CONVERSA_GERAL } from "./constantes";
 import { BarraResposta, BotaoResponder, Citacao } from "./citacao";
 import { cn } from "@/lib/utils";
 
@@ -41,9 +42,16 @@ export function ChatFlutuante({
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [respondendoA, setRespondendoA] = useState<Msg | null>(null);
+  // Não lidas por conversa ("geral" ou id da pessoa) e o aviso da última mensagem que chegou.
+  const [porConversa, setPorConversa] = useState<Record<string, number> | null>(null);
+  const [aviso, setAviso] = useState<{ chave: string; autor: string; texto: string } | null>(null);
   const fim = useRef<HTMLDivElement>(null);
+  const atual = useRef({ aberto, com });
+  atual.current = { aberto, com };
 
   const nomes = new Map(pessoas.map((p) => [p.id, p.nome]));
+  const total = porConversa ? Object.values(porConversa).reduce((s, n) => s + n, 0) : naoLidas;
+  const contagem = (chave: string) => porConversa?.[chave] ?? 0;
   const quem = (m: Msg) => (m.autor_id === usuarioId ? "Você" : nomes.get(m.autor_id) ?? "—");
 
   function irPara(id: string) {
@@ -82,7 +90,45 @@ export function ChatFlutuante({
     setConversaId(r.conversaId);
     setMensagens(r.mensagens ?? []);
     void marcarConversaLida(r.conversaId);
+    setPorConversa((p) => (p ? { ...p, [alvo]: 0 } : p));
+    setAviso((a) => (a?.chave === alvo ? null : a));
   }, []);
+
+  // Contagem de não lidas por conversa (sala geral e cada pessoa), atualizada quando o servidor recalcula.
+  useEffect(() => {
+    let vivo = true;
+    void naoLidasPorConversa().then((c) => vivo && setPorConversa(c));
+    return () => {
+      vivo = false;
+    };
+  }, [naoLidas]);
+
+  // Mensagem nova em QUALQUER conversa: conta, mostra o aviso e marca a conversa no seletor.
+  useEffect(() => {
+    const supabase = criarClienteBrowser();
+    const canal = supabase
+      .channel("chat-flutuante-avisos-" + usuarioId)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_mensagens" }, (p) => {
+        const m = p.new as Msg & { conversa_id: string };
+        if (m.autor_id === usuarioId) return;
+        const chave = m.conversa_id === CONVERSA_GERAL ? "geral" : m.autor_id;
+        // A conversa aberta no chat rápido já mostra a mensagem e marca como lida.
+        if (atual.current.aberto && atual.current.com === chave) return;
+        setPorConversa((c) => ({ ...(c ?? {}), [chave]: ((c ?? {})[chave] ?? 0) + 1 }));
+        setAviso({ chave, autor: m.autor_id, texto: m.texto });
+      })
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(canal);
+    };
+  }, [usuarioId]);
+
+  // O aviso some sozinho depois de alguns segundos.
+  useEffect(() => {
+    if (!aviso) return;
+    const t = setTimeout(() => setAviso(null), 9000);
+    return () => clearTimeout(t);
+  }, [aviso]);
 
   useEffect(() => {
     if (aberto && com) void abrirConversa(com);
@@ -120,6 +166,24 @@ export function ChatFlutuante({
     setRespondendoA(null);
   }
 
+  function escolher(chave: string) {
+    setCom(chave);
+    try {
+      localStorage.setItem(CHAVE, chave);
+    } catch {
+      /* ignora */
+    }
+  }
+
+  function abrirAviso() {
+    if (!aviso) return;
+    escolher(aviso.chave);
+    setAberto(true);
+    setAviso(null);
+  }
+
+  const resumoAviso = aviso ? `${nomes.get(aviso.autor) ?? "Alguém"}${aviso.chave === "geral" ? " · Sala geral" : ""}` : "";
+
   // Na tela de Chat completa o atalho é desnecessário.
   if (caminho?.startsWith("/chat")) return null;
 
@@ -151,25 +215,33 @@ export function ChatFlutuante({
           <div className="border-b p-2">
             <select
               value={com}
-              onChange={(e) => {
-                setCom(e.target.value);
-                try {
-                  localStorage.setItem(CHAVE, e.target.value);
-                } catch {
-                  /* ignora */
-                }
-              }}
+              onChange={(e) => escolher(e.target.value)}
               aria-label="Conversar com"
               className="h-9 w-full rounded-md border bg-background px-2 text-sm"
             >
               <option value="">Conversar com…</option>
-              <option value="geral">Sala geral do time</option>
+              <option value="geral">
+                {contagem("geral") > 0 ? `● (${contagem("geral")}) ` : ""}Sala geral do time
+              </option>
               {pessoas.map((p) => (
                 <option key={p.id} value={p.id}>
+                  {contagem(p.id) > 0 ? `● (${contagem(p.id)}) ` : ""}
                   {p.nome}
                 </option>
               ))}
             </select>
+            {aviso && (aviso.chave !== com || !aberto) ? (
+              <button
+                type="button"
+                onClick={abrirAviso}
+                className="mt-2 flex w-full items-start gap-2 rounded-md bg-primary/10 px-2.5 py-1.5 text-left text-xs hover:bg-primary/15"
+              >
+                <MessageCircle className="mt-0.5 size-3.5 shrink-0 text-primary" />
+                <span className="min-w-0">
+                  <strong>{resumoAviso}</strong> <span className="block truncate text-muted-foreground">{aviso.texto}</span>
+                </span>
+              </button>
+            ) : null}
           </div>
 
           <div className="flex-1 space-y-2 overflow-y-auto p-3">
@@ -245,6 +317,20 @@ export function ChatFlutuante({
         </div>
       ) : null}
 
+      {!aberto && aviso ? (
+        <button
+          type="button"
+          onClick={abrirAviso}
+          className="flex w-72 max-w-[calc(100vw-2rem)] items-start gap-2 rounded-2xl border bg-card px-3 py-2 text-left text-sm shadow-xl animate-in fade-in-0 slide-in-from-bottom-2"
+        >
+          <MessageCircle className="mt-0.5 size-4 shrink-0 text-primary" />
+          <span className="min-w-0">
+            <strong className="block text-xs">{resumoAviso}</strong>
+            <span className="line-clamp-2 break-words text-muted-foreground">{aviso.texto}</span>
+          </span>
+        </button>
+      ) : null}
+
       <button
         type="button"
         onClick={() => setAberto((v) => !v)}
@@ -253,9 +339,9 @@ export function ChatFlutuante({
         className="relative flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-xl transition hover:scale-105"
       >
         {aberto ? <X className="size-6" /> : <MessageCircle className="size-6" />}
-        {!aberto && naoLidas > 0 ? (
+        {!aberto && total > 0 ? (
           <span className="absolute -right-1 -top-1 flex min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[11px] font-bold text-destructive-foreground">
-            {naoLidas > 99 ? "99+" : naoLidas}
+            {total > 99 ? "99+" : total}
           </span>
         ) : null}
       </button>
