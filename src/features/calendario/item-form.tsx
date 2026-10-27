@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { Loader2, X } from "lucide-react";
+import { Loader2, Trash2, X } from "lucide-react";
 import { salvarItemCalendario, type DadosItemCalendario } from "./actions";
 import type { ItemCalendario } from "./lista-calendario";
 import { Button } from "@/components/ui/button";
@@ -54,11 +54,14 @@ export function ItemCalendarioForm({
   responsaveisConhecidos,
   dataPadrao,
   aoFechar,
+  aoExcluir,
 }: {
   item?: ItemCalendario;
   responsaveisConhecidos: string[];
   dataPadrao: string;
   aoFechar: () => void;
+  /** Só para quem pode excluir (liderança) e ao editar um item existente. */
+  aoExcluir?: () => void | Promise<void>;
 }) {
   const [d, setD] = useState<DadosItemCalendario>(
     item
@@ -186,7 +189,12 @@ export function ItemCalendarioForm({
         </div>
 
         {erro ? <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{erro}</p> : null}
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-wrap justify-end gap-2">
+          {aoExcluir ? (
+            <Button type="button" variant="ghost" className="mr-auto text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => void aoExcluir()} disabled={pendente}>
+              <Trash2 className="size-4" /> Excluir
+            </Button>
+          ) : null}
           <Button type="button" variant="outline" onClick={aoFechar}>
             Cancelar
           </Button>

@@ -110,11 +110,16 @@ export function ListaCalendario({ itens, podeExcluir = false }: { itens: ItemCal
     });
   }
 
-  async function excluir(i: ItemCalendario) {
+  /** Pede confirmação e exclui; devolve true se o item foi excluído. */
+  async function excluir(i: ItemCalendario): Promise<boolean> {
     const ok = await confirmar({ titulo: "Excluir este item?", descricao: i.nome, confirmar: "Excluir", perigo: true });
-    if (!ok) return;
+    if (!ok) return false;
     const r = await excluirItemCalendario(i.id);
-    if (r.erro) void avisar(r.erro, "Não foi possível excluir");
+    if (r.erro) {
+      void avisar(r.erro, "Não foi possível excluir");
+      return false;
+    }
+    return true;
   }
 
   const sel = "h-9 rounded-md border bg-background px-2 text-sm";
@@ -326,7 +331,19 @@ export function ListaCalendario({ itens, podeExcluir = false }: { itens: ItemCal
       ) : null}
 
       {formulario !== null ? (
-        <ItemCalendarioForm item={formulario.item} responsaveisConhecidos={resps} dataPadrao={formulario.data} aoFechar={() => setFormulario(null)} />
+        <ItemCalendarioForm
+          item={formulario.item}
+          responsaveisConhecidos={resps}
+          dataPadrao={formulario.data}
+          aoFechar={() => setFormulario(null)}
+          aoExcluir={
+            podeExcluir && formulario.item
+              ? async () => {
+                  if (await excluir(formulario.item!)) setFormulario(null);
+                }
+              : undefined
+          }
+        />
       ) : null}
     </div>
   );
