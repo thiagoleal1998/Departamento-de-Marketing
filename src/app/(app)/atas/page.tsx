@@ -7,6 +7,7 @@ import { estadoVivoPorSerie } from "@/features/atas/vivo";
 import { criarReuniao } from "@/features/atas/actions";
 import { ItemCard, type ItemCardDados } from "@/features/atas/item-card";
 import { listarPessoasOpcoes } from "@/features/operacional/cadastros-data";
+import { MarcarVisto } from "@/features/notificacoes/marcar-visto";
 import { Relatorios } from "@/features/atas/relatorios";
 import { calcularRelatorio } from "@/features/atas/relatorios-calculo";
 import { Button } from "@/components/ui/button";
@@ -159,6 +160,8 @@ export default async function AtasPage({
 
   return (
     <div className="space-y-6">
+      {/* Abrir as Atas marca como lidos os avisos de prazo (zera o número do menu). */}
+      <MarcarVisto prefixo="/atas" />
       <PageHeader
         titulo="Atas"
         descricao="Reuniões de planejamento de marketing: o que foi combinado, quem é o responsável e até quando."
