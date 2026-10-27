@@ -11,7 +11,9 @@ import { Select } from "@/components/ui/select";
 import { SeletorLembretes } from "@/components/shared/seletor-lembretes";
 import { normalizarLembretes } from "@/lib/lembretes";
 
-export const TIPOS = ["E-mail Marketing", "Redes Sociais", "Oferta", "Podcast", "Visita"];
+export const TIPOS = ["E-mail Marketing", "Redes Sociais", "Oferta", "Podcast", "Visita", "ULV"];
+/** Nome por extenso do tipo (o valor guardado continua curto). */
+export const rotuloTipo = (t: string) => (t === "ULV" ? "ULV (Universidade LV)" : t);
 const STATUS = ["Não iniciada", "Em andamento", "Editando", "Em aprovação - Gustavo", "Em Aprovação - Marco", "Agendado", "Postado", "Concluído"];
 const CANAIS = ["RD Station", "Instagram", "Tiktok", "Whatsapp", "Youtube", "Facebook", "Close Friends"];
 const PUBLICOS = ["B2B", "B2C"];
@@ -130,8 +132,10 @@ export function ItemCalendarioForm({
           <div className="space-y-1.5">
             <Label htmlFor="cal-tipo">Tipo</Label>
             <Select id="cal-tipo" value={d.tipo} onChange={(e) => trocarTipo(e.target.value)}>
-              {TIPOS.map((t) => (
-                <option key={t}>{t}</option>
+              {Array.from(new Set([...TIPOS, d.tipo].filter(Boolean))).map((t) => (
+                <option key={t} value={t}>
+                  {rotuloTipo(t)}
+                </option>
               ))}
             </Select>
           </div>

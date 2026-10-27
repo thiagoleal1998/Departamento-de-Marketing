@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, List, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { useDialogo } from "@/components/shared/dialogo-provider";
 import { excluirItemCalendario } from "./actions";
-import { ItemCalendarioForm } from "./item-form";
+import { ItemCalendarioForm, TIPOS, rotuloTipo } from "./item-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -41,6 +41,7 @@ const TIPO_COR: Record<string, { chip: string; ponto: string; borda: string }> =
   Oferta: { chip: "bg-green-100 text-green-900 dark:bg-green-950 dark:text-green-200", ponto: "bg-green-500", borda: "border-l-green-500" },
   Podcast: { chip: "bg-yellow-100 text-yellow-900 dark:bg-yellow-950 dark:text-yellow-200", ponto: "bg-yellow-500", borda: "border-l-yellow-500" },
   Visita: { chip: "bg-orange-100 text-orange-900 dark:bg-orange-950 dark:text-orange-200", ponto: "bg-orange-500", borda: "border-l-orange-500" },
+  ULV: { chip: "bg-sky-100 text-sky-900 dark:bg-sky-950 dark:text-sky-200", ponto: "bg-sky-500", borda: "border-l-sky-500" },
 };
 const COR_PADRAO = { chip: "bg-muted text-foreground", ponto: "bg-muted-foreground/60", borda: "border-l-muted-foreground/40" };
 const corTipo = (t: string | null) => (t && TIPO_COR[t]) || COR_PADRAO;
@@ -68,7 +69,8 @@ export function ListaCalendario({ itens, podeExcluir = false }: { itens: ItemCal
   const [resp, setResp] = useState("");
   const [status, setStatus] = useState("");
 
-  const tipos = useMemo(() => Array.from(new Set(itens.map((i) => i.tipo).filter((x): x is string => !!x))).sort(), [itens]);
+  // Todos os tipos possíveis aparecem no filtro e na legenda, mesmo sem itens ainda.
+  const tipos = useMemo(() => Array.from(new Set([...TIPOS, ...itens.map((i) => i.tipo).filter((x): x is string => !!x)])).sort((a, b) => a.localeCompare(b, "pt-BR")), [itens]);
   const resps = useMemo(() => Array.from(new Set(itens.flatMap((i) => i.responsaveis))).sort(), [itens]);
   const statuses = useMemo(() => Array.from(new Set(itens.map((i) => i.status))).sort(), [itens]);
 
@@ -133,7 +135,7 @@ export function ListaCalendario({ itens, podeExcluir = false }: { itens: ItemCal
           </Button>
         ) : null}
       </div>
-      <p className="text-xs text-muted-foreground">{[i.tipo, i.tipo_post, i.canais.join(", "), i.publico.join("/"), i.objetivo].filter(Boolean).join(" · ") || "—"}</p>
+      <p className="text-xs text-muted-foreground">{[i.tipo ? rotuloTipo(i.tipo) : null, i.tipo_post, i.canais.join(", "), i.publico.join("/"), i.objetivo].filter(Boolean).join(" · ") || "—"}</p>
       {i.responsaveis.length > 0 ? <p className="text-xs">Responsável: {i.responsaveis.join(", ")}</p> : null}
     </li>
   );
@@ -180,7 +182,9 @@ export function ListaCalendario({ itens, podeExcluir = false }: { itens: ItemCal
         <select value={tipo} onChange={(e) => setTipo(e.target.value)} aria-label="Tipo" className={sel}>
           <option value="">Todos os tipos</option>
           {tipos.map((t) => (
-            <option key={t}>{t}</option>
+            <option key={t} value={t}>
+              {rotuloTipo(t)}
+            </option>
           ))}
         </select>
         <select value={resp} onChange={(e) => setResp(e.target.value)} aria-label="Responsável" className={sel}>
@@ -198,7 +202,7 @@ export function ListaCalendario({ itens, podeExcluir = false }: { itens: ItemCal
         <ul className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           {tipos.map((t) => (
             <li key={t} className="flex items-center gap-1.5">
-              <span className={cn("size-2.5 rounded-full", corTipo(t).ponto)} /> {t}
+              <span className={cn("size-2.5 rounded-full", corTipo(t).ponto)} /> {rotuloTipo(t)}
             </li>
           ))}
         </ul>
