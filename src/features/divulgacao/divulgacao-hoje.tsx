@@ -2,6 +2,7 @@ import Link from "@/components/shared/link";
 import { ArrowRight, Mail, Newspaper, Tag } from "lucide-react";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { ofertasDoPeriodo } from "./data";
+import { atualizarDivulgacaoSeDefasada } from "./auto-sync";
 import { blocosNacional, dataCurta, diaSemana, hojeSP, type Oferta } from "./tipos";
 
 const primeiraLinha = (t: string | null) => (t ?? "").split("\n").map((x) => x.trim()).find(Boolean) ?? "";
@@ -12,6 +13,7 @@ const MAX = 4;
  * a oferta do dia (nacional e internacional) e o e-mail programado para hoje.
  */
 export async function DivulgacaoHoje() {
+  await atualizarDivulgacaoSeDefasada();
   const hoje = hojeSP();
   const { itens, indisponivel } = await ofertasDoPeriodo(hoje, hoje);
   if (indisponivel) return null; // migration ainda não aplicada: o quadro simplesmente não aparece
