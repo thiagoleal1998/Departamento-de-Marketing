@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { criarClienteServidor } from "@/lib/supabase/server";
+import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { uploadReferencia } from "@/features/chamados/upload";
 import {
   criarTarefaDaEtapa,
@@ -49,6 +50,39 @@ export async function criarProjeto(formData: FormData) {
     .select("id")
     .single();
   if (error || !data) return;
+
+  // Todo projeto (famtour, evento, feira, VT…) também aparece como card no quadro de Tarefas.
+  if (servicoDisponivel()) {
+    try {
+      const admin = criarClienteAdmin();
+      const { data: card } = await admin
+        .from("tarefas")
+        .insert({
+          titulo: nome,
+          descricao,
+          status: "a_fazer",
+          responsavel_id,
+          prazo: data_fim,
+          tag: categoriaPorValor(categoria)?.label ?? null,
+        })
+        .select("id")
+        .single();
+      const cardId = (card as { id: string } | null)?.id;
+      // Ligação com o projeto à parte (migration 0078): sem ela o card é criado do mesmo jeito.
+      if (cardId) await admin.from("tarefas").update({ projeto_id: data.id }).eq("id", cardId);
+      if (cardId && responsavel_id && responsavel_id !== uid) {
+        await admin.from("notificacoes").insert({
+          destinatario_id: responsavel_id,
+          tipo: "tarefa",
+          titulo: `Novo card para você: ${nome}`,
+          link: "/operacional?tarefa=" + cardId,
+        });
+      }
+      revalidatePath("/operacional");
+    } catch {
+      // o projeto já foi criado; o card é complementar
+    }
+  }
 
   revalidatePath("/projetos");
   revalidatePath("/projetos/categoria/[slug]", "page");

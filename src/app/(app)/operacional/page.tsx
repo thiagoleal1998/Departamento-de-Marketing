@@ -66,6 +66,9 @@ export default async function OperacionalPage({
     } else if (t.etapa_id && etapaProjeto.get(t.etapa_id)) {
       origemHref = `/projetos/${etapaProjeto.get(t.etapa_id)}`;
       origemLabel = "Abrir projeto";
+    } else if (t.projeto_id) {
+      origemHref = `/projetos/${t.projeto_id}`;
+      origemLabel = "Abrir projeto";
     }
     return {
       id: t.id,

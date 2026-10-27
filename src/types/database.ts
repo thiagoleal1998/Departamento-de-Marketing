@@ -117,6 +117,8 @@ export interface Tarefa {
   /** Código TAFMKT - numero/ano (migration 0072). */
   numero?: number | null;
   ano?: number | null;
+  /** Projeto (famtour, evento…) a que o card pertence (migration 0078). */
+  projeto_id?: string | null;
   /** Dias antes do prazo em que o sistema avisa (migration 0073). */
   lembretes?: number[] | null;
 }
