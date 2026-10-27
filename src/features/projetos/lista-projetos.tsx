@@ -73,15 +73,15 @@ export async function ListaProjetos({
             <Link key={p.id} href={`/projetos/${p.id}`}>
               <Card className="h-full overflow-hidden transition-colors hover:border-primary/40 hover:bg-accent/30">
                 {p.capa_url || p.logo_parceiro_url ? (
-                  <div className="relative h-32 bg-muted">
+                  <div className="relative h-32 overflow-hidden bg-muted">
                     {p.capa_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={p.capa_url} alt="" className="size-full object-cover" />
                     ) : null}
                     {p.logo_parceiro_url ? (
-                      <div className={p.capa_url ? "absolute bottom-2 left-2 rounded-lg bg-white p-1.5 shadow" : "grid size-full place-items-center bg-white p-4"}>
+                      <div className={p.capa_url ? "absolute bottom-2 left-2 rounded-lg bg-white p-1.5 shadow" : "size-full bg-white p-4"}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={p.logo_parceiro_url} alt="" className={p.capa_url ? "h-8 max-w-28 object-contain" : "max-h-full max-w-full object-contain"} />
+                        <img src={p.logo_parceiro_url} alt="" className={p.capa_url ? "h-8 max-w-28 object-contain" : "size-full object-contain"} />
                       </div>
                     ) : null}
                   </div>
