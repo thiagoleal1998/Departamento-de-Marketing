@@ -9,6 +9,9 @@ import { NotificacoesBell } from "@/features/notificacoes/bell";
 import { AtivarPush } from "@/features/notificacoes/ativar-push";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { AtualizarPagina } from "@/components/layout/atualizar-pagina";
+import { Suspense } from "react";
+import { PresencaOnline } from "@/features/atividade/presenca-online";
+import { ehLideranca } from "@/lib/permissions";
 import { obterNotificacoes } from "@/features/notificacoes/data";
 import { PAPEL_LABEL } from "@/types";
 import type { Profile } from "@/types/database";
@@ -29,7 +32,15 @@ export async function Topbar({
       <div className="lg:hidden">
         <NomeMarca />
       </div>
-      <div className="hidden lg:block" />
+      {ehLideranca(usuario.role) ? (
+        <div className="hidden sm:block">
+          <Suspense fallback={<div className="h-9 w-40 animate-pulse rounded-full bg-muted/60" />}>
+            <PresencaOnline euId={usuario.id} compacto />
+          </Suspense>
+        </div>
+      ) : (
+        <div className="hidden lg:block" />
+      )}
 
       <div className="flex items-center gap-2 sm:gap-3">
         <AtivarPush />

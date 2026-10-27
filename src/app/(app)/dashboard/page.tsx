@@ -17,8 +17,8 @@ import { PainelLideranca } from "@/features/dashboard/painel-lideranca";
 import { DivulgacaoHoje } from "@/features/divulgacao/divulgacao-hoje";
 import { AlertasDestinos } from "@/features/noticias/alertas-destinos";
 import { AgendaHoje } from "@/features/agenda/agenda-hoje";
-import { PresencaOnline } from "@/features/atividade/presenca-online";
 import { CalendarioMes } from "@/features/calendario/calendario-mes";
+import { NoticiasTurismo } from "@/features/noticias/noticias-turismo";
 import { EsqueletoAgenda, EsqueletoAlertas, EsqueletoDivulgacao, EsqueletoPainel } from "@/components/shared/esqueleto";
 import { PageHeader } from "@/components/shared/page-header";
 import { DataCard } from "@/components/shared/data-card";
@@ -79,11 +79,6 @@ export default async function DashboardPage() {
             <div className="space-y-1">
               <h1 className="text-2xl font-semibold tracking-tight">{`Olá, ${usuario.nome.split(" ")[0]} 👋`}</h1>
               <p className="text-sm text-muted-foreground">Veja o panorama da operação e o que precisa da sua atenção.</p>
-              <div className="pt-2">
-                <Suspense fallback={<div className="h-11 w-72 animate-pulse rounded-xl bg-muted/60" />}>
-                  <PresencaOnline euId={usuario.id} />
-                </Suspense>
-              </div>
             </div>
             <Suspense fallback={<EsqueletoAgenda />}>
               <AgendaHoje />
@@ -105,6 +100,10 @@ export default async function DashboardPage() {
           {/* Calendário do mês e do seguinte, alternando sozinho. */}
           <Suspense fallback={<div className="h-80 animate-pulse rounded-2xl bg-muted/50" />}>
             <CalendarioMes />
+          </Suspense>
+          {/* Principais notícias do turismo (Panrotas e outras fontes do setor). */}
+          <Suspense fallback={<div className="h-72 animate-pulse rounded-2xl bg-muted/50" />}>
+            <NoticiasTurismo />
           </Suspense>
         </div>
       ) : (

@@ -8,7 +8,7 @@ import { rotuloTela } from "./rotulo-tela";
 import { cn } from "@/lib/utils";
 
 /** Quem está online agora (gerente e líder): contagem, nomes e se está mexendo ou ausente. Atualiza sozinho. */
-export function PresencaOnlineCliente({ inicial, euId }: { inicial: PessoaOnline[]; euId: string }) {
+export function PresencaOnlineCliente({ inicial, euId, compacto = false }: { inicial: PessoaOnline[]; euId: string; compacto?: boolean }) {
   const [pessoas, setPessoas] = useState(inicial);
 
   useEffect(() => {
@@ -27,6 +27,35 @@ export function PresencaOnlineCliente({ inicial, euId }: { inicial: PessoaOnline
   }, []);
 
   const ativos = pessoas.filter((p) => p.ativo).length;
+
+  // Versão da barra superior: um selo com a contagem e as fotos sobrepostas (o nome aparece ao passar o mouse).
+  if (compacto) {
+    const mostradas = pessoas.slice(0, 6);
+    return (
+      <div className="flex items-center gap-2.5 rounded-full border bg-card px-3 py-1 text-sm shadow-sm" aria-live="polite">
+        <span className="relative flex size-2.5 shrink-0">
+          <span className={cn("absolute inline-flex size-full rounded-full opacity-60", pessoas.length > 0 && "animate-ping bg-emerald-500")} />
+          <span className={cn("relative inline-flex size-2.5 rounded-full", pessoas.length > 0 ? "bg-emerald-500" : "bg-muted-foreground/40")} />
+        </span>
+        <span className="whitespace-nowrap text-xs font-semibold">{pessoas.length === 0 ? "Ninguém online" : `${pessoas.length} online`}</span>
+        {mostradas.length > 0 ? (
+          <ul className="hidden items-center -space-x-2 md:flex">
+            {mostradas.map((p) => (
+              <li
+                key={p.id}
+                className="relative"
+                title={`${p.id === euId ? "Você" : p.nome} · ${p.ativo ? "ativo" : "ausente"}${p.caminho ? " · em " + rotuloTela(p.caminho) : ""}`}
+              >
+                <Avatar nome={p.nome} src={p.avatar_url} className={cn("size-7 ring-2 ring-card", !p.ativo && "opacity-60")} />
+                <span className={cn("absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-card", p.ativo ? "bg-emerald-500" : "bg-amber-400")} />
+              </li>
+            ))}
+            {pessoas.length > mostradas.length ? <li className="pl-3 text-xs font-medium text-muted-foreground">+{pessoas.length - mostradas.length}</li> : null}
+          </ul>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border bg-card px-3 py-2 text-sm shadow-sm" aria-live="polite">
