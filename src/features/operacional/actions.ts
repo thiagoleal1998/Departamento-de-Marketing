@@ -42,6 +42,45 @@ export async function moverTarefa(tarefaId: string, novoStatus: TarefaStatus) {
   revalidatePath("/operacional");
 }
 
+/**
+ * Posiciona um card: muda de coluna (se for o caso) e grava a ordem de todos os cards da coluna, na sequência
+ * em que aparecem no quadro (de cima para baixo). A leitura passa pela regra de acesso; a gravação da ordem usa
+ * a chave de serviço, só nos cards que a pessoa enxerga.
+ */
+export async function posicionarTarefa(
+  tarefaId: string,
+  novoStatus: TarefaStatus,
+  idsDaColuna: string[]
+): Promise<{ ok?: boolean; erro?: string }> {
+  const supabase = await criarClienteServidor();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { erro: "Sessão expirada. Entre novamente." };
+  if (!servicoDisponivel()) return { erro: "Reordenação indisponível no momento." };
+
+  const { data: antes } = await supabase.from("tarefas").select("status").eq("id", tarefaId).maybeSingle();
+  if (!antes) return { erro: "Você não tem permissão para mexer neste card." };
+  if (antes.status !== novoStatus) await moverTarefa(tarefaId, novoStatus);
+
+  const ids = Array.from(new Set(idsDaColuna)).slice(0, 1500);
+  // Só reordena o que a pessoa enxerga (a liderança enxerga tudo).
+  const permitidos = new Set<string>();
+  for (let i = 0; i < ids.length; i += 80) {
+    const { data } = await supabase.from("tarefas").select("id").in("id", ids.slice(i, i + 80));
+    for (const t of (data as { id: string }[] | null) ?? []) permitidos.add(t.id);
+  }
+  const admin = criarClienteAdmin();
+  const ordenados = ids.filter((id) => permitidos.has(id));
+  for (let i = 0; i < ordenados.length; i += 25) {
+    await Promise.all(
+      ordenados.slice(i, i + 25).map((id, k) => admin.from("tarefas").update({ ordem: (i + k + 1) * 10 }).eq("id", id))
+    );
+  }
+  revalidatePath("/operacional");
+  return { ok: true };
+}
+
 const STATUS_VALIDOS: TarefaStatus[] = [
   "a_fazer",
   "em_andamento",

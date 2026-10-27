@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
-import { ChevronLeft, ChevronRight, GripVertical, Link2, Plus, Search } from "lucide-react";
+import { Fragment, useEffect, useRef, useState, useTransition } from "react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, GripVertical, Link2, Plus, Search } from "lucide-react";
 import { KanbanSquare } from "lucide-react";
-import { moverTarefa } from "./actions";
+import { moverTarefa, posicionarTarefa } from "./actions";
 import { TarefaDetalhe } from "./tarefa-detalhe";
 import { NovoCardDialogo } from "./novo-card";
 import { Badge } from "@/components/ui/badge";
@@ -84,6 +84,8 @@ export function KanbanTarefas({
   }, [tarefas]);
   const [arrastando, setArrastando] = useState<string | null>(null);
   const [sobre, setSobre] = useState<TarefaStatus | null>(null);
+  // Onde o card arrastado vai cair: antes ou depois deste card.
+  const [alvo, setAlvo] = useState<{ id: string; depois: boolean } | null>(null);
   const [aberta, setAberta] = useState<string | null>(abrirId);
   const [criando, setCriando] = useState<TarefaStatus | null>(null);
   const [busca, setBusca] = useState("");
@@ -148,11 +150,48 @@ export function KanbanTarefas({
     });
   }
 
+  /** Põe o card em outra posição (e coluna): antes ou depois de outro card. Grava a ordem da coluna inteira. */
+  function posicionar(id: string, status: TarefaStatus, refId: string, depois: boolean) {
+    const tarefa = lista.find((t) => t.id === id);
+    if (!tarefa || refId === id) return;
+    const resto = lista.filter((t) => t.id !== id);
+    const i = resto.findIndex((t) => t.id === refId);
+    if (i < 0) return;
+    const nova = [...resto.slice(0, depois ? i + 1 : i), { ...tarefa, status }, ...resto.slice(depois ? i + 1 : i)];
+    setLista(nova);
+    const ids = nova.filter((t) => t.status === status).map((t) => t.id);
+    startTransition(async () => {
+      await posicionarTarefa(id, status, ids);
+    });
+  }
+
+  function soltarNoCard(status: TarefaStatus, refId: string) {
+    const id = arrastando;
+    const lado = alvo?.id === refId ? alvo.depois : false;
+    setArrastando(null);
+    setSobre(null);
+    setAlvo(null);
+    if (!id) return;
+    // Com busca ou filtro ligado só aparece parte da coluna: aí o card só muda de coluna.
+    if (filtrando) return soltarSemOrdem(id, status);
+    posicionar(id, status, refId, lado);
+  }
+
+  function soltarSemOrdem(id: string, status: TarefaStatus) {
+    const tarefa = lista.find((t) => t.id === id);
+    if (!tarefa || tarefa.status === status) return;
+    setLista((l) => l.map((t) => (t.id === id ? { ...t, status } : t)));
+    startTransition(async () => {
+      await moverTarefa(id, status);
+    });
+  }
+
   function rolar(direcao: 1 | -1) {
     trilho.current?.scrollBy({ left: direcao * 320, behavior: "smooth" });
   }
 
   const termo = busca.trim().toLowerCase();
+  const filtrando = Boolean(termo || filtroResp);
   const visiveis = lista.filter(
     (t) =>
       (!filtroResp ||
@@ -209,7 +248,7 @@ export function KanbanTarefas({
       </div>
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">
-          Clique em um card para abrir e editar. Arraste o card para mudar de coluna; puxe o fundo para andar para o lado.
+          Clique em um card para abrir e editar. Arraste para mudar de coluna ou de posição (ou use as setas do card); puxe o fundo para andar para o lado.
         </p>
         <div className="flex gap-1">
           <Button
@@ -265,12 +304,32 @@ export function KanbanTarefas({
                   sobre === coluna && "border-primary/50 bg-primary/5"
                 )}
               >
-                {daColuna.map((t) => (
+                {daColuna.map((t, posicao) => (
+                  <Fragment key={t.id}>
+                  {arrastando && alvo?.id === t.id && !alvo.depois && arrastando !== t.id ? <div className="h-1 rounded-full bg-primary" /> : null}
                   <div
-                    key={t.id}
                     draggable
                     onDragStart={() => setArrastando(t.id)}
-                    onDragEnd={() => setArrastando(null)}
+                    onDragEnd={() => {
+                      setArrastando(null);
+                      setAlvo(null);
+                      setSobre(null);
+                    }}
+                    onDragOver={(e) => {
+                      if (!arrastando || filtrando) return;
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setSobre(coluna);
+                      const r = e.currentTarget.getBoundingClientRect();
+                      const depois = e.clientY > r.top + r.height / 2;
+                      setAlvo((a) => (a?.id === t.id && a.depois === depois ? a : { id: t.id, depois }));
+                    }}
+                    onDrop={(e) => {
+                      if (filtrando) return; // cai no soltar da coluna
+                      e.preventDefault();
+                      e.stopPropagation();
+                      soltarNoCard(coluna, t.id);
+                    }}
                     onClick={() => setAberta(t.id)}
                     role="button"
                     tabIndex={0}
@@ -283,7 +342,39 @@ export function KanbanTarefas({
                     )}
                   >
                     <div className="flex items-start gap-1.5">
-                      <GripVertical className="mt-0.5 size-4 shrink-0 cursor-grab text-muted-foreground/50" />
+                      <div className="flex shrink-0 flex-col items-center gap-0.5">
+                        <GripVertical className="mt-0.5 size-4 cursor-grab text-muted-foreground/50" />
+                        {!filtrando ? (
+                          <>
+                            <button
+                              type="button"
+                              aria-label="Subir o card"
+                              title="Subir"
+                              disabled={posicao === 0}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                posicionar(t.id, coluna, daColuna[posicao - 1].id, false);
+                              }}
+                              className="grid size-5 place-items-center rounded text-muted-foreground opacity-0 transition hover:bg-muted hover:text-foreground focus-visible:opacity-100 disabled:hidden group-hover:opacity-100 [@media(hover:none)]:opacity-100"
+                            >
+                              <ChevronUp className="size-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              aria-label="Descer o card"
+                              title="Descer"
+                              disabled={posicao === daColuna.length - 1}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                posicionar(t.id, coluna, daColuna[posicao + 1].id, true);
+                              }}
+                              className="grid size-5 place-items-center rounded text-muted-foreground opacity-0 transition hover:bg-muted hover:text-foreground focus-visible:opacity-100 disabled:hidden group-hover:opacity-100 [@media(hover:none)]:opacity-100"
+                            >
+                              <ChevronDown className="size-3.5" />
+                            </button>
+                          </>
+                        ) : null}
+                      </div>
                       <div className="min-w-0 flex-1">
                         {t.codigo ? <p className="mb-0.5 text-[10px] font-semibold tracking-wide text-muted-foreground">{t.codigo}</p> : null}
                         <p className="text-sm font-medium leading-tight">
@@ -314,6 +405,8 @@ export function KanbanTarefas({
                       </div>
                     </div>
                   </div>
+                  {arrastando && alvo?.id === t.id && alvo.depois && arrastando !== t.id ? <div className="h-1 rounded-full bg-primary" /> : null}
+                  </Fragment>
                 ))}
                 {coluna === "concluida" && todasDaColuna.length > LIMITE_CONCLUIDAS ? (
                   <Button
