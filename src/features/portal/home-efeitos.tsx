@@ -86,7 +86,7 @@ export function TextoRotativo({ palavras }: { palavras: string[] }) {
   }, [palavras.length]);
   return (
     <span className="relative inline-block align-bottom">
-      <span key={i} className="home-palavra inline-block bg-gradient-to-r from-emerald-300 via-teal-300 to-amber-300 bg-clip-text text-transparent">
+      <span key={i} className="home-palavra -mb-[0.22em] inline-block bg-gradient-to-r from-emerald-300 via-teal-300 to-amber-300 bg-clip-text pb-[0.22em] text-transparent">
         {palavras[i]}
       </span>
     </span>

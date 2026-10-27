@@ -10,6 +10,7 @@ const PUBLICAS_PREFIXO = [
   "/login",
   "/central",
   "/consulta",
+  "/contatos",
   "/auth",
   "/acompanhar",
   "/api/cron",

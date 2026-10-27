@@ -1,5 +1,5 @@
 import Link from "@/components/shared/link";
-import { ArrowRight, ArrowUpRight, Inbox, LogIn, Radar, Search, Sparkles, Users } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Inbox, LogIn, Mail, Radar, Search, Sparkles } from "lucide-react";
 import { obterConfig } from "@/lib/config";
 import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { NomeMarca } from "@/components/shared/nome-marca";
@@ -114,7 +114,7 @@ export default async function HomePage() {
             { valor: n.atendidos, rotulo: "solicitações atendidas", cor: "from-amber-300 to-orange-300" },
           ].map((s) => (
             <div key={s.rotulo} className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
-              <p className={`bg-gradient-to-r ${s.cor} bg-clip-text text-5xl font-bold text-transparent sm:text-6xl`}>
+              <p className={`bg-gradient-to-r ${s.cor} bg-clip-text pb-1 text-5xl font-bold leading-tight text-transparent sm:text-6xl`}>
                 <Contador valor={s.valor} />
               </p>
               <p className="mt-2 flex items-center gap-2 text-sm text-slate-300">
@@ -182,18 +182,18 @@ export default async function HomePage() {
         </section>
 
         <section className="mt-4">
-          <CartaoHolofote href="/login" className="flex-row items-center justify-between gap-4 !p-6">
+          <CartaoHolofote href="/contatos" className="flex-row items-center justify-between gap-4 !p-6">
             <span className="flex items-center gap-4">
               <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white/10 text-orange-300">
-                <Users className="size-5" />
+                <Mail className="size-5" />
               </span>
               <span>
-                <span className="block text-lg font-semibold text-white">Área do time</span>
-                <span className="block text-sm text-slate-300">Gestão, criação, operação e desenvolvimento do marketing.</span>
+                <span className="block text-lg font-semibold text-white">Contatos do Marketing</span>
+                <span className="block text-sm text-slate-300">Quem é quem no time e como falar direto com cada pessoa.</span>
               </span>
             </span>
             <span className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-orange-300">
-              Entrar <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+              Ver contatos <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
             </span>
           </CartaoHolofote>
         </section>
