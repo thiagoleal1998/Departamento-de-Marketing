@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { Loader2, Trash2, X } from "lucide-react";
+import { Check, Loader2, Trash2, X } from "lucide-react";
 import { salvarItemCalendario, type DadosItemCalendario } from "./actions";
 import type { ItemCalendario } from "./lista-calendario";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { SeletorData } from "@/components/ui/seletor-data";
+import { cn } from "@/lib/utils";
 import { SeletorLembretes } from "@/components/shared/seletor-lembretes";
 import { normalizarLembretes } from "@/lib/lembretes";
 
@@ -17,7 +19,20 @@ export const TIPOS = ["E-mail Marketing", "Redes Sociais", "Oferta", "Podcast", 
 export const RESPONSAVEIS_PADRAO = ["Cesar", "Gustavo", "Jéssica", "Shay", "Thiago"];
 export const rotuloTipo = (t: string) => (t === "ULV" ? "ULV (Universidade LV)" : t);
 const STATUS = ["Não iniciada", "Em andamento", "Editando", "Em aprovação - Gustavo", "Em Aprovação - Marco", "Agendado", "Postado", "Concluído"];
-const CANAIS = ["RD Station", "Instagram", "Tiktok", "Whatsapp", "Youtube", "Facebook", "Close Friends"];
+const CANAIS = ["RD Station", "Instagram", "Tiktok", "Whatsapp", "Youtube", "Facebook", "Close Friends", "Google Meet"];
+/** Bolinha de cor de cada opção (canais e público), para bater o olho. */
+const COR_OPCAO: Record<string, string> = {
+  "RD Station": "bg-emerald-500",
+  Instagram: "bg-pink-500",
+  Tiktok: "bg-cyan-500",
+  Whatsapp: "bg-green-500",
+  Youtube: "bg-red-500",
+  Facebook: "bg-blue-500",
+  "Close Friends": "bg-lime-500",
+  "Google Meet": "bg-teal-500",
+  B2B: "bg-indigo-500",
+  B2C: "bg-orange-500",
+};
 const PUBLICOS = ["B2B", "B2C"];
 const OBJETIVOS = ["Alcance", "Engajamento", "Informativo", "Qualificação"];
 const TIPOS_POST = ["Stories", "Feed", "Reels", "Carrossel", "Vídeo"];
@@ -27,7 +42,7 @@ function Marcas({ rotulo, opcoes, valor, aoMudar }: { rotulo: string; opcoes: st
   return (
     <fieldset className="space-y-1.5">
       <legend className="text-sm font-medium leading-none">{rotulo}</legend>
-      <div className="flex flex-wrap gap-2 pt-1">
+      <div className="flex flex-wrap gap-2 pt-1.5">
         {opcoes.map((o) => {
           const marcado = valor.includes(o);
           return (
@@ -36,11 +51,20 @@ function Marcas({ rotulo, opcoes, valor, aoMudar }: { rotulo: string; opcoes: st
               type="button"
               aria-pressed={marcado}
               onClick={() => aoMudar(marcado ? valor.filter((x) => x !== o) : [...valor, o])}
-              className={
-                "rounded-full border px-3 py-1 text-xs font-medium transition-colors " +
-                (marcado ? "border-primary bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:text-foreground")
-              }
+              className={cn(
+                "inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-sm font-medium transition-all duration-150 active:scale-95",
+                marcado
+                  ? "border-primary bg-primary/10 text-foreground shadow-sm ring-1 ring-primary/40"
+                  : "bg-background text-muted-foreground hover:border-primary/40 hover:bg-accent/60 hover:text-foreground"
+              )}
             >
+              {marcado ? (
+                <span className="grid size-4 place-items-center rounded-full bg-primary text-primary-foreground">
+                  <Check className="size-3" strokeWidth={3} />
+                </span>
+              ) : COR_OPCAO[o] ? (
+                <span className={cn("size-2.5 rounded-full", COR_OPCAO[o])} />
+              ) : null}
               {o}
             </button>
           );
@@ -132,7 +156,7 @@ export function ItemCalendarioForm({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="cal-data">Data de envio / publicação</Label>
-            <Input id="cal-data" type="date" value={d.data} onChange={(e) => set("data", e.target.value)} />
+            <SeletorData id="cal-data" value={d.data} onChange={(v) => set("data", v)} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="cal-tipo">Tipo</Label>
