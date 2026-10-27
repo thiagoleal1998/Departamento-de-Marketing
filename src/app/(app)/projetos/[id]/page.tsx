@@ -10,6 +10,8 @@ import {
   Scale,
   Upload,
   ExternalLink,
+  Pencil,
+  Save,
 } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import { ehLideranca } from "@/lib/permissions";
@@ -19,11 +21,13 @@ import {
   listarDocumentos,
   listarComparativos,
   listarAtualizacoes,
+  pessoasParaEscolher,
 } from "@/features/projetos/data";
 import { mapaDePerfis } from "@/features/chamados/data";
-import { listarColaboradores } from "@/features/desenvolvimento/data";
 import {
   adicionarEtapa,
+  atualizarEtapa,
+  atualizarProjeto,
   removerEtapa,
   adicionarDocumento,
   removerDocumento,
@@ -66,14 +70,15 @@ export default async function ProjetoDetalhePage({
   const projeto = await obterProjeto(id);
   if (!projeto) notFound();
 
-  const lideranca = ehLideranca(usuario.role);
+  // Gerente, líder e o responsável pelo projeto editam tudo nele.
+  const podeEditar = ehLideranca(usuario.role) || projeto.responsavel_id === usuario.id;
   const [etapas, documentos, comparativos, atualizacoes, perfis, pessoas] = await Promise.all([
     listarEtapas(id),
     listarDocumentos(id),
     listarComparativos(id),
     listarAtualizacoes(id),
     mapaDePerfis(),
-    lideranca ? listarColaboradores() : Promise.resolve([]),
+    podeEditar ? pessoasParaEscolher() : Promise.resolve([]),
   ]);
 
   // Menor e maior valor por item (para destacar preço no comparativo).
@@ -151,7 +156,7 @@ export default async function ProjetoDetalhePage({
                   {etapas.map((e) => (
                     <li
                       key={e.id}
-                      className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
+                      className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
                     >
                       <div className="min-w-0">
                         <p className="text-sm font-medium">{e.titulo}</p>
@@ -171,9 +176,9 @@ export default async function ProjetoDetalhePage({
                         <EtapaStatusControl
                           etapaId={e.id}
                           status={e.status}
-                          podeEditar={lideranca}
+                          podeEditar={podeEditar}
                         />
-                        {lideranca ? (
+                        {podeEditar ? (
                           <form action={removerEtapa.bind(null, id)}>
                             <input type="hidden" name="etapa_id" value={e.id} />
                             <Button
@@ -188,13 +193,41 @@ export default async function ProjetoDetalhePage({
                           </form>
                         ) : null}
                       </div>
+                      {podeEditar ? (
+                        <details className="group/edit w-full border-t pt-2 text-sm">
+                          <summary className="flex cursor-pointer list-none items-center gap-1.5 text-xs font-medium text-primary hover:underline">
+                            <Pencil className="size-3.5" /> Editar etapa
+                          </summary>
+                          <form action={atualizarEtapa.bind(null, id)} className="mt-3 space-y-3">
+                            <input type="hidden" name="etapa_id" value={e.id} />
+                            <Input name="titulo" defaultValue={e.titulo} required aria-label="Título da etapa" />
+                            <Textarea name="descricao" rows={2} defaultValue={e.descricao ?? ""} placeholder="Detalhes da etapa (opcional)" />
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <Select name="responsavel_id" defaultValue={e.responsavel_id ?? ""} aria-label="Responsável pela etapa">
+                                <option value="">Sem responsável</option>
+                                {pessoas.map((p) => (
+                                  <option key={p.id} value={p.id}>
+                                    {p.nome}
+                                  </option>
+                                ))}
+                              </Select>
+                              <DateInputBR name="prazo" defaultValue={e.prazo ?? ""} />
+                            </div>
+                            <div className="flex justify-end">
+                              <Button type="submit" size="sm">
+                                <Save className="size-4" /> Salvar etapa
+                              </Button>
+                            </div>
+                          </form>
+                        </details>
+                      ) : null}
                     </li>
                   ))}
                 </ul>
               )}
 
               {/* Adicionar etapa */}
-              {lideranca ? (
+              {podeEditar ? (
                 <form
                   action={adicionarEtapa.bind(null, id)}
                   className="space-y-3 border-t pt-4"
@@ -262,7 +295,7 @@ export default async function ProjetoDetalhePage({
                             <span className="truncate">{d.nome}</span>
                             <ExternalLink className="size-3 shrink-0" />
                           </a>
-                          {lideranca ? (
+                          {podeEditar ? (
                             <form action={removerDocumento.bind(null, id)}>
                               <input type="hidden" name="doc_id" value={d.id} />
                               <Button
@@ -280,7 +313,7 @@ export default async function ProjetoDetalhePage({
                       ))}
                     </ul>
                   )}
-                  {lideranca ? (
+                  {podeEditar ? (
                     <form
                       action={adicionarDocumento.bind(null, id)}
                       className="space-y-3 border-t pt-4"
@@ -395,7 +428,7 @@ export default async function ProjetoDetalhePage({
                                   {c.observacao ?? ""}
                                 </td>
                                 <td>
-                                  {lideranca ? (
+                                  {podeEditar ? (
                                     <form
                                       action={removerComparativo.bind(null, id)}
                                     >
@@ -423,7 +456,7 @@ export default async function ProjetoDetalhePage({
                       </table>
                     </div>
                   )}
-                  {lideranca ? (
+                  {podeEditar ? (
                     <form
                       action={adicionarComparativo.bind(null, id)}
                       className="grid gap-2 border-t pt-4 sm:grid-cols-4"
@@ -452,7 +485,7 @@ export default async function ProjetoDetalhePage({
               <CardTitle className="text-base">Situação</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {lideranca ? (
+              {podeEditar ? (
                 <ProjetoStatusControl
                   projetoId={id}
                   status={projeto.status}
@@ -464,7 +497,7 @@ export default async function ProjetoDetalhePage({
               )}
               <div className="space-y-1 text-sm">
                 <p className="text-xs text-muted-foreground">Categoria</p>
-                {lideranca ? (
+                {podeEditar ? (
                   <CategoriaControl
                     projetoId={id}
                     categoria={projeto.categoria}
@@ -492,6 +525,54 @@ export default async function ProjetoDetalhePage({
               ) : null}
             </CardContent>
           </Card>
+
+          {podeEditar ? (
+            <Card>
+              <CardContent className="p-0">
+                <details>
+                  <summary className="flex cursor-pointer list-none items-center gap-2 px-6 py-4 text-sm font-semibold hover:bg-accent/40">
+                    <Pencil className="size-4" /> Editar dados do projeto
+                  </summary>
+                  <form action={atualizarProjeto.bind(null, id)} className="space-y-3 border-t px-6 py-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="proj-nome">Nome *</Label>
+                      <Input id="proj-nome" name="nome" defaultValue={projeto.nome} required />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="proj-desc">Descrição</Label>
+                      <Textarea id="proj-desc" name="descricao" rows={4} defaultValue={projeto.descricao ?? ""} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="proj-resp">Responsável</Label>
+                      <Select id="proj-resp" name="responsavel_id" defaultValue={projeto.responsavel_id ?? ""}>
+                        <option value="">Sem responsável</option>
+                        {pessoas.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.nome}
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="proj-ini">Início</Label>
+                        <DateInputBR id="proj-ini" name="data_inicio" defaultValue={projeto.data_inicio ?? ""} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="proj-fim">Término</Label>
+                        <DateInputBR id="proj-fim" name="data_fim" defaultValue={projeto.data_fim ?? ""} />
+                      </div>
+                    </div>
+                    <div className="flex justify-end">
+                      <Button type="submit" size="sm">
+                        <Save className="size-4" /> Salvar
+                      </Button>
+                    </div>
+                  </form>
+                </details>
+              </CardContent>
+            </Card>
+          ) : null}
 
           {projeto.descricao ? (
             <Card>

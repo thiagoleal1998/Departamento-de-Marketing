@@ -20,6 +20,25 @@ async function usuarioId() {
   return user?.id ?? null;
 }
 
+/**
+ * Quem pode mexer no projeto: gerente, líder e o responsável por ele. O banco só deixa a liderança gravar,
+ * então, conferida a permissão aqui, a gravação usa a chave de serviço.
+ */
+async function escritorDoProjeto(projetoId: string) {
+  const supabase = await criarClienteServidor();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data: eu } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  const papel = (eu as { role: string } | null)?.role;
+  if (papel !== "gerente" && papel !== "lider") {
+    const { data: p } = await supabase.from("projetos").select("responsavel_id").eq("id", projetoId).maybeSingle();
+    if ((p as { responsavel_id: string | null } | null)?.responsavel_id !== user.id) return null;
+  }
+  return { db: servicoDisponivel() ? criarClienteAdmin() : supabase, uid: user.id };
+}
+
 export async function criarProjeto(formData: FormData) {
   const uid = await usuarioId();
   if (!uid) redirect("/login");
@@ -89,17 +108,44 @@ export async function criarProjeto(formData: FormData) {
   redirect(`/projetos/${data.id}`);
 }
 
+/**
+ * Edita os dados do projeto (nome, descrição, responsável e datas). O card do projeto em Tarefas acompanha.
+ * Pode a liderança e o responsável pelo projeto.
+ */
+export async function atualizarProjeto(projetoId: string, formData: FormData) {
+  const w = await escritorDoProjeto(projetoId);
+  if (!w) return;
+  const nome = String(formData.get("nome") ?? "").trim();
+  if (!nome) return;
+  const descricao = String(formData.get("descricao") ?? "").trim() || null;
+  const responsavel_id = String(formData.get("responsavel_id") ?? "").trim() || null;
+  const data_inicio = String(formData.get("data_inicio") ?? "").trim() || null;
+  const data_fim = String(formData.get("data_fim") ?? "").trim() || null;
+
+  const { error } = await w.db.from("projetos").update({ nome, descricao, responsavel_id, data_inicio, data_fim }).eq("id", projetoId);
+  if (error) return;
+
+  // Card do projeto no quadro de Tarefas (sem a migration 0078 não há ligação e nada acontece).
+  try {
+    await w.db.from("tarefas").update({ titulo: nome, descricao, responsavel_id, prazo: data_fim }).eq("projeto_id", projetoId);
+  } catch {
+    // complementar
+  }
+  revalidatePath(`/projetos/${projetoId}`);
+  revalidatePath("/projetos");
+  revalidatePath("/projetos/categoria/[slug]", "page");
+  revalidatePath("/operacional");
+}
+
 export async function atualizarCategoriaProjeto(
   projetoId: string,
   categoria: string
 ) {
   const meta = categoriaPorValor(categoria);
   if (!meta) return;
-  const supabase = await criarClienteServidor();
-  await supabase
-    .from("projetos")
-    .update({ categoria: meta.valor })
-    .eq("id", projetoId);
+  const w = await escritorDoProjeto(projetoId);
+  if (!w) return;
+  await w.db.from("projetos").update({ categoria: meta.valor }).eq("id", projetoId);
   revalidatePath(`/projetos/${projetoId}`);
   revalidatePath("/projetos");
   revalidatePath("/projetos/categoria/[slug]", "page");
@@ -109,14 +155,16 @@ export async function atualizarStatusProjeto(
   projetoId: string,
   status: ProjetoStatus
 ) {
-  const supabase = await criarClienteServidor();
-  await supabase.from("projetos").update({ status }).eq("id", projetoId);
+  const w = await escritorDoProjeto(projetoId);
+  if (!w) return;
+  await w.db.from("projetos").update({ status }).eq("id", projetoId);
   revalidatePath(`/projetos/${projetoId}`);
   revalidatePath("/projetos");
 }
 
 export async function adicionarEtapa(projetoId: string, formData: FormData) {
-  const supabase = await criarClienteServidor();
+  const w = await escritorDoProjeto(projetoId);
+  if (!w) return;
   const titulo = String(formData.get("titulo") ?? "").trim();
   if (!titulo) return;
   const descricao = String(formData.get("descricao") ?? "").trim() || null;
@@ -125,12 +173,12 @@ export async function adicionarEtapa(projetoId: string, formData: FormData) {
   const prazo = String(formData.get("prazo") ?? "").trim() || null;
 
   // ordem = fim da lista
-  const { count } = await supabase
+  const { count } = await w.db
     .from("projeto_etapas")
     .select("*", { count: "exact", head: true })
     .eq("projeto_id", projetoId);
 
-  const { data: etapa } = await supabase
+  const { data: etapa } = await w.db
     .from("projeto_etapas")
     .insert({
       projeto_id: projetoId,
@@ -152,31 +200,56 @@ export async function adicionarEtapa(projetoId: string, formData: FormData) {
   revalidatePath("/operacional");
 }
 
+/** A etapa pertence a qual projeto? (leitura aberta a quem está logado) */
+async function projetoDaEtapa(etapaId: string): Promise<string | null> {
+  const supabase = await criarClienteServidor();
+  const { data } = await supabase.from("projeto_etapas").select("projeto_id").eq("id", etapaId).maybeSingle();
+  return (data as { projeto_id: string } | null)?.projeto_id ?? null;
+}
+
 export async function atualizarStatusEtapa(
   etapaId: string,
   status: EtapaStatus
 ) {
-  const supabase = await criarClienteServidor();
-  const { data } = await supabase
-    .from("projeto_etapas")
-    .update({ status })
-    .eq("id", etapaId)
-    .select("projeto_id")
-    .single();
+  const projetoId = await projetoDaEtapa(etapaId);
+  if (!projetoId) return;
+  const w = await escritorDoProjeto(projetoId);
+  if (!w) return;
+  await w.db.from("projeto_etapas").update({ status }).eq("id", etapaId);
   // Espelha no card do kanban.
-  await supabase
+  await w.db
     .from("tarefas")
     .update({ status: etapaParaTarefaStatus(status) })
     .eq("etapa_id", etapaId);
-  if (data?.projeto_id) revalidatePath(`/projetos/${data.projeto_id}`);
+  revalidatePath(`/projetos/${projetoId}`);
+  revalidatePath("/operacional");
+}
+
+/** Edita título, descrição, responsável e prazo de uma etapa; o card dela em Tarefas acompanha. */
+export async function atualizarEtapa(projetoId: string, formData: FormData) {
+  const etapaId = String(formData.get("etapa_id") ?? "").trim();
+  if (!etapaId) return;
+  const w = await escritorDoProjeto(projetoId);
+  if (!w) return;
+  const titulo = String(formData.get("titulo") ?? "").trim();
+  if (!titulo) return;
+  const descricao = String(formData.get("descricao") ?? "").trim() || null;
+  const responsavel_id = String(formData.get("responsavel_id") ?? "").trim() || null;
+  const prazo = String(formData.get("prazo") ?? "").trim() || null;
+
+  const { error } = await w.db.from("projeto_etapas").update({ titulo, descricao, responsavel_id, prazo }).eq("id", etapaId).eq("projeto_id", projetoId);
+  if (error) return;
+  await w.db.from("tarefas").update({ titulo, descricao, responsavel_id, prazo }).eq("etapa_id", etapaId);
+  revalidatePath(`/projetos/${projetoId}`);
   revalidatePath("/operacional");
 }
 
 export async function removerEtapa(projetoId: string, formData: FormData) {
-  const supabase = await criarClienteServidor();
+  const w = await escritorDoProjeto(projetoId);
+  if (!w) return;
   const etapaId = String(formData.get("etapa_id") ?? "").trim();
   if (!etapaId) return;
-  await supabase.from("projeto_etapas").delete().eq("id", etapaId);
+  await w.db.from("projeto_etapas").delete().eq("id", etapaId).eq("projeto_id", projetoId);
   revalidatePath(`/projetos/${projetoId}`);
   revalidatePath("/operacional");
 }
@@ -188,7 +261,8 @@ export async function adicionarDocumento(
   projetoId: string,
   formData: FormData
 ) {
-  const supabase = await criarClienteServidor();
+  const w = await escritorDoProjeto(projetoId);
+  if (!w) return;
   const nome = String(formData.get("nome") ?? "").trim();
   const linkRaw = String(formData.get("url") ?? "").trim();
 
@@ -202,7 +276,7 @@ export async function adicionarDocumento(
   if (!url) return; // precisa de arquivo ou link
   const nomeFinal = nome || arquivo?.nome || "Documento";
 
-  await supabase
+  await w.db
     .from("projeto_documentos")
     .insert({ projeto_id: projetoId, nome: nomeFinal, url });
 
@@ -213,10 +287,11 @@ export async function removerDocumento(
   projetoId: string,
   formData: FormData
 ) {
-  const supabase = await criarClienteServidor();
+  const w = await escritorDoProjeto(projetoId);
+  if (!w) return;
   const docId = String(formData.get("doc_id") ?? "").trim();
   if (!docId) return;
-  await supabase.from("projeto_documentos").delete().eq("id", docId);
+  await w.db.from("projeto_documentos").delete().eq("id", docId).eq("projeto_id", projetoId);
   revalidatePath(`/projetos/${projetoId}`);
 }
 
@@ -227,7 +302,8 @@ export async function adicionarComparativo(
   projetoId: string,
   formData: FormData
 ) {
-  const supabase = await criarClienteServidor();
+  const w = await escritorDoProjeto(projetoId);
+  if (!w) return;
   const item = String(formData.get("item") ?? "").trim();
   const fornecedor = String(formData.get("fornecedor") ?? "").trim();
   if (!item || !fornecedor) return;
@@ -239,7 +315,7 @@ export async function adicionarComparativo(
   const valor = valorRaw ? Number(valorRaw) : null;
   const observacao = String(formData.get("observacao") ?? "").trim() || null;
 
-  await supabase.from("projeto_comparativos").insert({
+  await w.db.from("projeto_comparativos").insert({
     projeto_id: projetoId,
     item,
     fornecedor,
@@ -254,10 +330,11 @@ export async function removerComparativo(
   projetoId: string,
   formData: FormData
 ) {
-  const supabase = await criarClienteServidor();
+  const w = await escritorDoProjeto(projetoId);
+  if (!w) return;
   const compId = String(formData.get("comp_id") ?? "").trim();
   if (!compId) return;
-  await supabase.from("projeto_comparativos").delete().eq("id", compId);
+  await w.db.from("projeto_comparativos").delete().eq("id", compId).eq("projeto_id", projetoId);
   revalidatePath(`/projetos/${projetoId}`);
 }
 

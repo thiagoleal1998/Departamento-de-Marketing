@@ -1,3 +1,4 @@
+import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import type {
   Projeto,
@@ -82,4 +83,11 @@ export async function listarAtualizacoes(projetoId: string): Promise<Atualizacao
     .order("created_at", { ascending: false })
     .limit(200);
   return (data as AtualizacaoProjeto[] | null) ?? [];
+}
+
+/** Pessoas ativas para escolher como responsável (lê com a chave de serviço: o colaborador não enxerga os perfis dos colegas). */
+export async function pessoasParaEscolher(): Promise<{ id: string; nome: string }[]> {
+  if (!servicoDisponivel()) return [];
+  const { data } = await criarClienteAdmin().from("profiles").select("id, nome").eq("ativo", true).order("nome", { ascending: true });
+  return (data as { id: string; nome: string }[] | null) ?? [];
 }
