@@ -29,7 +29,7 @@ async function numeros() {
   const [lps, paginas, atendidos] = await Promise.all([
     sb.from("landing_pages").select("id", head).eq("status_patrocinio", "ativo").not("grupo", "in", "(antigas,epic,feriados)"),
     sb.from("conteudos_site").select("id", head).eq("status", "publicado"),
-    sb.from("chamados").select("id", head).in("status", ["resolvido", "fechado"]),
+    sb.from("chamados").select("id", head).eq("origem", "portal").in("status", ["resolvido", "fechado"]),
   ]);
   return { lps: lps.count ?? 0, paginas: paginas.count ?? 0, atendidos: atendidos.count ?? 0 };
 }
