@@ -1,6 +1,7 @@
 import Link from "@/components/shared/link";
 import { redirect } from "next/navigation";
-import { BarChart3, Download, FileBarChart, Mail, Plug } from "lucide-react";
+import { Activity, BarChart3, Download, FileBarChart, Mail, Plug } from "lucide-react";
+import { RelatorioAtividade } from "@/features/atividade/relatorio-atividade";
 import { exigirUsuario } from "@/lib/auth";
 import { pode } from "@/lib/permissions";
 import { criarClienteServidor } from "@/lib/supabase/server";
@@ -17,7 +18,7 @@ import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-type Sp = { aba?: string; de?: string; ate?: string; tipo?: string; q?: string; periodo?: string; regime?: string; rd?: string; publico?: string };
+type Sp = { usuario?: string; aba?: string; de?: string; ate?: string; tipo?: string; q?: string; periodo?: string; regime?: string; rd?: string; publico?: string };
 
 const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 const rotuloMes = (m: string) => `${MESES[Number(m.slice(5)) - 1]}/${m.slice(2, 4)}`;
@@ -30,16 +31,17 @@ export default async function RelatoriosPage({ searchParams }: { searchParams: P
   const usuario = await exigirUsuario();
   if (!pode(usuario.role, "ver_relatorios_gerais")) redirect("/dashboard");
   const sp = await searchParams;
-  const aba = sp.aba === "rd" ? "rd" : "divulgacao";
+  const aba = sp.aba === "rd" ? "rd" : sp.aba === "atividade" ? "atividade" : "divulgacao";
 
   const abas = [
     { chave: "divulgacao", href: "/relatorios", label: "Divulgação", icone: FileBarChart },
     { chave: "rd", href: "/relatorios?aba=rd", label: "E-mails (RD Station)", icone: Mail },
+    { chave: "atividade", href: "/relatorios?aba=atividade", label: "Acessos e atividade", icone: Activity },
   ] as const;
 
   return (
     <div className="space-y-6">
-      <PageHeader titulo="Relatórios" descricao="O que foi divulgado, por produto, tipo, período (feriado, férias, baixa temporada) e regime, e como os e-mails performaram." />
+      <PageHeader titulo="Relatórios" descricao="O que foi divulgado, como os e-mails performaram e quem acessou o sistema, por quanto tempo e fazendo o quê." />
       <nav aria-label="Seções dos relatórios" className="flex flex-wrap gap-1 border-b">
         {abas.map((a) => {
           const Icone = a.icone;
@@ -58,7 +60,7 @@ export default async function RelatoriosPage({ searchParams }: { searchParams: P
           );
         })}
       </nav>
-      {aba === "divulgacao" ? await RelatorioDivulgacao(sp) : await RelatorioEmails(sp)}
+      {aba === "divulgacao" ? await RelatorioDivulgacao(sp) : aba === "rd" ? await RelatorioEmails(sp) : <RelatorioAtividade sp={sp} />}
     </div>
   );
 }

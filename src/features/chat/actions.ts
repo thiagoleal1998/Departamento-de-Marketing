@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { avisarNovaMensagem } from "./aviso";
+import { registrarAcao } from "@/features/atividade/registro";
 
 /** Envia uma mensagem (a entrega em tempo real vem do Supabase Realtime). */
 export async function enviarMensagem(
@@ -44,6 +45,7 @@ export async function enviarMensagem(
   }
   await avisarNovaMensagem(supabase, user.id, conversaId, original ? `↪ “${original.texto.slice(0, 40)}${original.texto.length > 40 ? "…" : ""}” — ${limpo}` : limpo);
 
+  await registrarAcao(user.id, "Enviou mensagem no chat", null, "/chat");
   return { ok: true };
 }
 

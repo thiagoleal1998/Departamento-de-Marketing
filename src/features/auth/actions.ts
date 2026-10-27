@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { supabaseConfigurado } from "@/lib/supabase/env";
+import { registrarLogin } from "@/features/atividade/registro";
 
 export type EstadoLogin = { erro?: string };
 
@@ -22,7 +23,7 @@ export async function entrar(
   }
 
   const supabase = await criarClienteServidor();
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password: senha,
   });
@@ -31,11 +32,16 @@ export async function entrar(
     return { erro: "E-mail ou senha inválidos." };
   }
 
+  if (data.user) await registrarLogin(data.user.id, "login");
   redirect("/dashboard");
 }
 
 export async function sair() {
   const supabase = await criarClienteServidor();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) await registrarLogin(user.id, "logout");
   await supabase.auth.signOut();
   redirect("/login");
 }

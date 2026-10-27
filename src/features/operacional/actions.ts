@@ -6,6 +6,8 @@ import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { avisarDiretoria } from "@/features/executivo/avisos";
 import { tarefaParaEtapaStatus } from "@/features/projetos/tarefa";
 import { ehRaiz } from "@/lib/pastas";
+import { registrarAcao } from "@/features/atividade/registro";
+import { TAREFA_STATUS_META } from "@/types";
 import { normalizarLembretes } from "@/lib/lembretes";
 import type { TarefaStatus } from "@/types";
 
@@ -30,6 +32,12 @@ export async function moverTarefa(tarefaId: string, novoStatus: TarefaStatus) {
   }
   if (novoStatus === "aprovacao_marco" && antes && antes.status !== novoStatus) {
     await avisarDiretoria({ titulo: "Para aprovar: " + antes.titulo, link: "/executivo" });
+  }
+  if (antes && antes.status !== novoStatus) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) await registrarAcao(user.id, "Moveu a tarefa de coluna", `${antes.titulo} → ${TAREFA_STATUS_META[novoStatus]?.label ?? novoStatus}`, "/operacional");
   }
   revalidatePath("/operacional");
 }
@@ -179,6 +187,7 @@ export async function salvarTarefa(
       link: "/operacional?tarefa=" + tarefaId,
     });
   }
+  await registrarAcao(user.id, "Editou a tarefa", titulo, "/operacional");
   revalidatePath("/operacional");
   if (avisoPasta) return { erro: avisoPasta };
   return { ok: true };
@@ -198,7 +207,7 @@ export async function excluirTarefa(tarefaId: string): Promise<{ ok?: boolean; e
   // A leitura passa pela RLS: só enxerga a tarefa quem é da liderança ou o responsável.
   const { data: tarefa } = await supabase
     .from("tarefas")
-    .select("id, responsavel_id")
+    .select("id, responsavel_id, titulo")
     .eq("id", tarefaId)
     .maybeSingle();
   if (!tarefa) return { erro: "Tarefa não encontrada ou sem permissão." };
@@ -214,6 +223,7 @@ export async function excluirTarefa(tarefaId: string): Promise<{ ok?: boolean; e
   const { error } = await criarClienteAdmin().from("tarefas").delete().eq("id", tarefaId);
   if (error) return { erro: "Não foi possível excluir a tarefa." };
 
+  await registrarAcao(user.id, "Excluiu a tarefa", (tarefa as { titulo?: string }).titulo ?? null, "/operacional");
   revalidatePath("/operacional");
   revalidatePath("/chat");
   return { ok: true };
@@ -311,6 +321,7 @@ export async function criarTarefaCard(d: NovoCard): Promise<{ ok?: boolean; erro
   if (d.status === "aprovacao_marco") {
     await avisarDiretoria({ titulo: "Para aprovar: " + titulo, link: "/executivo" });
   }
+  await registrarAcao(user.id, "Criou a tarefa", titulo, "/operacional");
   revalidatePath("/operacional");
   return { ok: true, id };
 }

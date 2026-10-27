@@ -5,6 +5,7 @@ import { criarClienteServidor } from "@/lib/supabase/server";
 import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { enviarPush } from "@/lib/push";
 import { dataBr } from "./calendario";
+import { registrarAcao } from "@/features/atividade/registro";
 
 type Resultado = { ok?: boolean; erro?: string; avisados?: number };
 const MIGRACAO = "A escala de feriados ainda não foi ativada no banco (migration 0067).";
@@ -67,6 +68,7 @@ export async function definirEscala(data: string, nomeFeriado: string, profileId
     entrando.filter((id) => id !== l.user!.id),
     `Você está escalado(a) no feriado: ${nome} (${dataBr(data)}).`
   );
+  await registrarAcao(l.user.id, "Alterou a escala de feriado", `${nome} (${dataBr(data)})`, "/gestao/feriados");
   revalidatePath("/gestao/feriados");
   return { ok: true, avisados: entrando.length };
 }
@@ -96,6 +98,7 @@ export async function avisarFolga(data: string, nomeFeriado: string): Promise<Re
     folga.filter((id) => id !== l.user!.id),
     `Você estará de folga no feriado: ${nomeFeriado.slice(0, 120)} (${dataBr(data)}).`
   );
+  await registrarAcao(l.user.id, "Avisou a folga de feriado", `${nomeFeriado.slice(0, 120)} (${dataBr(data)})`, "/gestao/feriados");
   revalidatePath("/gestao/feriados");
   return { ok: true, avisados: folga.length };
 }

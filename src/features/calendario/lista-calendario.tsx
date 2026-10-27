@@ -22,6 +22,8 @@ export interface ItemCalendario {
   publico: string[];
   tags: string | null;
   lembretes?: number[] | null;
+  /** Quem criou o item (migration 0077). */
+  criado_por?: string | null;
 }
 
 const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -57,7 +59,9 @@ const diaExtenso = (data: string) => {
 };
 
 /** Calendário geral: grade mensal (ou lista) com os conteúdos e eventos do time, com filtros. */
-export function ListaCalendario({ itens, podeExcluir = false }: { itens: ItemCalendario[]; podeExcluir?: boolean }) {
+export function ListaCalendario({ itens, usuarioId, lideranca = false }: { itens: ItemCalendario[]; usuarioId: string; lideranca?: boolean }) {
+  // Gerente e líder excluem qualquer item; o colaborador, só o que ele mesmo criou.
+  const podeExcluirItem = (i: ItemCalendario) => lideranca || i.criado_por === usuarioId;
   const { confirmar, avisar } = useDialogo();
   const hoje = hojeSP();
   const [formulario, setFormulario] = useState<{ item?: ItemCalendario; data: string } | null>(null);
@@ -134,7 +138,7 @@ export function ListaCalendario({ itens, podeExcluir = false }: { itens: ItemCal
         <Button variant="ghost" size="icon" className="size-7" aria-label={`Editar ${i.nome}`} onClick={() => setFormulario({ item: i, data: i.data ?? hoje })}>
           <Pencil className="size-3.5" />
         </Button>
-        {podeExcluir ? (
+        {podeExcluirItem(i) ? (
           <Button variant="ghost" size="icon" className="size-7" aria-label={`Excluir ${i.nome}`} onClick={() => void excluir(i)}>
             <Trash2 className="size-3.5" />
           </Button>
@@ -337,7 +341,7 @@ export function ListaCalendario({ itens, podeExcluir = false }: { itens: ItemCal
           dataPadrao={formulario.data}
           aoFechar={() => setFormulario(null)}
           aoExcluir={
-            podeExcluir && formulario.item
+            formulario.item && podeExcluirItem(formulario.item)
               ? async () => {
                   if (await excluir(formulario.item!)) setFormulario(null);
                 }

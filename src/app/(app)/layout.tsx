@@ -8,6 +8,7 @@ import { obterConfig } from "@/lib/config";
 import { contagensDoMenu } from "@/features/notificacoes/menu";
 import { obterDiretorio } from "@/features/equipe/diretorio";
 import { ChatFlutuante } from "@/features/chat/chat-flutuante";
+import { RastreadorAtividade } from "@/features/atividade/rastreador";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,7 @@ export default async function AppLayout({
           </div>
         </main>
       </div>
+      <RastreadorAtividade />
       <ChatFlutuante usuarioId={usuario.id} pessoas={colegas} naoLidas={contagens["/chat"] ?? 0} />
     </div>
   );
