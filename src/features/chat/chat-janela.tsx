@@ -18,6 +18,7 @@ import { refsDe, type DadosVinculo, type ItemEstoqueChat, type RefItem } from ".
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { BarraResposta, BotaoResponder, Citacao } from "./citacao";
+import { ReacoesDaMensagem, SeletorReacao, useReacoes } from "./reacoes";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -77,6 +78,7 @@ export function ChatJanela({
   const fimRef = useRef<HTMLDivElement>(null);
   // Responder a uma mensagem específica (aparece citada acima da resposta).
   const [respondendoA, setRespondendoA] = useState<MensagemView | null>(null);
+  const { lista: reacoes, reagir } = useReacoes(conversaId, meuId);
   const quem = (m: MensagemView) => (m.autor_id === meuId ? "Você" : nomes[m.autor_id] ?? "—");
   function irPara(id: string) {
     const el = document.getElementById("cj-msg-" + id);
@@ -278,7 +280,13 @@ export function ChatJanela({
           mensagens.map((m) => {
             const minha = m.autor_id === meuId;
             const original = m.resposta_a ? mensagens.find((x) => x.id === m.resposta_a) : undefined;
-            const botao = <BotaoResponder nome={quem(m)} onClick={() => setRespondendoA(m)} />;
+            const dela = reacoes.filter((r) => r.mensagem_id === m.id);
+            const botao = (
+              <div className="flex items-center self-center">
+                <SeletorReacao atual={dela.find((r) => r.usuario_id === meuId)?.emoji} onEscolher={(e) => void reagir(m.id, e)} />
+                <BotaoResponder nome={quem(m)} onClick={() => setRespondendoA(m)} />
+              </div>
+            );
             return (
               <div
                 key={m.id}
@@ -303,6 +311,7 @@ export function ChatJanela({
                     <Citacao nome={original ? quem(original) : "Mensagem anterior"} texto={original?.texto ?? null} minha={minha} onIr={original ? () => irPara(original.id) : undefined} />
                   ) : null}
                   <p className="whitespace-pre-wrap break-words">{m.texto}</p>
+                  <ReacoesDaMensagem reacoes={dela} usuarioId={meuId} nomeDe={(id) => nomes[id] ?? "—"} onReagir={(e) => void reagir(m.id, e)} minha={minha} />
                   {m.solicitacao_id && mensagens.find((x) => x.solicitacao_id === m.solicitacao_id)?.id === m.id ? (
                     <SolicitacaoCard
                       id={m.solicitacao_id}

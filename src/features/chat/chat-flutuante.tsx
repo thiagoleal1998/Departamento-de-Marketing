@@ -9,6 +9,7 @@ import { enviarMensagem, marcarConversaLida } from "./actions";
 import { abrirConversaFlutuante, naoLidasPorConversa } from "./flutuante-actions";
 import { CONVERSA_GERAL } from "./constantes";
 import { BarraResposta, BotaoResponder, Citacao } from "./citacao";
+import { ReacoesDaMensagem, SeletorReacao, useReacoes } from "./reacoes";
 import { cn } from "@/lib/utils";
 
 interface Msg {
@@ -46,6 +47,7 @@ export function ChatFlutuante({
   const [porConversa, setPorConversa] = useState<Record<string, number> | null>(null);
   const [aviso, setAviso] = useState<{ chave: string; autor: string; texto: string } | null>(null);
   const fim = useRef<HTMLDivElement>(null);
+  const { lista: reacoes, reagir } = useReacoes(aberto ? conversaId : null, usuarioId);
   const atual = useRef({ aberto, com });
   atual.current = { aberto, com };
 
@@ -257,7 +259,13 @@ export function ChatFlutuante({
               mensagens.map((m) => {
                 const minha = m.autor_id === usuarioId;
                 const original = m.resposta_a ? mensagens.find((x) => x.id === m.resposta_a) : undefined;
-                const botao = <BotaoResponder nome={quem(m)} onClick={() => setRespondendoA(m)} />;
+                const dela = reacoes.filter((r) => r.mensagem_id === m.id);
+                const botao = (
+                  <div className="flex items-center self-center">
+                    <SeletorReacao atual={dela.find((r) => r.usuario_id === usuarioId)?.emoji} onEscolher={(e) => void reagir(m.id, e)} />
+                    <BotaoResponder nome={quem(m)} onClick={() => setRespondendoA(m)} />
+                  </div>
+                );
                 return (
                   <div key={m.id} className={cn("group flex gap-1", minha ? "justify-end" : "justify-start")}>
                     {minha ? botao : null}
@@ -270,6 +278,7 @@ export function ChatFlutuante({
                         <Citacao nome={original ? quem(original) : "Mensagem anterior"} texto={original?.texto ?? null} minha={minha} onIr={original ? () => irPara(original.id) : undefined} />
                       ) : null}
                       <p className="whitespace-pre-wrap break-words">{m.texto}</p>
+                      <ReacoesDaMensagem reacoes={dela} usuarioId={usuarioId} nomeDe={(id) => nomes.get(id) ?? "—"} onReagir={(e) => void reagir(m.id, e)} minha={minha} />
                       <p className={cn("mt-0.5 text-right text-[10px]", minha ? "opacity-80" : "text-muted-foreground")}>{hora(m.created_at)}</p>
                     </div>
                     {!minha ? botao : null}
