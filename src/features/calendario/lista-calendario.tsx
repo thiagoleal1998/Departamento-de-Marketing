@@ -45,6 +45,7 @@ const TIPO_COR: Record<string, { chip: string; ponto: string; borda: string }> =
   Podcast: { chip: "bg-yellow-100 text-yellow-900 dark:bg-yellow-950 dark:text-yellow-200", ponto: "bg-yellow-500", borda: "border-l-yellow-500" },
   Visita: { chip: "bg-orange-100 text-orange-900 dark:bg-orange-950 dark:text-orange-200", ponto: "bg-orange-500", borda: "border-l-orange-500" },
   ULV: { chip: "bg-sky-100 text-sky-900 dark:bg-sky-950 dark:text-sky-200", ponto: "bg-sky-500", borda: "border-l-sky-500" },
+  "Treinamento Agentes": { chip: "bg-teal-100 text-teal-900 dark:bg-teal-950 dark:text-teal-200", ponto: "bg-teal-500", borda: "border-l-teal-500" },
 };
 const COR_PADRAO = { chip: "bg-muted text-foreground", ponto: "bg-muted-foreground/60", borda: "border-l-muted-foreground/40" };
 const corTipo = (t: string | null) => (t && TIPO_COR[t]) || COR_PADRAO;
