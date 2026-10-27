@@ -9,6 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { ehResponsavel } from "@/lib/responsaveis";
+import Link from "@/components/shared/link";
+import { categoriaPorValor } from "@/features/projetos/categorias";
+import { PROJETO_STATUS_META } from "@/types";
 
 export interface ItemCalendario {
   id: string;
@@ -25,6 +28,50 @@ export interface ItemCalendario {
   lembretes?: number[] | null;
   /** Quem criou o item (migration 0077). */
   criado_por?: string | null;
+  /** Item vindo de um projeto (evento, famtour…): só abre o projeto, não edita aqui. */
+  href?: string | null;
+}
+
+export interface ProjetoNoCalendario {
+  id: string;
+  nome: string;
+  categoria: string;
+  status: string;
+  responsavel: string | null;
+  inicio: string | null;
+  fim: string | null;
+}
+
+const MAX_DIAS_PROJETO = 60;
+const diasEntre = (ini: string, fim: string) => {
+  const dias: string[] = [];
+  const t0 = Date.parse(ini + "T00:00:00Z");
+  const t1 = Date.parse(fim + "T00:00:00Z");
+  for (let t = t0, n = 0; t <= t1 && n < MAX_DIAS_PROJETO; t += 86_400_000, n++) dias.push(new Date(t).toISOString().slice(0, 10));
+  return dias;
+};
+
+/** Cada projeto com data vira um item em cada dia do período dele. */
+function itensDosProjetos(projetos: ProjetoNoCalendario[]): ItemCalendario[] {
+  return projetos.flatMap((p) => {
+    const ini = p.inicio ?? p.fim;
+    const fim = p.fim ?? p.inicio;
+    if (!ini || !fim || fim < ini) return ini ? [ini] .map((d) => ({ p, d })) : [];
+    return diasEntre(ini, fim).map((d) => ({ p, d }));
+  }).map(({ p, d }) => ({
+    id: `proj:${p.id}:${d}`,
+    nome: p.nome,
+    data: d,
+    status: PROJETO_STATUS_META[p.status as keyof typeof PROJETO_STATUS_META]?.label ?? p.status,
+    tipo: categoriaPorValor(p.categoria)?.label ?? "Projeto",
+    canais: [],
+    responsaveis: p.responsavel ? [p.responsavel.split(" ")[0]] : [],
+    tipo_post: null,
+    objetivo: null,
+    publico: [],
+    tags: null,
+    href: `/projetos/${p.id}`,
+  }));
 }
 
 const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -44,6 +91,11 @@ const TIPO_COR: Record<string, { chip: string; ponto: string; borda: string }> =
   Oferta: { chip: "bg-green-100 text-green-900 dark:bg-green-950 dark:text-green-200", ponto: "bg-green-500", borda: "border-l-green-500" },
   Podcast: { chip: "bg-yellow-100 text-yellow-900 dark:bg-yellow-950 dark:text-yellow-200", ponto: "bg-yellow-500", borda: "border-l-yellow-500" },
   Visita: { chip: "bg-orange-100 text-orange-900 dark:bg-orange-950 dark:text-orange-200", ponto: "bg-orange-500", borda: "border-l-orange-500" },
+  Eventos: { chip: "bg-indigo-100 text-indigo-900 dark:bg-indigo-950 dark:text-indigo-200", ponto: "bg-indigo-500", borda: "border-l-indigo-500" },
+  Feira: { chip: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200", ponto: "bg-amber-500", borda: "border-l-amber-500" },
+  Famtour: { chip: "bg-rose-100 text-rose-900 dark:bg-rose-950 dark:text-rose-200", ponto: "bg-rose-500", borda: "border-l-rose-500" },
+  "Projetos de Marketing": { chip: "bg-violet-100 text-violet-900 dark:bg-violet-950 dark:text-violet-200", ponto: "bg-violet-500", borda: "border-l-violet-500" },
+  "VT's": { chip: "bg-fuchsia-100 text-fuchsia-900 dark:bg-fuchsia-950 dark:text-fuchsia-200", ponto: "bg-fuchsia-500", borda: "border-l-fuchsia-500" },
   ULV: { chip: "bg-sky-100 text-sky-900 dark:bg-sky-950 dark:text-sky-200", ponto: "bg-sky-500", borda: "border-l-sky-500" },
   "Treinamento Agentes": { chip: "bg-teal-100 text-teal-900 dark:bg-teal-950 dark:text-teal-200", ponto: "bg-teal-500", borda: "border-l-teal-500" },
 };
@@ -61,10 +113,12 @@ const diaExtenso = (data: string) => {
 };
 
 /** Calendário geral: grade mensal (ou lista) com os conteúdos e eventos do time, com filtros. */
-export function ListaCalendario({ itens, usuarioId, usuarioNome, lideranca = false }: { itens: ItemCalendario[]; usuarioId: string; usuarioNome: string; lideranca?: boolean }) {
+export function ListaCalendario({ itens: itensDoCalendario, projetos = [], usuarioId, usuarioNome, lideranca = false }: { itens: ItemCalendario[]; projetos?: ProjetoNoCalendario[]; usuarioId: string; usuarioNome: string; lideranca?: boolean }) {
+  // Itens do calendário + projetos (eventos, famtours, feiras, VTs…) com data.
+  const itens = useMemo(() => [...itensDoCalendario, ...itensDosProjetos(projetos)], [itensDoCalendario, projetos]);
   // Gerente e líder excluem qualquer item; o colaborador, o que ele criou. Itens antigos não guardam o autor:
   // para esses vale quem está entre os responsáveis.
-  const podeExcluirItem = (i: ItemCalendario) => lideranca || i.criado_por === usuarioId || (!i.criado_por && ehResponsavel(usuarioNome, i.responsaveis));
+  const podeExcluirItem = (i: ItemCalendario) => !i.href && (lideranca || i.criado_por === usuarioId || (!i.criado_por && ehResponsavel(usuarioNome, i.responsaveis)));
   const { confirmar, avisar } = useDialogo();
   const hoje = hojeSP();
   const [formulario, setFormulario] = useState<{ item?: ItemCalendario; data: string } | null>(null);
@@ -138,9 +192,15 @@ export function ListaCalendario({ itens, usuarioId, usuarioNome, lideranca = fal
         <span className={cn("shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium", corStatus(i.status))}>{i.status}</span>
       </div>
       <div className="flex justify-end gap-1">
-        <Button variant="ghost" size="icon" className="size-7" aria-label={`Editar ${i.nome}`} onClick={() => setFormulario({ item: i, data: i.data ?? hoje })}>
-          <Pencil className="size-3.5" />
-        </Button>
+        {i.href ? (
+          <Button asChild variant="outline" size="sm" className="h-7 text-xs">
+            <Link href={i.href}>Abrir projeto</Link>
+          </Button>
+        ) : (
+          <Button variant="ghost" size="icon" className="size-7" aria-label={`Editar ${i.nome}`} onClick={() => setFormulario({ item: i, data: i.data ?? hoje })}>
+            <Pencil className="size-3.5" />
+          </Button>
+        )}
         {podeExcluirItem(i) ? (
           <Button variant="ghost" size="icon" className="size-7" aria-label={`Excluir ${i.nome}`} onClick={() => void excluir(i)}>
             <Trash2 className="size-3.5" />
@@ -267,17 +327,28 @@ export function ListaCalendario({ itens, usuarioId, usuarioNome, lideranca = fal
                         <Plus className="size-3.5" />
                       </button>
                     </div>
-                    {lista.slice(0, POR_CELULA).map((i) => (
-                      <button
-                        key={i.id}
-                        type="button"
-                        onClick={() => setFormulario({ item: i, data: c.data })}
-                        title={`${i.nome} · ${i.status}`}
-                        className={cn("block w-full truncate rounded px-1.5 py-0.5 text-left text-[11px] font-medium transition-opacity hover:opacity-80", corTipo(i.tipo).chip, concluido(i.status) && "opacity-60")}
-                      >
-                        {i.nome}
-                      </button>
-                    ))}
+                    {lista.slice(0, POR_CELULA).map((i) =>
+                      i.href ? (
+                        <Link
+                          key={i.id}
+                          href={i.href}
+                          title={`${i.nome} · ${i.tipo} · ${i.status}`}
+                          className={cn("block w-full truncate rounded px-1.5 py-0.5 text-left text-[11px] font-semibold ring-1 ring-inset ring-current/20 transition-opacity hover:opacity-80", corTipo(i.tipo).chip, concluido(i.status) && "opacity-60")}
+                        >
+                          {i.nome}
+                        </Link>
+                      ) : (
+                        <button
+                          key={i.id}
+                          type="button"
+                          onClick={() => setFormulario({ item: i, data: c.data })}
+                          title={`${i.nome} · ${i.status}`}
+                          className={cn("block w-full truncate rounded px-1.5 py-0.5 text-left text-[11px] font-medium transition-opacity hover:opacity-80", corTipo(i.tipo).chip, concluido(i.status) && "opacity-60")}
+                        >
+                          {i.nome}
+                        </button>
+                      )
+                    )}
                     {lista.length > POR_CELULA ? (
                       <button type="button" onClick={() => setDiaAberto(c.data)} className="w-full rounded px-1.5 text-left text-[11px] font-medium text-muted-foreground hover:text-foreground">
                         +{lista.length - POR_CELULA} mais

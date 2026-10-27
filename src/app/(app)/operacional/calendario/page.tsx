@@ -4,6 +4,8 @@ import { ehLideranca } from "@/lib/permissions";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { ListaCalendario, type ItemCalendario } from "@/features/calendario/lista-calendario";
 import { PageHeader } from "@/components/shared/page-header";
+import { mapaDePerfis } from "@/features/chamados/data";
+import type { ProjetoNoCalendario } from "@/features/calendario/lista-calendario";
 
 export const dynamic = "force-dynamic";
 
@@ -17,19 +19,36 @@ export default async function CalendarioPage() {
     .limit(3000);
   const itens = (data as ItemCalendario[] | null) ?? [];
 
+  // Eventos, famtours, feiras, VTs e projetos com data entram no calendário (clicar abre o projeto).
+  const { data: projs } = await supabase
+    .from("projetos")
+    .select("id, nome, categoria, status, responsavel_id, data_inicio, data_fim")
+    .or("data_inicio.not.is.null,data_fim.not.is.null")
+    .limit(500);
+  const perfis = await mapaDePerfis();
+  const projetos: ProjetoNoCalendario[] = ((projs as { id: string; nome: string; categoria: string; status: string; responsavel_id: string | null; data_inicio: string | null; data_fim: string | null }[] | null) ?? []).map((p) => ({
+    id: p.id,
+    nome: p.nome,
+    categoria: p.categoria,
+    status: p.status,
+    responsavel: p.responsavel_id ? perfis.get(p.responsavel_id)?.nome ?? null : null,
+    inicio: p.data_inicio,
+    fim: p.data_fim,
+  }));
+
   return (
     <div className="space-y-6">
       <PageHeader
         titulo="Calendário geral"
         descricao="E-mails, redes sociais, ofertas, podcasts e visitas do time em um só calendário. Clique em um dia para ver tudo o que está programado ou para incluir um item."
       />
-      {itens.length === 0 ? (
+      {itens.length === 0 && projetos.length === 0 ? (
         <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed p-10 text-center text-sm text-muted-foreground">
           <CalendarRange className="size-8" />
           Nenhum item ainda. Rode a migration 0048 para importar o calendário do Notion.
         </div>
       ) : (
-        <ListaCalendario itens={itens} usuarioId={usuario.id} usuarioNome={usuario.nome} lideranca={ehLideranca(usuario.role)} />
+        <ListaCalendario itens={itens} projetos={projetos} usuarioId={usuario.id} usuarioNome={usuario.nome} lideranca={ehLideranca(usuario.role)} />
       )}
     </div>
   );

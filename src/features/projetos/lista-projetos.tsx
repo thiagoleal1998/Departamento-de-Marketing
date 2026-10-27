@@ -71,7 +71,21 @@ export async function ListaProjetos({
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {projetos.map((p) => (
             <Link key={p.id} href={`/projetos/${p.id}`}>
-              <Card className="h-full transition-colors hover:border-primary/40 hover:bg-accent/30">
+              <Card className="h-full overflow-hidden transition-colors hover:border-primary/40 hover:bg-accent/30">
+                {p.capa_url || p.logo_parceiro_url ? (
+                  <div className="relative h-32 bg-muted">
+                    {p.capa_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.capa_url} alt="" className="size-full object-cover" />
+                    ) : null}
+                    {p.logo_parceiro_url ? (
+                      <div className={p.capa_url ? "absolute bottom-2 left-2 rounded-lg bg-white p-1.5 shadow" : "grid size-full place-items-center bg-white p-4"}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={p.logo_parceiro_url} alt="" className={p.capa_url ? "h-8 max-w-28 object-contain" : "max-h-full max-w-full object-contain"} />
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
                 <CardContent className="space-y-3 p-5">
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="font-semibold leading-tight">{p.nome}</h3>

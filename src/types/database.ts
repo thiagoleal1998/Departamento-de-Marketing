@@ -134,6 +134,9 @@ export interface Projeto {
   data_fim: string | null;
   criado_por: string | null;
   created_at: string;
+  /** Foto de capa e logo do parceiro (migration 0079). */
+  capa_url?: string | null;
+  logo_parceiro_url?: string | null;
 }
 
 export interface ProjetoEtapa {

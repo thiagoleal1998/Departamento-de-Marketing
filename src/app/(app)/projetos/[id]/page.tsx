@@ -39,6 +39,8 @@ import { EtapaStatusControl } from "@/features/projetos/etapa-status-control";
 import { ProjetoStatusControl } from "@/features/projetos/projeto-status-control";
 import { CategoriaControl } from "@/features/projetos/categoria-control";
 import { categoriaPorValor } from "@/features/projetos/categorias";
+import { CapaProjeto } from "@/features/projetos/capa-projeto";
+import { CampoImagem } from "@/features/projetos/campo-imagem";
 import { PageHeader } from "@/components/shared/page-header";
 import {
   Card,
@@ -105,6 +107,7 @@ export default async function ProjetoDetalhePage({
 
   return (
     <div className="space-y-6">
+      <CapaProjeto capa={projeto.capa_url} logo={projeto.logo_parceiro_url} nome={projeto.nome} />
       <PageHeader
         titulo={projeto.nome}
         descricao="Acompanhe as etapas do projeto."
@@ -563,6 +566,8 @@ export default async function ProjetoDetalhePage({
                         <DateInputBR id="proj-fim" name="data_fim" defaultValue={projeto.data_fim ?? ""} />
                       </div>
                     </div>
+                    <CampoImagem name="capa" rotulo="Foto de capa" formato="capa" atual={projeto.capa_url} />
+                    <CampoImagem name="logo_parceiro" rotulo="Logo do parceiro" formato="logo" atual={projeto.logo_parceiro_url} />
                     <div className="flex justify-end">
                       <Button type="submit" size="sm">
                         <Save className="size-4" /> Salvar

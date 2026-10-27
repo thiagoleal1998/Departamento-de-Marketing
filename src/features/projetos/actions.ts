@@ -10,6 +10,7 @@ import {
   etapaParaTarefaStatus,
 } from "./tarefa";
 import { categoriaPorValor } from "./categorias";
+import { enviarImagemProjeto } from "./imagem";
 import type { ProjetoStatus, EtapaStatus } from "@/types";
 
 async function usuarioId() {
@@ -70,6 +71,22 @@ export async function criarProjeto(formData: FormData) {
     .single();
   if (error || !data) return;
 
+  // Capa e logo do parceiro (migration 0079): gravadas à parte; sem ela o projeto é criado do mesmo jeito.
+  {
+    const campos: Record<string, string> = {};
+    const capa = String(formData.get("capa") ?? "");
+    const logo = String(formData.get("logo_parceiro") ?? "");
+    if (capa) {
+      const u = await enviarImagemProjeto(capa, "capa");
+      if (u) campos.capa_url = u;
+    }
+    if (logo) {
+      const u = await enviarImagemProjeto(logo, "logo");
+      if (u) campos.logo_parceiro_url = u;
+    }
+    if (Object.keys(campos).length > 0) await supabase.from("projetos").update(campos).eq("id", data.id);
+  }
+
   // Todo projeto (famtour, evento, feira, VT…) também aparece como card no quadro de Tarefas.
   if (servicoDisponivel()) {
     try {
@@ -124,6 +141,22 @@ export async function atualizarProjeto(projetoId: string, formData: FormData) {
 
   const { error } = await w.db.from("projetos").update({ nome, descricao, responsavel_id, data_inicio, data_fim }).eq("id", projetoId);
   if (error) return;
+
+  // Capa e logo do parceiro: nova imagem substitui; "remover" tira.
+  {
+    const imagens: Record<string, string | null> = {};
+    const capa = String(formData.get("capa") ?? "");
+    const logo = String(formData.get("logo_parceiro") ?? "");
+    if (capa) {
+      const u = await enviarImagemProjeto(capa, "capa");
+      if (u) imagens.capa_url = u;
+    } else if (formData.get("remover_capa") === "1") imagens.capa_url = null;
+    if (logo) {
+      const u = await enviarImagemProjeto(logo, "logo");
+      if (u) imagens.logo_parceiro_url = u;
+    } else if (formData.get("remover_logo_parceiro") === "1") imagens.logo_parceiro_url = null;
+    if (Object.keys(imagens).length > 0) await w.db.from("projetos").update(imagens).eq("id", projetoId);
+  }
 
   // Card do projeto no quadro de Tarefas (sem a migration 0078 não há ligação e nada acontece).
   try {

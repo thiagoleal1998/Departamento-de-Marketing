@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { DateInputBR } from "@/components/ui/date-input-br";
+import { CampoImagem } from "@/features/projetos/campo-imagem";
 
 export const dynamic = "force-dynamic";
 
@@ -81,6 +82,10 @@ export default async function NovoProjetoPage({
                 rows={4}
                 placeholder="Objetivo, escopo e contexto do projeto."
               />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <CampoImagem name="capa" rotulo="Foto de capa" formato="capa" dica="Aparece no topo do projeto e na lista. Prefira uma foto horizontal." />
+              <CampoImagem name="logo_parceiro" rotulo="Logo do parceiro" formato="logo" dica="Aparece sobre a capa. PNG com fundo transparente fica melhor." />
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2">
