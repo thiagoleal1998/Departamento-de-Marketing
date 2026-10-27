@@ -4,6 +4,7 @@ import { exigirUsuario } from "@/lib/auth";
 import { ehLideranca } from "@/lib/permissions";
 import { listarProjetos } from "@/features/projetos/data";
 import {
+  TEXTOS_PROJETO,
   categoriaPorValor,
   type CategoriaMeta,
 } from "@/features/projetos/categorias";
@@ -28,6 +29,7 @@ export async function ListaProjetos({
     listarProjetos(categoria?.valor),
     mapaDePerfis(),
   ]);
+  const textos = categoria?.textos ?? TEXTOS_PROJETO;
   const novoHref = categoria
     ? `/projetos/novo?categoria=${categoria.valor}`
     : "/projetos/novo";
@@ -45,7 +47,7 @@ export async function ListaProjetos({
           lideranca ? (
             <Button asChild>
               <Link href={novoHref}>
-                <Plus className="size-4" /> Novo projeto
+                <Plus className="size-4" /> {textos.novo}
               </Link>
             </Button>
           ) : undefined
@@ -55,14 +57,12 @@ export async function ListaProjetos({
       {projetos.length === 0 ? (
         <EmptyState
           icone={FolderKanban}
-          titulo={
-            categoria ? `Nada em ${categoria.label} ainda` : "Nenhum projeto ainda"
-          }
-          descricao="Crie um projeto para organizar o trabalho em etapas, com documentos e comparativos."
+          titulo={textos.nenhum}
+          descricao={`${textos.criar} para organizar o trabalho em etapas, com documentos e comparativos.`}
           acao={
             lideranca ? (
               <Button asChild>
-                <Link href={novoHref}>Novo projeto</Link>
+                <Link href={novoHref}>{textos.novo}</Link>
               </Button>
             ) : undefined
           }

@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import { ehLideranca } from "@/lib/permissions";
 import { criarProjeto } from "@/features/projetos/actions";
-import { CATEGORIAS } from "@/features/projetos/categorias";
+import { CATEGORIAS, TEXTOS_PROJETO } from "@/features/projetos/categorias";
 import { listarColaboradores } from "@/features/desenvolvimento/data";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,12 +26,14 @@ export default async function NovoProjetoPage({
   const usuario = await exigirUsuario();
   if (!ehLideranca(usuario.role)) redirect("/projetos");
   const pessoas = await listarColaboradores();
+  // Famtour, evento, feira…: os textos acompanham a categoria de onde a pessoa veio.
+  const textos = CATEGORIAS.find((c) => c.valor === categoria)?.textos ?? TEXTOS_PROJETO;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <PageHeader
-        titulo="Novo projeto"
-        descricao="Crie o projeto; depois você adiciona as etapas."
+        titulo={textos.novo}
+        descricao={`${textos.criar}; depois você adiciona as etapas.`}
         acoes={
           <Button asChild variant="outline">
             <Link href="/projetos">
@@ -45,11 +47,11 @@ export default async function NovoProjetoPage({
         <CardContent className="pt-6">
           <form action={criarProjeto} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="nome">Nome do projeto *</Label>
+              <Label htmlFor="nome">{textos.nome} *</Label>
               <Input
                 id="nome"
                 name="nome"
-                placeholder="Ex.: Feira de Turismo 2026"
+                placeholder={textos.exemplo}
                 required
               />
             </div>
@@ -105,7 +107,7 @@ export default async function NovoProjetoPage({
               <Button asChild variant="ghost">
                 <Link href="/projetos">Cancelar</Link>
               </Button>
-              <Button type="submit">Criar projeto</Button>
+              <Button type="submit">{textos.botaoCriar}</Button>
             </div>
           </form>
         </CardContent>
