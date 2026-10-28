@@ -37,7 +37,7 @@ export function VinculoCard({
   const [aberto, setAberto] = useState(false);
   const [texto, setTexto] = useState("");
   const [entradas, setEntradas] = useState<Record<string, string>>({});
-  const [concluir, setConcluir] = useState(true);
+  const [concluir, setConcluir] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, startTransition] = useTransition();
   const [atualizando, setAtualizando] = useState(false);

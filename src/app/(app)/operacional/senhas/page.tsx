@@ -9,14 +9,14 @@ export const dynamic = "force-dynamic";
  * Quem é o dono do acesso. Vem da planilha de origem, gravada nas observações
  * ("Acessos — Thiago", "Acesso antigo — Jessica"); nos acessos criados no painel, de quem cadastrou.
  */
-function donoDe(observacoes: string | null, criador: string | undefined): { dono: string; donoNaPlanilha: boolean } {
+function donoDe(observacoes: string | null, criador: string | undefined): { dono: string; donoNaPlanilha: boolean; antigo: boolean } {
   const m = observacoes?.match(/^(Acessos?(?: antigo)?)\s+—\s+(.+)$/m);
   if (m) {
     const nome = m[2].trim();
-    return { dono: /antigo/i.test(m[1]) ? `${nome} (antigo)` : nome, donoNaPlanilha: true };
+    return { dono: nome, donoNaPlanilha: true, antigo: /antigo/i.test(m[1]) };
   }
-  if (observacoes?.startsWith("Redes sociais")) return { dono: "Redes sociais", donoNaPlanilha: true };
-  return { dono: criador?.split(" ")[0] ?? "Sem responsável", donoNaPlanilha: false };
+  if (observacoes?.startsWith("Redes sociais")) return { dono: "Redes sociais", donoNaPlanilha: true, antigo: false };
+  return { dono: criador?.split(" ")[0] ?? "Sem responsável", donoNaPlanilha: false, antigo: false };
 }
 
 export default async function SenhasPage() {

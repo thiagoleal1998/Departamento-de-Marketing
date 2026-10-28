@@ -59,6 +59,33 @@ export async function marcarConversaLida(conversaId: string) {
 
   const agora = new Date().toISOString();
 
+  // Quais mensagens dos outros esta pessoa está vendo agora pela primeira vez (confirmação de leitura).
+  const { data: anterior } = await supabase
+    .from("chat_membros")
+    .select("ultima_leitura")
+    .eq("conversa_id", conversaId)
+    .eq("usuario_id", user.id)
+    .maybeSingle();
+  const desde = (anterior as { ultima_leitura: string } | null)?.ultima_leitura;
+  let novas = supabase
+    .from("chat_mensagens")
+    .select("id")
+    .eq("conversa_id", conversaId)
+    .neq("autor_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(150);
+  if (desde) novas = novas.gt("created_at", desde);
+  const { data: lidas } = await novas;
+  if (lidas && lidas.length > 0) {
+    // Antes da migration 0081 a tabela não existe: o erro é ignorado e o resto segue igual.
+    await supabase
+      .from("chat_leituras")
+      .upsert(
+        (lidas as { id: string }[]).map((m) => ({ mensagem_id: m.id, conversa_id: conversaId, usuario_id: user.id, lida_em: agora })),
+        { onConflict: "mensagem_id,usuario_id", ignoreDuplicates: true }
+      );
+  }
+
   // Conversa direta: a linha de membro já existe -> só atualiza.
   // (Um upsert passaria pela regra de INSERT, que só vale para a sala geral.)
   const { data: atualizadas } = await supabase

@@ -12,6 +12,9 @@ import { CONVERSA_GERAL } from "./constantes";
 import { BarraResposta, BotaoResponder, Citacao } from "./citacao";
 import { ReacoesDaMensagem, SeletorReacao, useReacoes } from "./reacoes";
 import { IndicadorDigitando, useDigitando } from "./digitando";
+import { StatusLeitura, useLeituras } from "./leituras";
+import { RevisaoCard } from "./revisao-card";
+import type { RevisaoPeca } from "./revisao-tipos";
 import { cn } from "@/lib/utils";
 
 interface Msg {
@@ -20,6 +23,7 @@ interface Msg {
   texto: string;
   created_at: string;
   resposta_a?: string | null;
+  revisao?: RevisaoPeca | null;
 }
 
 const hora = (iso: string) => new Date(iso).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
@@ -58,6 +62,7 @@ export function ChatFlutuante({
   const ativoAgora = aberto && !caminho?.startsWith("/chat");
   const { lista: reacoes, reagir } = useReacoes(ativoAgora ? conversaId : null, usuarioId);
   const { digitando, avisarDigitando, parouDeDigitar } = useDigitando(ativoAgora ? conversaId : null, usuarioId);
+  const leituras = useLeituras(ativoAgora ? conversaId : null);
   const atual = useRef({ aberto, com });
   atual.current = { aberto, com };
 
@@ -288,9 +293,22 @@ export function ChatFlutuante({
                       {m.resposta_a ? (
                         <Citacao nome={original ? quem(original) : "Mensagem anterior"} texto={original?.texto ?? null} minha={minha} onIr={original ? () => irPara(original.id) : undefined} />
                       ) : null}
+                      {m.revisao?.imagem ? <RevisaoCard revisao={m.revisao} minha={minha} /> : null}
                       <p className="whitespace-pre-wrap break-words">{m.texto}</p>
                       <ReacoesDaMensagem reacoes={dela} usuarioId={usuarioId} nomeDe={(id) => nomes.get(id) ?? "—"} onReagir={(e) => void reagir(m.id, e)} minha={minha} />
-                      <p className={cn("mt-0.5 text-right text-[10px]", minha ? "opacity-80" : "text-muted-foreground")}>{hora(m.created_at)}</p>
+                      <p className={cn("mt-0.5 text-right text-[10px]", minha ? "opacity-80" : "text-muted-foreground")}>
+                        {hora(m.created_at)}
+                        {minha ? (
+                          <>
+                            {" · "}
+                            <StatusLeitura
+                              leituras={leituras.filter((l) => l.mensagem_id === m.id && l.usuario_id !== usuarioId)}
+                              nomeDe={(id) => nomes.get(id) ?? "—"}
+                              ehGeral={com === "geral"}
+                            />
+                          </>
+                        ) : null}
+                      </p>
                     </div>
                     {!minha ? botao : null}
                   </div>

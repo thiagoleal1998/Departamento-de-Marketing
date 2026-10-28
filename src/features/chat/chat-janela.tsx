@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Send, Loader2, Link2, ClipboardPlus } from "lucide-react";
+import { Send, Loader2, Link2, ClipboardPlus, ScanSearch } from "lucide-react";
 import { criarClienteBrowser } from "@/lib/supabase/client";
 import { enviarMensagem, marcarConversaLida } from "./actions";
 import {
@@ -20,6 +20,11 @@ import { Button } from "@/components/ui/button";
 import { BarraResposta, BotaoResponder, Citacao } from "./citacao";
 import { ReacoesDaMensagem, SeletorReacao, useReacoes } from "./reacoes";
 import { IndicadorDigitando, useDigitando } from "./digitando";
+import { StatusLeitura, useLeituras } from "./leituras";
+import { RevisaoCard } from "./revisao-card";
+import { RevisaoEditor } from "./revisao-editor";
+import type { RevisaoPeca } from "./revisao-tipos";
+import { CONVERSA_GERAL } from "./constantes";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,6 +40,7 @@ export interface MensagemView {
   projeto_id?: string | null;
   solicitacao_id?: string | null;
   resposta_a?: string | null;
+  revisao?: RevisaoPeca | null;
 }
 
 export interface ProjetoOpcao {
@@ -85,6 +91,8 @@ export function ChatJanela({
     if (respondendoA) caixaRef.current?.focus();
   }, [respondendoA]);
   const { lista: reacoes, reagir } = useReacoes(conversaId, meuId);
+  const leituras = useLeituras(conversaId);
+  const [revisando, setRevisando] = useState(false);
   const { digitando, avisarDigitando, parouDeDigitar } = useDigitando(conversaId, meuId);
   const quem = (m: MensagemView) => (m.autor_id === meuId ? "Você" : nomes[m.autor_id] ?? "—");
   function irPara(id: string) {
@@ -104,7 +112,7 @@ export function ChatJanela({
   const [respTarefaId, setRespTarefaId] = useState("");
   const [respDados, setRespDados] = useState<DadosVinculo | null>(null);
   const [respEntradas, setRespEntradas] = useState<Record<string, string>>({});
-  const [respConcluir, setRespConcluir] = useState(true);
+  const [respConcluir, setRespConcluir] = useState(false);
   // Itens do estoque escolhidos (vários), cada um com a quantidade pedida.
   const [itensSel, setItensSel] = useState<{ id: string; qtd: string }[]>([]);
   const [projetoId, setProjetoId] = useState("");
@@ -205,11 +213,18 @@ export function ChatJanela({
     setVincular(true);
   }
 
+  /** Ao responder uma mensagem, a pessoa pode escolher uma tarefa pendente dela para responder junto. */
+  function escolherTarefaDaResposta() {
+    const citada = respondendoA?.tarefa_id;
+    setRespTarefaId(citada && tarefasResp.some((t) => t.id === citada) ? citada : "");
+    setVincular(true);
+  }
+
   function limparVinculo() {
     setVincular(false);
     setRespTarefaId("");
     setRespEntradas({});
-    setRespConcluir(true);
+    setRespConcluir(false);
     setItensSel([]);
     setProjetoId("");
     setStatusProjeto("");
@@ -318,6 +333,7 @@ export function ChatJanela({
                   {m.resposta_a ? (
                     <Citacao nome={original ? quem(original) : "Mensagem anterior"} texto={original?.texto ?? null} minha={minha} onIr={original ? () => irPara(original.id) : undefined} />
                   ) : null}
+                  {m.revisao?.imagem ? <RevisaoCard revisao={m.revisao} minha={minha} /> : null}
                   <p className="whitespace-pre-wrap break-words">{m.texto}</p>
                   <ReacoesDaMensagem reacoes={dela} usuarioId={meuId} nomeDe={(id) => nomes[id] ?? "—"} onReagir={(e) => void reagir(m.id, e)} minha={minha} />
                   {m.solicitacao_id && mensagens.find((x) => x.solicitacao_id === m.solicitacao_id)?.id === m.id ? (
@@ -360,6 +376,16 @@ export function ChatJanela({
                     )}
                   >
                     {hora(m.created_at)}
+                    {minha ? (
+                      <>
+                        {" · "}
+                        <StatusLeitura
+                          leituras={leituras.filter((l) => l.mensagem_id === m.id && l.usuario_id !== meuId)}
+                          nomeDe={(id) => nomes[id] ?? "—"}
+                          ehGeral={conversaId === CONVERSA_GERAL}
+                        />
+                      </>
+                    ) : null}
                   </p>
                 </div>
                 {!minha ? botao : null}
@@ -375,16 +401,14 @@ export function ChatJanela({
       <form onSubmit={enviar} className="border-t p-3">
         {erro ? <p className="mb-2 text-xs text-destructive">{erro}</p> : null}
 
-        {!vincular && !respondendo && tarefasResp.length > 0 ? (
-          <div className="mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-            <span>
-              📌 Tarefa em aberto nesta conversa: <strong>{tarefasResp[0].titulo}</strong>
-              {tarefasResp.length > 1 ? " (+" + (tarefasResp.length - 1) + ")" : ""}
-            </span>
-            <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => responderSobre(tarefasResp[0].id)}>
-              Responder sobre ela
-            </Button>
-          </div>
+        {respondendoA && !vincular && !respondendo && tarefasResp.length > 0 ? (
+          <button
+            type="button"
+            onClick={escolherTarefaDaResposta}
+            className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-900 transition-colors hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-200"
+          >
+            📌 Responder sobre uma tarefa pendente
+          </button>
         ) : null}
 
         {vincular && tarefasResp.length > 0 ? (
@@ -598,6 +622,16 @@ export function ChatJanela({
             <ClipboardPlus className="size-4" />
             <span className="hidden lg:inline">Solicitar criação</span>
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            aria-label="Revisar peça"
+            title="Revisar uma peça: marque na imagem o que precisa ser corrigido"
+            onClick={() => setRevisando(true)}
+          >
+            <ScanSearch className="size-4" />
+            <span className="hidden lg:inline">Revisar peça</span>
+          </Button>
           <Textarea
             ref={caixaRef}
             value={texto}
@@ -639,6 +673,7 @@ export function ChatJanela({
         </div>
       </form>
 
+      {revisando ? <RevisaoEditor conversaId={conversaId} respostaA={respondendoA?.id ?? null} aoFechar={() => setRevisando(false)} /> : null}
       {solicitando ? (
         <SolicitacaoForm conversaId={conversaId} meuNome={nomes[meuId] ?? ""} pessoas={pessoas} outroId={outroId} aoFechar={() => setSolicitando(false)} />
       ) : null}

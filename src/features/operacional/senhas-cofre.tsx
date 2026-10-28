@@ -37,6 +37,8 @@ export interface AcessoView {
   criadoPor: string | null;
   dono: string;
   donoNaPlanilha: boolean;
+  /** acesso de ex-integrante do time (aba "Acessos Antigos" da planilha) */
+  antigo: boolean;
 }
 
 const VAZIO = { servico: "", url: "", usuario: "", senha: "", observacoes: "" };
@@ -50,11 +52,12 @@ export function SenhasCofre({
   ehGerente: boolean;
   meuId: string;
 }) {
+  // Primeiro escolhe-se entre usuários ativos e antigos; depois a pessoa. O total só aparece com a pessoa escolhida.
+  const [grupo, setGrupo] = useState<"ativos" | "antigos">("ativos");
   const [filtro, setFiltro] = useState("");
-  const pessoas = Array.from(
-    new Map(acessos.map((a) => [a.dono, a.dono])).entries()
-  ).sort((x, y) => x[1].localeCompare(y[1], "pt-BR"));
-  const visiveis = filtro === "" ? acessos : acessos.filter((a) => a.dono === filtro);
+  const doGrupo = acessos.filter((a) => a.antigo === (grupo === "antigos"));
+  const pessoas = Array.from(new Set(doGrupo.map((a) => a.dono))).sort((x, y) => x.localeCompare(y, "pt-BR"));
+  const visiveis = filtro === "" ? doGrupo : doGrupo.filter((a) => a.dono === filtro);
   const podeMexer = (a: AcessoView) => ehGerente || a.criadoPor === meuId;
   const [editando, setEditando] = useState<string | "novo" | null>(null);
   const [form, setForm] = useState(VAZIO);
@@ -148,19 +151,33 @@ export function SenhasCofre({
     <div className="space-y-4">
       {editando === null ? (
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <Select
-            value={filtro}
-            onChange={(e) => setFiltro(e.target.value)}
-            aria-label="Filtrar por usuário"
-            className="h-9 rounded-md border bg-background px-3 text-sm"
-          >
-            <option value="">Todos os usuários ({acessos.length})</option>
-            {pessoas.map(([id, nome]) => (
-              <option key={id} value={id}>
-                {nome} ({acessos.filter((a) => a.dono === id).length})
-              </option>
-            ))}
-          </Select>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select
+              value={grupo}
+              onChange={(e) => {
+                setGrupo(e.target.value as "ativos" | "antigos");
+                setFiltro("");
+              }}
+              aria-label="Usuários ativos ou antigos"
+              className="h-9 px-3"
+            >
+              <option value="ativos">Usuários ativos</option>
+              <option value="antigos">Usuários antigos</option>
+            </Select>
+            <Select value={filtro} onChange={(e) => setFiltro(e.target.value)} aria-label="Filtrar por usuário" className="h-9 px-3">
+              <option value="">Todos os usuários</option>
+              {pessoas.map((nome) => (
+                <option key={nome} value={nome}>
+                  {nome}
+                </option>
+              ))}
+            </Select>
+            {filtro !== "" ? (
+              <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                {visiveis.length} {visiveis.length === 1 ? "acesso" : "acessos"} de {filtro}
+              </span>
+            ) : null}
+          </div>
           <Button onClick={abrirNovo}>
             <Plus className="size-4" /> Novo acesso
           </Button>
