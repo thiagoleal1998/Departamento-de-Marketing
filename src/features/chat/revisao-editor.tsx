@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
-import { ImagePlus, Loader2, MousePointerSquareDashed, Send, Trash2, X } from "lucide-react";
+import { Hand, ImagePlus, Loader2, MousePointerSquareDashed, Pencil, Send, Trash2, X } from "lucide-react";
+import { ZoomPan } from "@/components/ui/zoom-pan";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -77,6 +78,10 @@ export function RevisaoEditor({
   const [erro, setErro] = useState<string | null>(null);
   const [lendo, setLendo] = useState(false);
   const [pendente, startTransition] = useTransition();
+  // Ferramentas: "Marcar" desenha retângulos; "Mover" (ou segurar Espaço) arrasta a imagem aproximada.
+  const [mao, setMao] = useState(false);
+  const [espaco, setEspaco] = useState(false);
+  const movendo = mao || espaco;
   const input = useRef<HTMLInputElement>(null);
   const area = useRef<HTMLDivElement>(null);
   const inicio = useRef<{ x: number; y: number } | null>(null);
@@ -113,12 +118,31 @@ export function RevisaoEditor({
     };
   }, [receber, aoFechar, pendente]);
 
+  // Segurar Espaço (fora dos campos de texto) vira a ferramenta Mover enquanto estiver pressionado.
+  useEffect(() => {
+    const campo = (e: KeyboardEvent) => ["TEXTAREA", "INPUT"].includes((e.target as HTMLElement | null)?.tagName ?? "");
+    const desce = (e: KeyboardEvent) => {
+      if (e.code === "Space" && !campo(e)) {
+        e.preventDefault();
+        setEspaco(true);
+      }
+    };
+    const sobe = (e: KeyboardEvent) => e.code === "Space" && setEspaco(false);
+    document.addEventListener("keydown", desce);
+    document.addEventListener("keyup", sobe);
+    return () => {
+      document.removeEventListener("keydown", desce);
+      document.removeEventListener("keyup", sobe);
+    };
+  }, []);
+
   const ponto = (e: React.PointerEvent) => {
     const r = area.current!.getBoundingClientRect();
     return { x: limitar(((e.clientX - r.left) / r.width) * 100), y: limitar(((e.clientY - r.top) / r.height) * 100) };
   };
 
   function comecar(e: React.PointerEvent) {
+    if (e.button !== 0) return;
     if (marcacoes.length >= MAX_MARCACOES) return setErro(`No máximo ${MAX_MARCACOES} apontamentos por peça.`);
     e.currentTarget.setPointerCapture(e.pointerId);
     inicio.current = ponto(e);
@@ -178,7 +202,7 @@ export function RevisaoEditor({
             <p className="text-xs text-muted-foreground">
               {ehPedido
                 ? "Envie a peça para quem vai revisar. Os apontamentos chegam aqui no chat e você faz os ajustes."
-                : "Arraste sobre a imagem para marcar o que precisa ser corrigido e comente cada ponto."}
+                : "Arraste sobre a imagem para marcar o que precisa ser corrigido. Roda do mouse dá zoom; use Mover (ou segure a barra de espaço) para navegar."}
             </p>
           </div>
           <button type="button" onClick={aoFechar} disabled={pendente} aria-label="Fechar" className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground">
@@ -208,8 +232,32 @@ export function RevisaoEditor({
         ) : (
           <>
             <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto p-4 lg:grid-cols-[1fr_340px]">
-              <div className="flex min-h-0 items-start justify-center overflow-auto rounded-lg bg-muted/40 p-2">
-                <PecaMarcada imagem={imagem} marcacoes={marcacoes} destaque={destaque} onDestaque={setDestaque} className="max-h-[62vh] w-auto">
+              <ZoomPan
+                className="h-[64vh] rounded-lg bg-muted/40"
+                bloquearArrasto={!ehPedido && !movendo}
+                extra={
+                  ehPedido ? null : (
+                    <div className="flex items-center gap-1 rounded-full bg-black/60 p-1 text-white shadow-lg backdrop-blur">
+                      <button
+                        type="button"
+                        onClick={() => setMao(false)}
+                        className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium", !movendo ? "bg-white text-black" : "hover:bg-white/15")}
+                      >
+                        <Pencil className="size-3.5" /> Marcar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMao(true)}
+                        title="Mover a imagem (ou segure a barra de espaço)"
+                        className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium", movendo ? "bg-white text-black" : "hover:bg-white/15")}
+                      >
+                        <Hand className="size-3.5" /> Mover
+                      </button>
+                    </div>
+                  )
+                }
+              >
+                <PecaMarcada imagem={imagem} marcacoes={marcacoes} destaque={destaque} onDestaque={setDestaque} className="max-h-[60vh] w-auto">
                   {ehPedido ? null : (
                   <div
                     ref={area}
@@ -220,7 +268,7 @@ export function RevisaoEditor({
                       inicio.current = null;
                       setRascunho(null);
                     }}
-                    className="absolute inset-0 cursor-crosshair touch-none"
+                    className={cn("absolute inset-0 touch-none", movendo ? "pointer-events-none" : "cursor-crosshair")}
                   >
                     {rascunho ? (
                       <div
@@ -231,7 +279,7 @@ export function RevisaoEditor({
                   </div>
                   )}
                 </PecaMarcada>
-              </div>
+              </ZoomPan>
 
               {ehPedido ? (
                 <div className="flex min-h-0 flex-col gap-3">

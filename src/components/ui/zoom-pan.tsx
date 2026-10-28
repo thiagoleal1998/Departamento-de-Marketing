@@ -11,7 +11,19 @@ const MAX = 8;
  * Área com zoom e arrastar (para imagens/peças grandes): roda do mouse ou botões +/− para aproximar, arrastar para mover,
  * duplo clique alterna entre ajustar e ampliar, e dois dedos fazem pinça no celular/tablet.
  */
-export function ZoomPan({ children, className }: { children: React.ReactNode; className?: string }) {
+export function ZoomPan({
+  children,
+  className,
+  bloquearArrasto = false,
+  extra,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  /** Quando o conteúdo tem a própria ação de arrastar (ex.: desenhar): só o botão do meio move; o zoom continua. */
+  bloquearArrasto?: boolean;
+  /** Controles extras no canto superior esquerdo. */
+  extra?: React.ReactNode;
+}) {
   const [escala, setEscala] = useState(1);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const area = useRef<HTMLDivElement>(null);
@@ -63,7 +75,7 @@ export function ZoomPan({ children, className }: { children: React.ReactNode; cl
       const [a, b] = [...ponteiros.current.values()];
       pinca.current = { dist: Math.hypot(a.x - b.x, a.y - b.y), escala };
       arrasto.current = null;
-    } else {
+    } else if (!bloquearArrasto || e.button === 1) {
       arrasto.current = { x: e.clientX, y: e.clientY, px: pos.x, py: pos.y };
     }
   }
@@ -98,6 +110,7 @@ export function ZoomPan({ children, className }: { children: React.ReactNode; cl
         onPointerUp={subir}
         onPointerCancel={subir}
         onDoubleClick={(e) => {
+          if (bloquearArrasto) return;
           const { cx, cy } = centro(e.clientX, e.clientY);
           zoomEm(escala > 1.05 ? 1 : 2.5, cx, cy);
         }}
@@ -109,12 +122,14 @@ export function ZoomPan({ children, className }: { children: React.ReactNode; cl
             moveu.current = false;
           }
         }}
-        className={cn("flex h-full w-full touch-none items-center justify-center", escala > 1 ? "cursor-grab active:cursor-grabbing" : "cursor-zoom-in")}
+        className={cn("flex h-full w-full touch-none items-center justify-center", !bloquearArrasto && (escala > 1 ? "cursor-grab active:cursor-grabbing" : "cursor-zoom-in"))}
       >
         <div style={{ transform: `translate(${pos.x}px, ${pos.y}px) scale(${escala})`, transformOrigin: "center", transition: arrasto.current || pinca.current ? "none" : "transform 120ms ease-out" }}>
           {children}
         </div>
       </div>
+
+      {extra ? <div className="absolute left-3 top-3 z-10">{extra}</div> : null}
 
       <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-full bg-black/60 p-1 text-white shadow-lg backdrop-blur">
         <button type="button" onClick={() => zoomEm(escala / 1.4)} disabled={escala <= MIN} aria-label="Diminuir" className="grid size-8 place-items-center rounded-full hover:bg-white/15 disabled:opacity-40">
