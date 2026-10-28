@@ -12,7 +12,7 @@ export interface AlvoChat {
 
 /** O que a mensagem comenta, já escolhido: vai junto no envio. */
 export interface SobreEscolhido {
-  tipo: "tarefa" | "ata";
+  tipo: "tarefa" | "ata" | "calendario";
   titulo: string;
   tarefaId: string | null;
 }

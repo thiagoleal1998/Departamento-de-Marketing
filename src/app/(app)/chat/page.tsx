@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Users, User } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import { ehLideranca } from "@/lib/permissions";
+import { ehResponsavel } from "@/lib/responsaveis";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { obterDiretorio } from "@/features/equipe/diretorio";
 import { abrirConversaDireta } from "@/features/chat/actions";
@@ -24,9 +25,9 @@ interface PessoaLite {
 export default async function ChatPage({
   searchParams,
 }: {
-  searchParams: Promise<{ c?: string; com?: string; tarefa?: string; ata?: string; titulo?: string }>;
+  searchParams: Promise<{ c?: string; com?: string; tarefa?: string; ata?: string; titulo?: string; resp?: string }>;
 }) {
-  const { c, com, tarefa, ata, titulo } = await searchParams;
+  const { c, com: comParam, tarefa, ata, titulo, resp } = await searchParams;
   const usuario = await exigirUsuario();
   const supabase = await criarClienteServidor();
 
@@ -65,6 +66,12 @@ export default async function ChatPage({
   );
 
   // Vindo da Ata: abre a conversa direta com a pessoa responsável (cria se ainda não existir).
+  // O calendário traz nomes curtos ("Shay", "Gustavo"): vale o primeiro responsável que for outra pessoa do painel.
+  const com =
+    comParam ??
+    (resp
+      ? pessoas.find((p) => p.id !== usuario.id && resp.split(",").some((r) => ehResponsavel(p.nome, [r])))?.id
+      : undefined);
   const pessoaDaAta = com && com !== usuario.id && nomes[com] ? com : null;
   if (pessoaDaAta && !c) {
     let conv = outraPessoaConversa.get(pessoaDaAta);
@@ -90,9 +97,9 @@ export default async function ChatPage({
   if (tarefa && /^[0-9a-f-]{36}$/i.test(tarefa)) {
     const { data: t } = await supabase.from("tarefas").select("id, titulo").eq("id", tarefa).maybeSingle();
     const tt = t as { id: string; titulo: string } | null;
-    sobreInicial = { tipo: ata ? "ata" : "tarefa", titulo: tituloSobre || tt?.titulo || "Tarefa", tarefaId: tt?.id ?? null };
+    sobreInicial = { tipo: ata === "cal" ? "calendario" : ata ? "ata" : "tarefa", titulo: tituloSobre || tt?.titulo || "Tarefa", tarefaId: tt?.id ?? null };
   } else if (ata && tituloSobre) {
-    sobreInicial = { tipo: "ata", titulo: tituloSobre, tarefaId: null };
+    sobreInicial = { tipo: ata === "cal" ? "calendario" : "ata", titulo: tituloSobre, tarefaId: null };
   }
   const ehGeral = conversaId === CONVERSA_GERAL;
   const tituloConversa = ehGeral

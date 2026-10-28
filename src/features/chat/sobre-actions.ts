@@ -83,9 +83,10 @@ export async function enviarMensagemSobre(
     const { data: t } = await supabase.from("tarefas").select("id").eq("id", sobre.tarefaId).maybeSingle();
     tarefaId = (t as { id: string } | null)?.id ?? null;
   }
-  // Tópico da ata: o título abre a mensagem (a tarefa ligada, se houver, mostra o cartão logo abaixo).
+  // Tópico da ata ou item do calendário: o título abre a mensagem (a tarefa ligada, se houver, mostra o cartão logo abaixo).
   const titulo = sobre.titulo.trim().slice(0, 200);
-  const mensagem = (sobre.tipo === "ata" ? `📋 Tópico da ata: ${titulo}\n${limpo}` : limpo).slice(0, 2000);
+  const abertura = sobre.tipo === "ata" ? `📋 Tópico da ata: ${titulo}` : sobre.tipo === "calendario" ? `📅 Item do calendário: ${titulo}` : null;
+  const mensagem = (abertura ? `${abertura}\n${limpo}` : limpo).slice(0, 2000);
 
   const base: { conversa_id: string; autor_id: string; texto: string; tarefa_id: string | null; resposta_a?: string } = { conversa_id: conversaId, autor_id: user.id, texto: mensagem, tarefa_id: tarefaId };
   let { error } = await supabase.from("chat_mensagens").insert(respostaA ? { ...base, resposta_a: respostaA } : base);

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { Check, Loader2, Trash2, X } from "lucide-react";
+import { Check, Loader2, MessageCircle, Trash2, X } from "lucide-react";
+import Link from "@/components/shared/link";
 import { salvarItemCalendario, type DadosItemCalendario } from "./actions";
 import type { ItemCalendario } from "./lista-calendario";
 import { Button } from "@/components/ui/button";
@@ -219,6 +220,13 @@ export function ItemCalendarioForm({
           {aoExcluir ? (
             <Button type="button" variant="ghost" className="mr-auto text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => void aoExcluir()} disabled={pendente}>
               <Trash2 className="size-4" /> Excluir
+            </Button>
+          ) : null}
+          {item ? (
+            <Button asChild type="button" variant="outline">
+              <Link href={"/chat?" + new URLSearchParams({ ata: "cal", titulo: item.nome.slice(0, 200), ...(d.responsaveis.length > 0 ? { resp: d.responsaveis.join(",") } : {}) }).toString()}>
+                <MessageCircle className="size-4" /> Falar no chat
+              </Link>
             </Button>
           ) : null}
           <Button type="button" variant="outline" onClick={aoFechar}>

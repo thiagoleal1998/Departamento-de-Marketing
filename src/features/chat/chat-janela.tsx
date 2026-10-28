@@ -448,7 +448,7 @@ export function ChatJanela({
           <div className="mb-2 flex items-center gap-2 rounded-xl border bg-muted/50 px-3 py-2 text-xs">
             {sobre.tipo === "ata" ? <NotebookPen className="size-4 shrink-0 text-primary" /> : <ClipboardList className="size-4 shrink-0 text-primary" />}
             <span className="min-w-0 flex-1 truncate">
-              <span className="text-muted-foreground">{sobre.tipo === "ata" ? "Sobre o tópico da ata: " : "Sobre a tarefa: "}</span>
+              <span className="text-muted-foreground">{sobre.tipo === "ata" ? "Sobre o tópico da ata: " : sobre.tipo === "calendario" ? "Sobre o item do calendário: " : "Sobre a tarefa: "}</span>
               <span className="font-medium">{sobre.titulo}</span>
             </span>
             <button type="button" onClick={() => setSobre(null)} aria-label="Tirar o assunto" className="rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
