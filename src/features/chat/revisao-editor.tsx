@@ -79,12 +79,14 @@ export function RevisaoEditor({
   const [lendo, setLendo] = useState(false);
   const [pendente, startTransition] = useTransition();
   // Ferramentas: "Marcar" desenha retângulos; "Mover" (ou segurar Espaço) arrasta a imagem aproximada.
-  const [mao, setMao] = useState(false);
+  const [mao, setMao] = useState(true); // começa em "Mover": primeiro se aproxima/navega, depois se marca
+  // Marcação em dois cliques: o primeiro fixa um canto, o segundo o canto oposto (arrastar também funciona).
+  const [ancora, setAncora] = useState<{ x: number; y: number } | null>(null);
+  const pressionado = useRef<{ x: number; y: number } | null>(null);
   const [espaco, setEspaco] = useState(false);
   const movendo = mao || espaco;
   const input = useRef<HTMLInputElement>(null);
   const area = useRef<HTMLDivElement>(null);
-  const inicio = useRef<{ x: number; y: number } | null>(null);
 
   const receber = useCallback(async (arquivo: File | undefined | null) => {
     if (!arquivo) return;
@@ -109,14 +111,21 @@ export function RevisaoEditor({
       const f = Array.from(e.clipboardData?.files ?? []).find((x) => x.type.startsWith("image/"));
       if (f) void receber(f);
     };
-    const tecla = (e: KeyboardEvent) => e.key === "Escape" && !pendente && aoFechar();
+    const tecla = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      // Esc primeiro cancela a marcação em andamento; só depois fecha a janela.
+      if (ancora) {
+        setAncora(null);
+        setRascunho(null);
+      } else if (!pendente) aoFechar();
+    };
     document.addEventListener("paste", colar);
     document.addEventListener("keydown", tecla);
     return () => {
       document.removeEventListener("paste", colar);
       document.removeEventListener("keydown", tecla);
     };
-  }, [receber, aoFechar, pendente]);
+  }, [receber, aoFechar, pendente, ancora]);
 
   // Segurar Espaço (fora dos campos de texto) vira a ferramenta Mover enquanto estiver pressionado.
   useEffect(() => {
@@ -141,31 +150,55 @@ export function RevisaoEditor({
     return { x: limitar(((e.clientX - r.left) / r.width) * 100), y: limitar(((e.clientY - r.top) / r.height) * 100) };
   };
 
-  function comecar(e: React.PointerEvent) {
-    if (e.button !== 0) return;
-    if (marcacoes.length >= MAX_MARCACOES) return setErro(`No máximo ${MAX_MARCACOES} apontamentos por peça.`);
-    e.currentTarget.setPointerCapture(e.pointerId);
-    inicio.current = ponto(e);
-    setRascunho({ ...inicio.current, w: 0, h: 0 });
-  }
-  function mover(e: React.PointerEvent) {
-    if (!inicio.current) return;
-    const p = ponto(e);
-    const i = inicio.current;
-    setRascunho({ x: Math.min(i.x, p.x), y: Math.min(i.y, p.y), w: Math.abs(p.x - i.x), h: Math.abs(p.y - i.y) });
-  }
-  function terminar() {
-    const r = rascunho;
-    inicio.current = null;
-    setRascunho(null);
-    if (!r) return;
-    // Um clique simples cria uma marcação pequena naquele ponto.
+  const caixaEntre = (a: { x: number; y: number }, b: { x: number; y: number }) => ({
+    x: Math.min(a.x, b.x),
+    y: Math.min(a.y, b.y),
+    w: Math.abs(a.x - b.x),
+    h: Math.abs(a.y - b.y),
+  });
+
+  function criarMarcacao(r: { x: number; y: number; w: number; h: number }) {
+    // Os dois cliques no mesmo ponto marcam uma área pequena em volta dele.
     const pequeno = r.w < MIN_ARRASTO && r.h < MIN_ARRASTO;
     const caixa = pequeno ? { x: limitar(r.x - 4), y: limitar(r.y - 4), w: 8, h: 8 } : r;
     const n = marcacoes.length + 1;
     setMarcacoes((l) => [...l, { n, ...caixa, texto: "" }]);
     setDestaque(n);
     setTimeout(() => document.getElementById(`rev-texto-${n}`)?.focus(), 30);
+  }
+
+  function comecar(e: React.PointerEvent) {
+    if (e.button !== 0) return;
+    if (marcacoes.length >= MAX_MARCACOES) return setErro(`No máximo ${MAX_MARCACOES} apontamentos por peça.`);
+    e.currentTarget.setPointerCapture(e.pointerId);
+    pressionado.current = ponto(e);
+    if (!ancora) setRascunho({ ...pressionado.current, w: 0, h: 0 });
+  }
+  function mover(e: React.PointerEvent) {
+    // O retângulo acompanha o mouse mesmo sem o botão apertado, depois do primeiro clique.
+    const origem = ancora ?? pressionado.current;
+    if (origem) setRascunho(caixaEntre(origem, ponto(e)));
+  }
+  function terminar(e: React.PointerEvent) {
+    const inicio = pressionado.current;
+    pressionado.current = null;
+    if (!inicio) return;
+    const p = ponto(e);
+    const arrastou = Math.abs(p.x - inicio.x) + Math.abs(p.y - inicio.y) > MIN_ARRASTO;
+    if (ancora) {
+      // Segundo clique: fecha o retângulo.
+      criarMarcacao(caixaEntre(ancora, p));
+      setAncora(null);
+      setRascunho(null);
+    } else if (arrastou) {
+      // Arrastou e soltou: marcação pronta.
+      criarMarcacao(caixaEntre(inicio, p));
+      setRascunho(null);
+    } else {
+      // Primeiro clique: fixa o canto e espera o segundo.
+      setAncora(inicio);
+      setRascunho({ ...inicio, w: 0, h: 0 });
+    }
   }
 
   function remover(n: number) {
@@ -202,7 +235,7 @@ export function RevisaoEditor({
             <p className="text-xs text-muted-foreground">
               {ehPedido
                 ? "Envie a peça para quem vai revisar. Os apontamentos chegam aqui no chat e você faz os ajustes."
-                : "Arraste sobre a imagem para marcar o que precisa ser corrigido. Roda do mouse dá zoom; use Mover (ou segure a barra de espaço) para navegar."}
+                : "Aproxime com a roda do mouse, navegue com Mover e use Marcar (dois cliques ou arrastar) no que precisa ser corrigido."}
             </p>
           </div>
           <button type="button" onClick={aoFechar} disabled={pendente} aria-label="Fechar" className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground">
@@ -237,7 +270,20 @@ export function RevisaoEditor({
                 bloquearArrasto={!ehPedido && !movendo}
                 extra={
                   ehPedido ? null : (
+                    <div className="flex flex-col items-start gap-1.5">
                     <div className="flex items-center gap-1 rounded-full bg-black/60 p-1 text-white shadow-lg backdrop-blur">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMao(true);
+                          setAncora(null);
+                          setRascunho(null);
+                        }}
+                        title="Mover a imagem (ou segure a barra de espaço)"
+                        className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium", movendo ? "bg-white text-black" : "hover:bg-white/15")}
+                      >
+                        <Hand className="size-3.5" /> Mover
+                      </button>
                       <button
                         type="button"
                         onClick={() => setMao(false)}
@@ -245,14 +291,12 @@ export function RevisaoEditor({
                       >
                         <Pencil className="size-3.5" /> Marcar
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setMao(true)}
-                        title="Mover a imagem (ou segure a barra de espaço)"
-                        className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium", movendo ? "bg-white text-black" : "hover:bg-white/15")}
-                      >
-                        <Hand className="size-3.5" /> Mover
-                      </button>
+                    </div>
+                    {!movendo ? (
+                      <p className="rounded-full bg-black/60 px-3 py-1 text-[11px] text-white/90 backdrop-blur">
+                        {ancora ? "Clique no canto oposto para fechar a marcação (Esc cancela)" : "Clique no canto inicial e depois no canto oposto — ou arraste"}
+                      </p>
+                    ) : null}
                     </div>
                   )
                 }
@@ -265,8 +309,8 @@ export function RevisaoEditor({
                     onPointerMove={mover}
                     onPointerUp={terminar}
                     onPointerCancel={() => {
-                      inicio.current = null;
-                      setRascunho(null);
+                      pressionado.current = null;
+                      if (!ancora) setRascunho(null);
                     }}
                     className={cn("absolute inset-0 touch-none", movendo ? "pointer-events-none" : "cursor-crosshair")}
                   >
@@ -331,7 +375,7 @@ export function RevisaoEditor({
                 {marcacoes.length === 0 ? (
                   <div className="flex items-center gap-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
                     <MousePointerSquareDashed className="size-5 shrink-0" />
-                    Arraste sobre a imagem para marcar uma área (ou clique para marcar um ponto).
+                    Escolha a ferramenta Marcar e clique em dois cantos (ou arraste) para marcar uma área.
                   </div>
                 ) : (
                   <ol className="max-h-64 space-y-2 overflow-y-auto pr-1 lg:max-h-none lg:flex-1">
