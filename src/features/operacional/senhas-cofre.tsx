@@ -41,6 +41,9 @@ export interface AcessoView {
   antigo: boolean;
 }
 
+/** Seções da planilha que guardam acessos mas não são pessoas: só aparecem em "Todos os usuários". */
+const NAO_USUARIOS = new Set(["Redes sociais", "Outras"]);
+
 const VAZIO = { servico: "", url: "", usuario: "", senha: "", observacoes: "" };
 
 export function SenhasCofre({
@@ -56,7 +59,7 @@ export function SenhasCofre({
   const [grupo, setGrupo] = useState<"ativos" | "antigos">("ativos");
   const [filtro, setFiltro] = useState("");
   const doGrupo = acessos.filter((a) => a.antigo === (grupo === "antigos"));
-  const pessoas = Array.from(new Set(doGrupo.map((a) => a.dono))).sort((x, y) => x.localeCompare(y, "pt-BR"));
+  const pessoas = Array.from(new Set(doGrupo.map((a) => a.dono).filter((d) => !NAO_USUARIOS.has(d)))).sort((x, y) => x.localeCompare(y, "pt-BR"));
   const visiveis = filtro === "" ? doGrupo : doGrupo.filter((a) => a.dono === filtro);
   const podeMexer = (a: AcessoView) => ehGerente || a.criadoPor === meuId;
   const [editando, setEditando] = useState<string | "novo" | null>(null);
