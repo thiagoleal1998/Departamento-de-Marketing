@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { ExternalLink, Search, Sparkles, X } from "lucide-react";
 import type { CampoProduto, MudancaCampo, ProdutoComercial } from "./tipos";
 import { ROTULO_DIVERGENCIA, ROTULO_SITUACAO, type ConferenciaProduto, type SituacaoLp } from "./conferencia";
+import { BlocoCampo, SeloSituacao } from "./sazonal-painel";
+import { ROTULO_CAMPO_SAZONAL, type CampoSazonal, type SazonalNoCard } from "./sazonal-tipos";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +19,8 @@ export interface ProdutoView extends Pick<ProdutoComercial, "chave" | "nome" | "
   conferencia: ConferenciaProduto;
   /** Complexo: hotéis exibidos juntos no mesmo card, cada um com suas condições. */
   partes?: { nome: string; campos: CampoProduto[] }[];
+  /** Condições dos períodos sazonais (ex.: Black November) para este produto. */
+  sazonais?: SazonalNoCard[];
   /** Alteração recente (se houver): quando e o que mudou. */
   alteracao?: {
     tipo: "novo" | "alterado";
@@ -148,6 +152,14 @@ function CardResumo({ p, aoAbrir }: { p: ProdutoView; aoAbrir: () => void }) {
             ⚠ {ROTULO_DIVERGENCIA[p.conferencia.divergencia]}
           </span>
         ) : null}
+
+        {p.sazonais?.map((z) => (
+          <span key={z.periodoId} className="flex min-w-0 items-center gap-1.5 rounded-md border border-foreground/20 bg-foreground/5 px-2 py-1 text-[11px]">
+            <span className="shrink-0 font-bold">🖤 {z.periodoNome.replace(/ \d{4}$/, "")}</span>
+            <SeloSituacao status={z.status} className="shrink-0 px-1.5 py-0 text-[10px]" />
+            {z.condicao ? <span className="min-w-0 flex-1 truncate font-medium">{z.condicao.split("\n")[0]}</span> : null}
+          </span>
+        ))}
 
         {alterados.length > 0 ? (
           <span className="block text-xs text-amber-800 dark:text-amber-300">
@@ -288,6 +300,35 @@ function Detalhes({ p, aoFechar }: { p: ProdutoView; aoFechar: () => void }) {
             <p className="text-xs text-muted-foreground">Correspondência encontrada por semelhança de nome.</p>
           ) : null}
         </div>
+
+        {p.sazonais?.map((z) => {
+          const mudou = (c: CampoSazonal) => (z.anterior && c in z.anterior ? z.anterior[c] : undefined);
+          return (
+            <section key={z.periodoId} className="space-y-3 border-b bg-foreground/[0.03] px-5 py-4 text-sm">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-base font-semibold">🖤 {z.periodoNome}</h3>
+                <SeloSituacao status={z.status} />
+                {z.atualizadoEm ? (
+                  <span className="rounded bg-amber-400 px-1.5 py-0.5 text-[11px] font-semibold text-amber-950">
+                    {z.anterior ? `Atualizado: ${(Object.keys(z.anterior) as CampoSazonal[]).map((c) => ROTULO_CAMPO_SAZONAL[c]).join(", ")}` : "Novo na campanha"} · {z.atualizadoEm}
+                  </span>
+                ) : null}
+              </div>
+              {z.hotel.toLowerCase() !== p.nome.toLowerCase() ? <p className="text-xs text-muted-foreground">Na planilha: {z.hotel}</p> : null}
+              {z.status ? <p className="whitespace-pre-line text-xs text-muted-foreground">{z.status}</p> : null}
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="md:col-span-2">
+                  <BlocoCampo rotulo="Condição" valor={z.condicao} destaque anterior={mudou("condicao")} />
+                </div>
+                <BlocoCampo rotulo="Vendas" valor={z.vendas} anterior={mudou("vendas")} />
+                <BlocoCampo rotulo="Hospedagens" valor={z.hospedagens} anterior={mudou("hospedagens")} />
+                <div className="md:col-span-2">
+                  <BlocoCampo rotulo="Observação" valor={z.observacao} anterior={mudou("observacao")} />
+                </div>
+              </div>
+            </section>
+          );
+        })}
 
         {p.partes ? (
           <div className="space-y-5 p-5">

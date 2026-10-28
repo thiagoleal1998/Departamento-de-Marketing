@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { criarClienteAdmin } from "@/lib/supabase/admin";
 import { enviarPush } from "@/lib/push";
 import { lerProdutos } from "./parser";
+import { sincronizarSazonais } from "./sazonal";
 import {
   PLANILHA_ID,
   type CampoProduto,
@@ -190,6 +191,8 @@ export async function sincronizarComercial(origem: string): Promise<ResultadoSyn
       alteradas: eventos.length,
       erro: null,
     });
+    // Períodos sazonais (ex.: Black November) vão junto; se falharem, não derrubam a sincronização principal.
+    await sincronizarSazonais(origem).catch(() => undefined);
     return { produtos: produtos.length, alteradas: eventos.length };
   } catch (e) {
     const erro = e instanceof Error ? e.message : "Falha na sincronização.";

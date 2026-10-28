@@ -3,6 +3,7 @@ import { AlertTriangle, ExternalLink, Handshake } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import { ehLideranca } from "@/lib/permissions";
 import { criarClienteServidor } from "@/lib/supabase/server";
+import { servicoDisponivel } from "@/lib/supabase/admin";
 import { ListaProdutos, type ProdutoView } from "@/features/comercial/cards";
 import { BotaoSincronizar } from "@/features/comercial/botao-sincronizar";
 import { BotaoMarcarVisto } from "@/features/comercial/botao-visto";
@@ -10,6 +11,16 @@ import { ConferenciaPainel } from "@/features/comercial/conferencia-painel";
 import { conferir, type LpSistema } from "@/features/comercial/conferencia";
 import { achaComplexos, mesclarDuplicados, nomeCorreto } from "@/features/comercial/ajustes";
 import { MarcarVisto } from "@/features/notificacoes/marcar-visto";
+import { PeriodosSazonais } from "@/features/comercial/sazonal-painel";
+import { sincronizarPeriodo } from "@/features/comercial/sazonal";
+import {
+  PERIODOS_SAZONAIS,
+  hotelCombina,
+  planilhaSazonalUrl,
+  type HotelSazonal,
+  type PeriodoView,
+  type SazonalNoCard,
+} from "@/features/comercial/sazonal-tipos";
 import {
   DIAS_DESTAQUE,
   PLANILHA_URL,
@@ -73,6 +84,23 @@ export default async function ComercialPage({
   const { count: jaVistas } = visto && visto > desdeJanela
     ? await supabase.from("comercial_alteracoes").select("id", { count: "exact", head: true }).gte("detectado_em", desdeJanela).lte("detectado_em", visto).neq("tipo", "removido")
     : { count: 0 };
+  // Períodos sazonais (Black November…): relê a planilha se a última leitura tem mais de 10 minutos.
+  const lerSyncSazonal = () => supabase.from("comercial_sazonal_sync").select("periodo, sincronizado_em, erro");
+  let { data: sazSyncData, error: sazErro } = await lerSyncSazonal();
+  const semTabelaSazonal = !!sazErro;
+  if (!semTabelaSazonal && servicoDisponivel()) {
+    const lidos = (sazSyncData as { periodo: string; sincronizado_em: string | null }[] | null) ?? [];
+    const velhos = PERIODOS_SAZONAIS.filter((p) => {
+      const ult = lidos.find((x) => x.periodo === p.id)?.sincronizado_em;
+      return !ult || Date.now() - new Date(ult).getTime() > 10 * 60_000;
+    });
+    for (const p of velhos) await sincronizarPeriodo(p, "pagina").catch(() => undefined);
+    if (velhos.length > 0) ({ data: sazSyncData } = await lerSyncSazonal());
+  }
+  const { data: sazData } = semTabelaSazonal
+    ? { data: null }
+    : await supabase.from("comercial_sazonal").select("*").order("ordem", { ascending: true }).limit(2000);
+
   const [{ data: prodData }, { data: altData }, { data: infoData }, { data: lpData }] = await Promise.all([
     supabase.from("comercial_produtos").select("chave, secao, nome, ordem, tag, tag_cor, campos").order("ordem", { ascending: true }).limit(2000),
     supabase.from("comercial_alteracoes").select("*").gte("detectado_em", desde).order("detectado_em", { ascending: false }).limit(500),
@@ -90,10 +118,33 @@ export default async function ComercialPage({
   for (const a of alteracoes) if (!recente.has(a.chave) && a.tipo !== "removido") recente.set(a.chave, a);
   const removidos = alteracoes.filter((a) => a.tipo === "removido");
 
+  // Hotéis dos períodos sazonais, com a data de atualização só enquanto o destaque vale.
+  const dataCurta = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { timeZone: FUSO, day: "2-digit", month: "2-digit" });
+  const recenteSaz = (iso: string | null) => (iso && iso > desdeJanela ? dataCurta(iso) : null);
+  const sazSyncPor = new Map(((sazSyncData as { periodo: string; sincronizado_em: string | null; erro: string | null }[] | null) ?? []).map((x) => [x.periodo, x]));
+  const periodosView: PeriodoView[] = PERIODOS_SAZONAIS.map((p) => ({
+    id: p.id,
+    nome: p.nome,
+    url: planilhaSazonalUrl(p),
+    hoteis: ((sazData as HotelSazonal[] | null) ?? []).filter((h) => h.periodo === p.id).map((h) => ({ ...h, atualizadoEm: recenteSaz(h.alterado_em) })),
+    sincronizadoEm: sazSyncPor.get(p.id)?.sincronizado_em ? quando(sazSyncPor.get(p.id)!.sincronizado_em) : null,
+    erro: sazSyncPor.get(p.id)?.erro ?? null,
+  }));
+  const totalSazAtualizados = periodosView.reduce((n, p) => n + p.hoteis.filter((h) => h.atualizadoEm).length, 0);
+  /** Condições da Black (e outros períodos) que valem para um produto, achadas pelo nome do hotel. */
+  const sazonaisDe = (nomes: string[]): SazonalNoCard[] =>
+    periodosView.flatMap((p) => {
+      const h = p.hoteis.find((x) => nomes.some((n) => hotelCombina(x.hotel, n)));
+      return h
+        ? [{ periodoId: p.id, periodoNome: p.nome, hotel: h.hotel, status: h.status, condicao: h.condicao, vendas: h.vendas, hospedagens: h.hospedagens, observacao: h.observacao, atualizadoEm: h.atualizadoEm, anterior: h.anterior }]
+        : [];
+    });
+
   const secoes = Array.from(new Set(linhas.map((l) => l.secao)));
   const ATIVOS = "Produtos ativos";
+  const SAZONAL = "Períodos sazonais";
   const CONFERENCIA = "Conferência com as LPs";
-  const abas = secoes.length > 0 ? [ATIVOS, ...secoes, CONFERENCIA] : [];
+  const abas = secoes.length > 0 ? [ATIVOS, ...secoes, SAZONAL, CONFERENCIA] : [];
   const primeiraComAlteracao = linhas.find((l) => recente.has(l.chave))?.secao;
   const ativa = abas.includes(abaRaw ?? "")
     ? (abaRaw as string)
@@ -122,6 +173,7 @@ export default async function ComercialPage({
         tag: membros[0].l.tag,
         tagCor: membros[0].l.tag_cor,
         campos: membros.flatMap(({ l: m }) => m.campos),
+        sazonais: sazonaisDe([cx.nome, ...membros.map(({ pt, l: m }) => pt.nome), ...membros.map(({ l: m }) => m.nome)]),
         partes: membros.map(({ pt, l: m }) => ({ nome: pt.nome, campos: m.campos })),
         conferencia: conferir(l.secao, cx.nome, membros[0].l.campos, lps),
         alteracao: a
@@ -139,6 +191,7 @@ export default async function ComercialPage({
       tag: l.tag,
       tagCor: l.tag_cor,
       campos: l.campos,
+      sazonais: sazonaisDe([nome, l.nome]),
       conferencia: conferir(l.secao, nome, l.campos, lps),
       alteracao: a
         ? { tipo: a.tipo === "novo" ? "novo" : "alterado", quando: quando(a.detectado_em, true), mudancas: a.mudancas }
@@ -272,6 +325,11 @@ export default async function ComercialPage({
                     {ativosReais}
                   </span>
                 ) : null}
+                {s === SAZONAL && totalSazAtualizados > 0 ? (
+                  <span className="rounded-full bg-amber-400 px-1.5 py-0.5 text-[11px] font-semibold text-amber-950">
+                    {totalSazAtualizados}
+                  </span>
+                ) : null}
                 {s === CONFERENCIA && divergentes > 0 ? (
                   <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[11px] font-semibold text-white">
                     {divergentes}
@@ -285,7 +343,17 @@ export default async function ComercialPage({
               </Link>
             ))}
           </nav>
-          {ativa === CONFERENCIA ? (
+          {ativa === SAZONAL ? (
+            semTabelaSazonal ? (
+              <EmptyState
+                icone={Handshake}
+                titulo="Períodos sazonais ainda não ativados"
+                descricao="Rode a migration 0083 no Supabase para ativar esta aba (Black November e outras campanhas)."
+              />
+            ) : (
+              <PeriodosSazonais periodos={periodosView} />
+            )
+          ) : ativa === CONFERENCIA ? (
             <ConferenciaPainel
               produtos={todos}
               lpsAtivasSemProduto={lpsAtivasSemProduto}
