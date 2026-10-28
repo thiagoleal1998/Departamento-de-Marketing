@@ -15,6 +15,7 @@ function donoDe(observacoes: string | null, criador: string | undefined): { dono
     const nome = m[2].trim();
     return { dono: /antigo/i.test(m[1]) ? `${nome} (antigo)` : nome, donoNaPlanilha: true };
   }
+  if (observacoes?.startsWith("Redes sociais")) return { dono: "Redes sociais", donoNaPlanilha: true };
   return { dono: criador?.split(" ")[0] ?? "Sem responsável", donoNaPlanilha: false };
 }
 
