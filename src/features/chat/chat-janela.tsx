@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Send, Loader2, Link2, ClipboardPlus, ScanSearch, Paperclip, Smile, Mic, ImageIcon, FilePlus2, ChevronDown } from "lucide-react";
+import { Send, Loader2, Link2, ClipboardPlus, ScanSearch, Paperclip, Smile, Mic, ImageIcon, FilePlus2, ChevronDown, X } from "lucide-react";
 import { criarClienteBrowser } from "@/lib/supabase/client";
 import { enviarMensagem, marcarConversaLida } from "./actions";
 import {
@@ -429,6 +429,19 @@ export function ChatJanela({
           >
             📌 Responder sobre uma tarefa pendente
           </button>
+        ) : null}
+
+        {vincular ? (
+          <div className="mb-1 flex items-center justify-between px-1">
+            <span className="text-xs font-medium text-muted-foreground">{respondendo ? "Respondendo sobre uma tarefa" : "Vincular à mensagem"}</span>
+            <button
+              type="button"
+              onClick={limparVinculo}
+              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <X className="size-3.5" /> Fechar
+            </button>
+          </div>
         ) : null}
 
         {vincular && tarefasResp.length > 0 ? (
