@@ -32,6 +32,14 @@ self.addEventListener("push", (event) => {
       });
       const emFoco = janelas.some((c) => c.focused);
       if (emFoco) return;
+      // Mensagem do chat com o painel aberto em outra aba/janela: quem toca é o próprio painel, com o som do painel
+      // (o aviso do navegador vai em silêncio para não tocar o som padrão do computador por cima).
+      const ehChat = typeof dados.tag === "string" && dados.tag.startsWith("chat-");
+      if (ehChat && janelas.length > 0) {
+        for (const c of janelas) c.postMessage({ tipo: "som-chat" });
+        await self.registration.showNotification(titulo, { ...opcoes, silent: true });
+        return;
+      }
       await self.registration.showNotification(titulo, opcoes);
     })()
   );

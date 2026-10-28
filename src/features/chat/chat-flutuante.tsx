@@ -127,6 +127,16 @@ export function ChatFlutuante({
     };
   }, [naoLidas]);
 
+  // O service worker (aviso do navegador) pede o som quando chega mensagem e o painel está aberto em segundo plano.
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const ouvir = (e: MessageEvent) => {
+      if (e.data?.tipo === "som-chat") tocarSomChat();
+    };
+    navigator.serviceWorker.addEventListener("message", ouvir);
+    return () => navigator.serviceWorker.removeEventListener("message", ouvir);
+  }, []);
+
   // Mensagem nova em QUALQUER conversa: conta, mostra o aviso e marca a conversa no seletor.
   useEffect(() => {
     const supabase = criarClienteBrowser();
@@ -167,7 +177,7 @@ export function ChatFlutuante({
       .channel("chat-flutuante-" + conversaId)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_mensagens", filter: "conversa_id=eq." + conversaId }, (p) => {
         const m = p.new as Msg;
-        tocarSomChat();
+        if (m.autor_id !== usuarioId) tocarSomChat();
         setMensagens((l) => (l.some((x) => x.id === m.id) ? l : [...l, m]));
         void marcarConversaLida(conversaId);
       })
@@ -175,7 +185,7 @@ export function ChatFlutuante({
     return () => {
       void supabase.removeChannel(canal);
     };
-  }, [aberto, conversaId]);
+  }, [aberto, conversaId, usuarioId]);
 
   useEffect(() => {
     fim.current?.scrollIntoView({ block: "end" });
