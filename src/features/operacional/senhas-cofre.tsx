@@ -33,6 +33,8 @@ export interface AcessoView {
   usuario: string | null;
   observacoes: string | null;
   temSenha: boolean;
+  criadoPor: string | null;
+  criadoPorNome: string | null;
 }
 
 const VAZIO = { servico: "", url: "", usuario: "", senha: "", observacoes: "" };
@@ -40,10 +42,18 @@ const VAZIO = { servico: "", url: "", usuario: "", senha: "", observacoes: "" };
 export function SenhasCofre({
   acessos,
   ehGerente,
+  meuId,
 }: {
   acessos: AcessoView[];
   ehGerente: boolean;
+  meuId: string;
 }) {
+  const [filtro, setFiltro] = useState("");
+  const pessoas = Array.from(
+    new Map(acessos.map((a) => [a.criadoPor ?? "", a.criadoPorNome ?? "Sem responsável"])).entries()
+  ).sort((x, y) => x[1].localeCompare(y[1], "pt-BR"));
+  const visiveis = filtro === "" ? acessos : acessos.filter((a) => (a.criadoPor ?? "") === filtro);
+  const podeMexer = (a: AcessoView) => ehGerente || a.criadoPor === meuId;
   const [editando, setEditando] = useState<string | "novo" | null>(null);
   const [form, setForm] = useState(VAZIO);
   const [erro, setErro] = useState<string | null>(null);
@@ -134,15 +144,28 @@ export function SenhasCofre({
 
   return (
     <div className="space-y-4">
-      {ehGerente && editando === null ? (
-        <div className="flex justify-end">
+      {editando === null ? (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <select
+            value={filtro}
+            onChange={(e) => setFiltro(e.target.value)}
+            aria-label="Filtrar por usuário"
+            className="h-9 rounded-md border bg-background px-3 text-sm"
+          >
+            <option value="">Todos os usuários ({acessos.length})</option>
+            {pessoas.map(([id, nome]) => (
+              <option key={id} value={id}>
+                {nome} ({acessos.filter((a) => (a.criadoPor ?? "") === id).length})
+              </option>
+            ))}
+          </select>
           <Button onClick={abrirNovo}>
             <Plus className="size-4" /> Novo acesso
           </Button>
         </div>
       ) : null}
 
-      {ehGerente && editando !== null ? (
+      {editando !== null ? (
         <Card>
           <CardContent className="space-y-4 pt-6">
             <div className="flex items-center justify-between">
@@ -226,13 +249,11 @@ export function SenhasCofre({
 
       {acessos.length === 0 ? (
         <p className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-          {ehGerente
-            ? "Nenhum acesso cadastrado. Clique em Novo acesso para começar."
-            : "Nenhum acesso cadastrado ainda."}
+          Nenhum acesso cadastrado. Clique em Novo acesso para começar.
         </p>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
-          {acessos.map((a) => (
+          {visiveis.map((a) => (
             <Card key={a.id}>
               <CardContent className="space-y-2 p-4">
                 <div className="flex items-start justify-between gap-2">
@@ -250,7 +271,7 @@ export function SenhasCofre({
                         </a>
                       </Button>
                     ) : null}
-                    {ehGerente ? (
+                    {podeMexer(a) ? (
                       <>
                         <Button
                           variant="ghost"
@@ -329,6 +350,9 @@ export function SenhasCofre({
                   </div>
                 </dl>
 
+                {a.criadoPorNome ? (
+                  <p className="text-xs text-muted-foreground">Cadastrado por {a.criadoPorNome}</p>
+                ) : null}
                 {a.observacoes ? (
                   <p className="whitespace-pre-line text-xs text-muted-foreground">
                     {a.observacoes}

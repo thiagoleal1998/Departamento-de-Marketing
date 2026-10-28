@@ -31,7 +31,8 @@ function decifrar(valor: string, chave: Buffer): string {
   return Buffer.concat([d.update(dados), d.final()]).toString("utf8");
 }
 
-async function exigirGerente() {
+/** Gerente mexe em qualquer acesso; os demais, só nos que cadastraram (o banco também confere). */
+async function exigirDono(id: string | null) {
   const supabase = await criarClienteServidor();
   const {
     data: { user },
@@ -39,13 +40,14 @@ async function exigirGerente() {
   if (!user) {
     return { supabase, user: null, erro: "Sessão expirada. Entre novamente." };
   }
-  const { data } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  if (data?.role !== "gerente") {
-    return { supabase, user, erro: "Apenas gerentes podem alterar senhas." };
+  if (id) {
+    const { data } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    if (data?.role !== "gerente") {
+      const { data: a } = await supabase.from("senhas_acesso").select("criado_por").eq("id", id).single();
+      if (a?.criado_por !== user.id) {
+        return { supabase, user, erro: "Você só pode alterar ou excluir as senhas que você cadastrou." };
+      }
+    }
   }
   return { supabase, user, erro: null as string | null };
 }
@@ -61,7 +63,7 @@ export async function salvarSenhaAcesso(
     observacoes: string;
   }
 ): Promise<EstadoSenhaAcesso> {
-  const { supabase, user, erro } = await exigirGerente();
+  const { supabase, user, erro } = await exigirDono(id);
   if (erro || !user) return { erro: erro ?? "Sessão expirada." };
 
   const servico = valores.servico.trim();
@@ -99,7 +101,7 @@ export async function salvarSenhaAcesso(
 export async function excluirSenhaAcesso(
   id: string
 ): Promise<EstadoSenhaAcesso> {
-  const { supabase, erro } = await exigirGerente();
+  const { supabase, erro } = await exigirDono(id);
   if (erro) return { erro };
   const { error } = await supabase.from("senhas_acesso").delete().eq("id", id);
   if (error) return { erro: "Não foi possível excluir." };
