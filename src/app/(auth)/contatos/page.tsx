@@ -12,6 +12,24 @@ export const dynamic = "force-dynamic";
 
 const ORDEM_PAPEL: Record<string, number> = { gerente: 0, lider: 1, colaborador: 2 };
 
+/** Posição do cargo na hierarquia (menor = mais alto). Cargo não reconhecido cai no meio, pelo papel no sistema. */
+const HIERARQUIA: [RegExp, number][] = [
+  [/diretor/, 0],
+  [/gerente/, 1],
+  [/coordenador/, 2],
+  [/supervisor|lider/, 3],
+  [/analista/, 4],
+  [/assistente/, 5],
+  [/auxiliar/, 6],
+  [/estagiari|trainee/, 7],
+];
+const semAcento = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+function posicaoDoCargo(cargo: string | null, papel: string): number {
+  const c = semAcento(cargo ?? "");
+  const achou = HIERARQUIA.find(([re]) => re.test(c));
+  return achou ? achou[1] : 4.5 + (ORDEM_PAPEL[papel] ?? 9) / 100;
+}
+
 /** Contatos do time de Marketing (página pública, ligada pela página inicial). */
 export default async function ContatosPage() {
   const { textos, logo } = await obterConfig();
@@ -21,7 +39,7 @@ export default async function ContatosPage() {
     const { data } = await criarClienteAdmin().from("profiles").select("id, nome, cargo, email, avatar_url, role").eq("ativo", true);
     pessoas = ((data as typeof pessoas | null) ?? [])
       .filter((p) => p.email)
-      .sort((a, b) => (ORDEM_PAPEL[a.role] ?? 9) - (ORDEM_PAPEL[b.role] ?? 9) || a.nome.localeCompare(b.nome, "pt-BR"));
+      .sort((a, b) => posicaoDoCargo(a.cargo, a.role) - posicaoDoCargo(b.cargo, b.role) || a.nome.localeCompare(b.nome, "pt-BR"));
   }
 
   return (
