@@ -5,6 +5,19 @@ import { PageHeader } from "@/components/shared/page-header";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Quem é o dono do acesso. Vem da planilha de origem, gravada nas observações
+ * ("Acessos — Thiago", "Acesso antigo — Jessica"); nos acessos criados no painel, de quem cadastrou.
+ */
+function donoDe(observacoes: string | null, criador: string | undefined): { dono: string; donoNaPlanilha: boolean } {
+  const m = observacoes?.match(/^(Acessos?(?: antigo)?)s+—s+(.+)$/m);
+  if (m) {
+    const nome = m[2].trim();
+    return { dono: /antigo/i.test(m[1]) ? `${nome} (antigo)` : nome, donoNaPlanilha: true };
+  }
+  return { dono: criador?.split(" ")[0] ?? "Sem responsável", donoNaPlanilha: false };
+}
+
 export default async function SenhasPage() {
   const usuario = await exigirUsuario();
   const supabase = await criarClienteServidor();
@@ -35,7 +48,7 @@ export default async function SenhasPage() {
     observacoes: a.observacoes,
     temSenha: Boolean(a.senha_cifrada),
     criadoPor: a.criado_por,
-    criadoPorNome: a.criado_por ? (nomes.get(a.criado_por) ?? null) : null,
+    ...donoDe(a.observacoes, a.criado_por ? nomes.get(a.criado_por) : undefined),
   }));
 
   return (

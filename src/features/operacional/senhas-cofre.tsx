@@ -34,7 +34,8 @@ export interface AcessoView {
   observacoes: string | null;
   temSenha: boolean;
   criadoPor: string | null;
-  criadoPorNome: string | null;
+  dono: string;
+  donoNaPlanilha: boolean;
 }
 
 const VAZIO = { servico: "", url: "", usuario: "", senha: "", observacoes: "" };
@@ -50,9 +51,9 @@ export function SenhasCofre({
 }) {
   const [filtro, setFiltro] = useState("");
   const pessoas = Array.from(
-    new Map(acessos.map((a) => [a.criadoPor ?? "", a.criadoPorNome ?? "Sem responsável"])).entries()
+    new Map(acessos.map((a) => [a.dono, a.dono])).entries()
   ).sort((x, y) => x[1].localeCompare(y[1], "pt-BR"));
-  const visiveis = filtro === "" ? acessos : acessos.filter((a) => (a.criadoPor ?? "") === filtro);
+  const visiveis = filtro === "" ? acessos : acessos.filter((a) => a.dono === filtro);
   const podeMexer = (a: AcessoView) => ehGerente || a.criadoPor === meuId;
   const [editando, setEditando] = useState<string | "novo" | null>(null);
   const [form, setForm] = useState(VAZIO);
@@ -155,7 +156,7 @@ export function SenhasCofre({
             <option value="">Todos os usuários ({acessos.length})</option>
             {pessoas.map(([id, nome]) => (
               <option key={id} value={id}>
-                {nome} ({acessos.filter((a) => (a.criadoPor ?? "") === id).length})
+                {nome} ({acessos.filter((a) => a.dono === id).length})
               </option>
             ))}
           </select>
@@ -350,8 +351,8 @@ export function SenhasCofre({
                   </div>
                 </dl>
 
-                {a.criadoPorNome ? (
-                  <p className="text-xs text-muted-foreground">Cadastrado por {a.criadoPorNome}</p>
+                {!a.donoNaPlanilha ? (
+                  <p className="text-xs text-muted-foreground">Cadastrado por {a.dono}</p>
                 ) : null}
                 {a.observacoes ? (
                   <p className="whitespace-pre-line text-xs text-muted-foreground">
