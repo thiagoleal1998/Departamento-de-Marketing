@@ -1,5 +1,6 @@
 "use client";
 
+import { Select } from "@/components/ui/select";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "@/components/shared/link";
 import { usePathname } from "next/navigation";
@@ -225,7 +226,7 @@ export function ChatFlutuante({
           </div>
 
           <div className="border-b p-2">
-            <select
+            <Select
               value={com}
               onChange={(e) => escolher(e.target.value)}
               aria-label="Conversar com"
@@ -241,7 +242,7 @@ export function ChatFlutuante({
                   {p.nome}
                 </option>
               ))}
-            </select>
+            </Select>
             {aviso && (aviso.chave !== com || !aberto) ? (
               <button
                 type="button"

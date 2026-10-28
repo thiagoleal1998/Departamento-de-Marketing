@@ -1,5 +1,6 @@
 "use client";
 
+import { Select } from "@/components/ui/select";
 import { useMemo, useState } from "react";
 import { ExternalLink, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -55,15 +56,15 @@ export function ConsultaSite({ paginas }: { paginas: PaginaSite[] }) {
             className="h-9 w-72 pl-8"
           />
         </div>
-        <select value={categoria} onChange={(e) => setCategoria(e.target.value)} aria-label="Categoria" className={selecao}>
+        <Select value={categoria} onChange={(e) => setCategoria(e.target.value)} aria-label="Categoria" className={selecao}>
           <option value="">Todas as categorias</option>
           {categorias.map((c) => (
             <option key={c} value={c}>
               {c}
             </option>
           ))}
-        </select>
-        <select
+        </Select>
+        <Select
           value={abrangencia}
           onChange={(e) => setAbrangencia(e.target.value)}
           aria-label="Abrangência"
@@ -75,7 +76,7 @@ export function ConsultaSite({ paginas }: { paginas: PaginaSite[] }) {
               {c}
             </option>
           ))}
-        </select>
+        </Select>
         <span className="text-xs text-muted-foreground">
           {visiveis.length} de {paginas.length} páginas
         </span>

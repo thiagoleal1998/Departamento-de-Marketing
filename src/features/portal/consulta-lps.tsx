@@ -1,5 +1,6 @@
 "use client";
 
+import { Select } from "@/components/ui/select";
 import { useMemo, useState } from "react";
 import { ExternalLink, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -50,7 +51,7 @@ export function ConsultaLps({ lps }: { lps: LpPublica[] }) {
             className="h-9 w-72 pl-8"
           />
         </div>
-        <select
+        <Select
           value={site}
           onChange={(e) => setSite(e.target.value)}
           aria-label="Site"
@@ -62,8 +63,8 @@ export function ConsultaLps({ lps }: { lps: LpPublica[] }) {
               {s}
             </option>
           ))}
-        </select>
-        <select
+        </Select>
+        <Select
           value={situacao}
           onChange={(e) => setSituacao(e.target.value)}
           aria-label="Situação"
@@ -72,7 +73,7 @@ export function ConsultaLps({ lps }: { lps: LpPublica[] }) {
           <option value="">Ativas e inativas</option>
           <option value="ativo">Só ativas</option>
           <option value="inativo">Só inativas</option>
-        </select>
+        </Select>
         <span className="text-xs text-muted-foreground">
           {visiveis.length} de {lps.length} landing pages ({nAtivas} ativas · {lps.length - nAtivas} inativas)
         </span>

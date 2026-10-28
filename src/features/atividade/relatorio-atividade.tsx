@@ -1,3 +1,4 @@
+import { Select } from "@/components/ui/select";
 import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { dataBr, hojeSP, somarDias } from "@/features/divulgacao/tipos";
 import { rotuloTela } from "./rotulo-tela";
@@ -105,19 +106,19 @@ export async function RelatorioAtividade({ sp }: { sp: { de?: string; ate?: stri
         <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
           Até <Input type="date" name="ate" defaultValue={ate} className="h-9 w-36" />
         </label>
-        <select name="usuario" defaultValue={usuarioSel} aria-label="Pessoa" className="h-9 rounded-md border bg-background px-2 text-sm">
+        <Select name="usuario" defaultValue={usuarioSel} aria-label="Pessoa" className="h-9 rounded-md border bg-background px-2 text-sm">
           <option value="">Todas as pessoas</option>
           {perfis.map((p) => (
             <option key={p.id} value={p.id}>
               {p.nome}
             </option>
           ))}
-        </select>
-        <select name="tipo" defaultValue={tipoSel} aria-label="Tipo de registro" className="h-9 rounded-md border bg-background px-2 text-sm">
+        </Select>
+        <Select name="tipo" defaultValue={tipoSel} aria-label="Tipo de registro" className="h-9 rounded-md border bg-background px-2 text-sm">
           <option value="">Telas e ações</option>
           <option value="acao">Só ações</option>
           <option value="pagina">Só telas abertas</option>
-        </select>
+        </Select>
         <Button type="submit" size="sm" className="h-9">
           Aplicar
         </Button>

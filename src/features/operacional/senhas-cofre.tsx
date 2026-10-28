@@ -1,5 +1,6 @@
 "use client";
 
+import { Select } from "@/components/ui/select";
 import { useDialogo } from "@/components/shared/dialogo-provider";
 
 import { useState, useTransition } from "react";
@@ -147,7 +148,7 @@ export function SenhasCofre({
     <div className="space-y-4">
       {editando === null ? (
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <select
+          <Select
             value={filtro}
             onChange={(e) => setFiltro(e.target.value)}
             aria-label="Filtrar por usuário"
@@ -159,7 +160,7 @@ export function SenhasCofre({
                 {nome} ({acessos.filter((a) => a.dono === id).length})
               </option>
             ))}
-          </select>
+          </Select>
           <Button onClick={abrirNovo}>
             <Plus className="size-4" /> Novo acesso
           </Button>

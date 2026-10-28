@@ -1,3 +1,4 @@
+import { Select } from "@/components/ui/select";
 import Link from "@/components/shared/link";
 import { redirect } from "next/navigation";
 import { Activity, BarChart3, Download, FileBarChart, Mail, Plug } from "lucide-react";
@@ -77,23 +78,23 @@ function FormFiltro({ f, aba }: { f: ReturnType<typeof lerFiltro>; aba: "divulga
       <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
         Até <Input type="date" name="ate" defaultValue={f.ate} className="h-9 w-36" />
       </label>
-      <select name="tipo" defaultValue={f.tipo} aria-label="Tipo" className={sel}>
+      <Select name="tipo" defaultValue={f.tipo} aria-label="Tipo" className={sel}>
         <option value="">Nacional e internacional</option>
         <option value="nacional">Só nacional</option>
         <option value="internacional">Só internacional</option>
-      </select>
-      <select name="periodo" defaultValue={f.periodo} aria-label="Período" className={sel}>
+      </Select>
+      <Select name="periodo" defaultValue={f.periodo} aria-label="Período" className={sel}>
         <option value="">Todos os períodos</option>
         {PERIODOS.map((p) => (
           <option key={p}>{p}</option>
         ))}
-      </select>
-      <select name="regime" defaultValue={f.regime} aria-label="Regime" className={sel}>
+      </Select>
+      <Select name="regime" defaultValue={f.regime} aria-label="Regime" className={sel}>
         <option value="">Todos os regimes</option>
         {REGIMES.map((p) => (
           <option key={p}>{p}</option>
         ))}
-      </select>
+      </Select>
       <Input name="q" defaultValue={f.busca} placeholder="Produto, destino ou tipo…" aria-label="Buscar" className="h-9 w-48" />
       <Button type="submit" size="sm" className="h-9">
         Aplicar
@@ -419,12 +420,12 @@ async function RelatorioEmails(sp: Sp) {
       {aviso ? <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-900">{aviso}</p> : null}
       <form method="get" className="flex flex-wrap items-end gap-3">
         <FormFiltro f={{ ...f, tipo: "", periodo: "", regime: "", busca: "" }} aba="rd" />
-        <select name="publico" defaultValue={publicoSel} aria-label="Público" className={sel}>
+        <Select name="publico" defaultValue={publicoSel} aria-label="Público" className={sel}>
           <option value="">B2B e B2C</option>
           <option value="B2B">Só B2B</option>
           <option value="B2C">Só B2C</option>
           <option value="Sem público no nome">Sem público no nome</option>
-        </select>
+        </Select>
         <span className="ml-auto text-xs text-muted-foreground">
           {ultima?.sincronizado_em ? `E-mails atualizados em ${new Date(ultima.sincronizado_em).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : "Ainda sem e-mails: clique em buscar"}
         </span>

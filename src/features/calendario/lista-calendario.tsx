@@ -1,5 +1,6 @@
 "use client";
 
+import { Select } from "@/components/ui/select";
 import { useMemo, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, List, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { useDialogo } from "@/components/shared/dialogo-provider";
@@ -259,26 +260,26 @@ export function ListaCalendario({ itens: itensDoCalendario, projetos = [], usuar
           <Search className="pointer-events-none absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
           <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar no calendário…" aria-label="Buscar" className="h-9 w-64 pl-8" />
         </div>
-        <select value={tipo} onChange={(e) => setTipo(e.target.value)} aria-label="Tipo" className={sel}>
+        <Select value={tipo} onChange={(e) => setTipo(e.target.value)} aria-label="Tipo" className={sel}>
           <option value="">Todos os tipos</option>
           {tipos.map((t) => (
             <option key={t} value={t}>
               {rotuloTipo(t)}
             </option>
           ))}
-        </select>
-        <select value={resp} onChange={(e) => setResp(e.target.value)} aria-label="Responsável" className={sel}>
+        </Select>
+        <Select value={resp} onChange={(e) => setResp(e.target.value)} aria-label="Responsável" className={sel}>
           <option value="">Todos os responsáveis</option>
           {resps.map((r) => (
             <option key={r}>{r}</option>
           ))}
-        </select>
-        <select value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Status" className={sel}>
+        </Select>
+        <Select value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Status" className={sel}>
           <option value="">Todos os status</option>
           {statuses.map((s) => (
             <option key={s}>{s}</option>
           ))}
-        </select>
+        </Select>
         <ul className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           {tipos.map((t) => (
             <li key={t} className="flex items-center gap-1.5">

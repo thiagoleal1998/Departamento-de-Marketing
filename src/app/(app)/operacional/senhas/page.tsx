@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
  * ("Acessos — Thiago", "Acesso antigo — Jessica"); nos acessos criados no painel, de quem cadastrou.
  */
 function donoDe(observacoes: string | null, criador: string | undefined): { dono: string; donoNaPlanilha: boolean } {
-  const m = observacoes?.match(/^(Acessos?(?: antigo)?)s+—s+(.+)$/m);
+  const m = observacoes?.match(/^(Acessos?(?: antigo)?)\s+—\s+(.+)$/m);
   if (m) {
     const nome = m[2].trim();
     return { dono: /antigo/i.test(m[1]) ? `${nome} (antigo)` : nome, donoNaPlanilha: true };

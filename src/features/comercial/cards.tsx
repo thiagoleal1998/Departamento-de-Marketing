@@ -1,5 +1,6 @@
 "use client";
 
+import { Select } from "@/components/ui/select";
 import { useEffect, useMemo, useState } from "react";
 import { ExternalLink, Search, Sparkles, X } from "lucide-react";
 import type { CampoProduto, MudancaCampo, ProdutoComercial } from "./tipos";
@@ -369,7 +370,7 @@ export function ListaProdutos({
             aria-label="Buscar"
           />
         </div>
-        <select
+        <Select
           value={situacao}
           onChange={(e) => setSituacao(e.target.value as typeof situacao)}
           aria-label="Situação da LP"
@@ -381,7 +382,7 @@ export function ListaProdutos({
           <option value="sem_status">LP sem status</option>
           <option value="sem_lp">Sem LP no sistema</option>
           <option value="divergentes">Somente divergentes</option>
-        </select>
+        </Select>
         <label className="flex cursor-pointer items-center gap-2 text-sm">
           <input
             type="checkbox"

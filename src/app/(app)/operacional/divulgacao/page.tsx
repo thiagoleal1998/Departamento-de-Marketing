@@ -1,3 +1,4 @@
+import { Select } from "@/components/ui/select";
 import Link from "@/components/shared/link";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
@@ -133,11 +134,11 @@ async function Historico(sp: Sp, podeExcluir: boolean) {
           <Search className="pointer-events-none absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
           <Input name="q" defaultValue={f.q} placeholder="Buscar produto, destino, vantagem…" aria-label="Buscar" className="h-9 w-72 pl-8" />
         </div>
-        <select name="tipo" defaultValue={f.tipo} aria-label="Tipo" className="h-9 rounded-md border bg-background px-2 text-sm">
+        <Select name="tipo" defaultValue={f.tipo} aria-label="Tipo" className="h-9 rounded-md border bg-background px-2 text-sm">
           <option value="">Nacional e internacional</option>
           <option value="nacional">Só nacional</option>
           <option value="internacional">Só internacional</option>
-        </select>
+        </Select>
         <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
           De <Input type="date" name="de" defaultValue={f.de} className="h-9 w-36" />
         </label>
