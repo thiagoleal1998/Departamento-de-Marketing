@@ -4,7 +4,7 @@ import { Select } from "@/components/ui/select";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "@/components/shared/link";
 import { usePathname } from "next/navigation";
-import { ExternalLink, Loader2, MessageCircle, Send, X } from "lucide-react";
+import { ExternalLink, ImageIcon, Loader2, MessageCircle, Mic, Paperclip, Send, Smile, X } from "lucide-react";
 import { criarClienteBrowser } from "@/lib/supabase/client";
 import { enviarMensagem, marcarConversaLida } from "./actions";
 import { abrirConversaFlutuante, naoLidasPorConversa } from "./flutuante-actions";
@@ -15,7 +15,8 @@ import { IndicadorDigitando, useDigitando } from "./digitando";
 import { StatusLeitura, useLeituras } from "./leituras";
 import { RevisaoCard } from "./revisao-card";
 import { AnexoMensagem } from "./anexo-mensagem";
-import { BotoesAnexo } from "./anexo-envio";
+import { AnexoEnvio, type ComandosAnexo } from "./anexo-envio";
+import { GradeEmojis, ItemMenu, MenuSuspenso } from "./menu-chat";
 import { TEXTOS_AUTOMATICOS, type AnexoChat } from "./anexo-tipos";
 import type { RevisaoPeca } from "./revisao-tipos";
 import { cn } from "@/lib/utils";
@@ -58,6 +59,7 @@ export function ChatFlutuante({
   const [aviso, setAviso] = useState<{ chave: string; autor: string; texto: string } | null>(null);
   const fim = useRef<HTMLDivElement>(null);
   const caixa = useRef<HTMLTextAreaElement>(null);
+  const anexo = useRef<ComandosAnexo>(null);
   // Ao clicar em Responder, o cursor já vai para a caixa de mensagem.
   useEffect(() => {
     if (respondendoA) caixa.current?.focus();
@@ -327,13 +329,37 @@ export function ChatFlutuante({
           {conversaId ? <IndicadorDigitando ids={digitando} nomeDe={(id) => nomes.get(id) ?? "Alguém"} /> : null}
           {respondendoA ? <BarraResposta nome={quem(respondendoA)} texto={respondendoA.texto} onCancelar={() => setRespondendoA(null)} /> : null}
           <form
-            className="flex items-end gap-2 border-t p-2"
+            className="border-t p-2"
             onSubmit={(e) => {
               e.preventDefault();
               void enviar();
             }}
           >
-            {conversaId ? <BotoesAnexo conversaId={conversaId} respostaA={respondendoA?.id ?? null} aoEnviado={() => setRespondendoA(null)} /> : null}
+            <div className="flex items-end gap-0.5 rounded-3xl border bg-muted/40 px-1 py-1">
+              <MenuSuspenso icone={<Paperclip className="size-5" />} rotulo="Anexar" titulo="Anexar">
+                {(fechar) => (
+                  <ItemMenu
+                    icone={<ImageIcon className="size-4" />}
+                    cor="bg-violet-500/15 text-violet-500"
+                    texto="Imagem ou áudio"
+                    detalhe="Enviar um arquivo"
+                    onClick={() => {
+                      fechar();
+                      anexo.current?.escolherArquivo();
+                    }}
+                  />
+                )}
+              </MenuSuspenso>
+              <MenuSuspenso icone={<Smile className="size-5" />} rotulo="Emojis" largura="w-[19.5rem] max-w-[calc(100vw-3rem)]">
+                {() => (
+                  <GradeEmojis
+                    aoEscolher={(e) => {
+                      setTexto((t) => t + e);
+                      caixa.current?.focus();
+                    }}
+                  />
+                )}
+              </MenuSuspenso>
             <textarea
               ref={caixa}
               value={texto}
@@ -353,16 +379,31 @@ export function ChatFlutuante({
               maxLength={2000}
               placeholder={conversaId ? "Mensagem… (Enter envia)" : "Escolha uma pessoa"}
               aria-label="Mensagem"
-              className="max-h-24 min-h-9 flex-1 resize-none rounded-md border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+              className="max-h-24 min-h-9 flex-1 resize-none bg-transparent px-1 py-2 text-sm outline-none placeholder:text-muted-foreground disabled:opacity-60"
             />
-            <button
-              type="submit"
-              disabled={!conversaId || !texto.trim() || enviando}
-              aria-label="Enviar"
-              className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
-            >
-              {enviando ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-            </button>
+              {texto.trim() ? (
+                <button
+                  type="submit"
+                  disabled={!conversaId || enviando}
+                  aria-label="Enviar"
+                  className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
+                >
+                  {enviando ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={!conversaId}
+                  onClick={() => anexo.current?.gravar()}
+                  aria-label="Gravar áudio"
+                  title="Gravar mensagem de voz"
+                  className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
+                >
+                  <Mic className="size-4" />
+                </button>
+              )}
+            </div>
+            {conversaId ? <AnexoEnvio ref={anexo} conversaId={conversaId} respostaA={respondendoA?.id ?? null} aoEnviado={() => setRespondendoA(null)} /> : null}
           </form>
         </div>
       ) : null}

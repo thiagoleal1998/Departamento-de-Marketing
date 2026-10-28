@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Send, Loader2, Link2, ClipboardPlus, ScanSearch } from "lucide-react";
+import { Send, Loader2, Link2, ClipboardPlus, ScanSearch, Paperclip, Smile, Mic, ImageIcon, FilePlus2, ChevronDown } from "lucide-react";
 import { criarClienteBrowser } from "@/lib/supabase/client";
 import { enviarMensagem, marcarConversaLida } from "./actions";
 import {
@@ -23,9 +23,10 @@ import { IndicadorDigitando, useDigitando } from "./digitando";
 import { StatusLeitura, useLeituras } from "./leituras";
 import { RevisaoCard } from "./revisao-card";
 import { AnexoMensagem } from "./anexo-mensagem";
-import { BotoesAnexo } from "./anexo-envio";
+import { AnexoEnvio, type ComandosAnexo } from "./anexo-envio";
 import { TEXTOS_AUTOMATICOS, type AnexoChat } from "./anexo-tipos";
-import { RevisaoEditor } from "./revisao-editor";
+import { RevisaoEditor, type PecaInicial } from "./revisao-editor";
+import { GradeEmojis, ItemMenu, MenuSuspenso } from "./menu-chat";
 import type { RevisaoPeca } from "./revisao-tipos";
 import { CONVERSA_GERAL } from "./constantes";
 import { Input } from "@/components/ui/input";
@@ -96,7 +97,8 @@ export function ChatJanela({
   }, [respondendoA]);
   const { lista: reacoes, reagir } = useReacoes(conversaId, meuId);
   const leituras = useLeituras(conversaId);
-  const [revisando, setRevisando] = useState(false);
+  const [revisando, setRevisando] = useState<null | { modo: "pedido" | "revisao"; inicial?: PecaInicial }>(null);
+  const anexo = useRef<ComandosAnexo>(null);
   const { digitando, avisarDigitando, parouDeDigitar } = useDigitando(conversaId, meuId);
   const quem = (m: MensagemView) => (m.autor_id === meuId ? "Você" : nomes[m.autor_id] ?? "—");
   function irPara(id: string) {
@@ -308,6 +310,19 @@ export function ChatJanela({
             const minha = m.autor_id === meuId;
             const original = m.resposta_a ? mensagens.find((x) => x.id === m.resposta_a) : undefined;
             const dela = reacoes.filter((r) => r.mensagem_id === m.id);
+            // Pedido de revisão: a situação vem da revisão mais recente que o responde.
+            const rev = m.revisao?.imagem ? m.revisao : null;
+            const ehPedido = rev?.tipo === "pedido";
+            const resposta = ehPedido ? [...mensagens].reverse().find((x) => x.revisao?.pedido === m.id) : undefined;
+            const situacao = resposta?.revisao?.veredito ?? "aguardando";
+            const acaoRevisao =
+              rev && ehPedido
+                ? !minha && situacao === "aguardando"
+                  ? { rotulo: "Revisar esta peça", aoClicar: () => setRevisando({ modo: "revisao", inicial: { imagem: rev.imagem, nome: rev.nome, pedidoId: m.id } }) }
+                  : minha && situacao === "ajustes"
+                    ? { rotulo: "Enviar nova versão", aoClicar: () => setRevisando({ modo: "pedido" }) }
+                    : undefined
+                : undefined;
             const botao = (
               <div className="flex items-center self-center">
                 <SeletorReacao atual={dela.find((r) => r.usuario_id === meuId)?.emoji} onEscolher={(e) => void reagir(m.id, e)} />
@@ -337,7 +352,7 @@ export function ChatJanela({
                   {m.resposta_a ? (
                     <Citacao nome={original ? quem(original) : "Mensagem anterior"} texto={original?.texto ?? null} minha={minha} onIr={original ? () => irPara(original.id) : undefined} />
                   ) : null}
-                  {m.revisao?.imagem ? <RevisaoCard revisao={m.revisao} minha={minha} /> : null}
+                  {rev ? <RevisaoCard revisao={rev} minha={minha} status={situacao} acao={acaoRevisao} /> : null}
                   {m.anexo?.url ? <AnexoMensagem anexo={m.anexo} /> : null}
                   {m.anexo?.url && TEXTOS_AUTOMATICOS.includes(m.texto) ? null : <p className="whitespace-pre-wrap break-words">{m.texto}</p>}
                   <ReacoesDaMensagem reacoes={dela} usuarioId={meuId} nomeDe={(id) => nomes[id] ?? "—"} onReagir={(e) => void reagir(m.id, e)} minha={minha} />
@@ -606,38 +621,92 @@ export function ChatJanela({
           </div>
         ) : null}
 
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            variant={vincular || temVinculo || respondendo ? "default" : "outline"}
-            size="icon"
-            aria-label="Vincular estoque ou tarefa"
-            title="Vincular item do estoque / criar tarefa"
-            onClick={() => (vincular ? limparVinculo() : setVincular(true))}
+        <div className="flex items-end gap-1 rounded-3xl border bg-muted/40 px-1.5 py-1.5">
+          <MenuSuspenso icone={<Paperclip className="size-5" />} rotulo="Anexar" titulo="Anexar" ativo={vincular || temVinculo || respondendo}>
+            {(fechar) => (
+              <>
+                <ItemMenu
+                  icone={<ImageIcon className="size-4" />}
+                  cor="bg-violet-500/15 text-violet-500"
+                  texto="Imagem ou áudio"
+                  detalhe="Enviar um arquivo"
+                  onClick={() => {
+                    fechar();
+                    anexo.current?.escolherArquivo();
+                  }}
+                />
+                <ItemMenu
+                  icone={<Link2 className="size-4" />}
+                  cor="bg-sky-500/15 text-sky-500"
+                  texto={vincular ? "Fechar vínculo" : "Estoque ou tarefa"}
+                  detalhe="Vincular item do estoque / criar tarefa"
+                  onClick={() => {
+                    fechar();
+                    if (vincular) limparVinculo();
+                    else setVincular(true);
+                  }}
+                />
+                <ItemMenu
+                  icone={<ClipboardPlus className="size-4" />}
+                  cor="bg-emerald-500/15 text-emerald-500"
+                  texto="Solicitar criação"
+                  detalhe="LP, banner, lâmina, vídeo…"
+                  onClick={() => {
+                    fechar();
+                    setSolicitando(true);
+                  }}
+                />
+              </>
+            )}
+          </MenuSuspenso>
+          <MenuSuspenso icone={<Smile className="size-5" />} rotulo="Emojis" largura="w-[19.5rem]">
+            {() => (
+              <GradeEmojis
+                aoEscolher={(e) => {
+                  setTexto((t) => t + e);
+                  caixaRef.current?.focus();
+                }}
+              />
+            )}
+          </MenuSuspenso>
+          <MenuSuspenso
+            icone={
+              <>
+                <ScanSearch className="size-4" />
+                <span className="hidden text-sm font-medium sm:inline">Revisão</span>
+                <ChevronDown className="size-3.5" />
+              </>
+            }
+            rotulo="Revisão"
+            titulo="Revisão de peças"
+            className="flex size-auto h-9 items-center gap-1.5 px-3"
+            largura="w-72"
           >
-            <Link2 className="size-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            aria-label="Solicitar criação"
-            title="Solicitar criação de LP, banner, lâmina, vídeo…"
-            onClick={() => setSolicitando(true)}
-          >
-            <ClipboardPlus className="size-4" />
-            <span className="hidden lg:inline">Solicitar criação</span>
-          </Button>
-          <BotoesAnexo conversaId={conversaId} respostaA={respondendoA?.id ?? null} aoEnviado={() => setRespondendoA(null)} />
-          <Button
-            type="button"
-            variant="outline"
-            aria-label="Revisar peça"
-            title="Revisar uma peça: marque na imagem o que precisa ser corrigido"
-            onClick={() => setRevisando(true)}
-          >
-            <ScanSearch className="size-4" />
-            <span className="hidden lg:inline">Revisar peça</span>
-          </Button>
+            {(fechar) => (
+              <>
+                <ItemMenu
+                  icone={<FilePlus2 className="size-4" />}
+                  cor="bg-amber-500/15 text-amber-600"
+                  texto="Solicitar revisão"
+                  detalhe="Envie sua peça para ser revisada"
+                  onClick={() => {
+                    fechar();
+                    setRevisando({ modo: "pedido" });
+                  }}
+                />
+                <ItemMenu
+                  icone={<ScanSearch className="size-4" />}
+                  cor="bg-rose-500/15 text-rose-500"
+                  texto="Revisar peça"
+                  detalhe="Marque na imagem o que precisa mudar"
+                  onClick={() => {
+                    fechar();
+                    setRevisando({ modo: "revisao" });
+                  }}
+                />
+              </>
+            )}
+          </MenuSuspenso>
           <Textarea
             ref={caixaRef}
             value={texto}
@@ -666,20 +735,24 @@ export function ChatJanela({
             }
             maxLength={2000}
             autoComplete="off"
-            className="max-h-40 min-h-10 resize-none py-2"
+            className="max-h-40 min-h-9 flex-1 resize-none border-0 bg-transparent px-1 py-2 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
           />
-          <Button type="submit" disabled={pendente || (!texto.trim() && !respondendo)}>
-            {pendente ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Send className="size-4" />
-            )}
-            <span className="sr-only sm:not-sr-only">Enviar</span>
-          </Button>
+          {texto.trim() || respondendo ? (
+            <Button type="submit" size="icon" disabled={pendente || (!texto.trim() && !respondendo)} aria-label="Enviar" className="size-9 shrink-0 rounded-full">
+              {pendente ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+            </Button>
+          ) : (
+            <Button type="button" size="icon" aria-label="Gravar áudio" title="Gravar mensagem de voz" onClick={() => anexo.current?.gravar()} className="size-9 shrink-0 rounded-full">
+              <Mic className="size-4" />
+            </Button>
+          )}
         </div>
       </form>
 
-      {revisando ? <RevisaoEditor conversaId={conversaId} respostaA={respondendoA?.id ?? null} aoFechar={() => setRevisando(false)} /> : null}
+      <AnexoEnvio ref={anexo} conversaId={conversaId} respostaA={respondendoA?.id ?? null} aoEnviado={() => setRespondendoA(null)} />
+      {revisando ? (
+        <RevisaoEditor conversaId={conversaId} respostaA={respondendoA?.id ?? null} modo={revisando.modo} inicial={revisando.inicial} aoFechar={() => setRevisando(null)} />
+      ) : null}
       {solicitando ? (
         <SolicitacaoForm conversaId={conversaId} meuNome={nomes[meuId] ?? ""} pessoas={pessoas} outroId={outroId} aoFechar={() => setSolicitando(false)} />
       ) : null}

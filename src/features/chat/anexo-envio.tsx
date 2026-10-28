@@ -1,9 +1,9 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
-import { ImagePlus, Loader2, Mic, Send, Square, Trash2, X } from "lucide-react";
+import { Loader2, Mic, Send, Square, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -43,11 +43,20 @@ async function reduzirImagem(arquivo: File): Promise<{ blob: Blob; nome: string 
 
 const FORMATOS_GRAVACAO = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"];
 
+/** O que a caixa de mensagem pode pedir a este componente. */
+export interface ComandosAnexo {
+  escolherArquivo: () => void;
+  gravar: () => void;
+}
+
 /**
- * Botões "enviar imagem" e "gravar áudio" da caixa de mensagem. Cada um abre uma janela de conferência
+ * Envio de imagem e áudio (a caixa de mensagem chama `escolherArquivo` ou `gravar`). Abre uma janela de conferência
  * (prévia da imagem ou player do áudio, com legenda) antes de enviar para a conversa.
  */
-export function BotoesAnexo({ conversaId, respostaA, aoEnviado }: { conversaId: string; respostaA?: string | null; aoEnviado?: () => void }) {
+export const AnexoEnvio = forwardRef<ComandosAnexo, { conversaId: string; respostaA?: string | null; aoEnviado?: () => void }>(function AnexoEnvio(
+  { conversaId, respostaA, aoEnviado },
+  refExterno
+) {
   const [aberto, setAberto] = useState<"escolha" | "gravando" | null>(null);
   const [rascunho, setRascunho] = useState<Rascunho | null>(null);
   const [legenda, setLegenda] = useState("");
@@ -82,6 +91,8 @@ export function BotoesAnexo({ conversaId, respostaA, aoEnviado }: { conversaId: 
     setErro(null);
     setSegundos(0);
   }, [soltarMicrofone]);
+
+  useImperativeHandle(refExterno, () => ({ escolherArquivo: () => input.current?.click(), gravar: () => void comecarGravacao() }));
 
   // Ao sair da tela com o microfone aberto, solta o microfone.
   useEffect(() => () => soltarMicrofone(), [soltarMicrofone]);
@@ -191,13 +202,6 @@ export function BotoesAnexo({ conversaId, respostaA, aoEnviado }: { conversaId: 
           e.target.value = "";
         }}
       />
-      <Button type="button" variant="outline" size="icon" aria-label="Enviar imagem ou áudio" title="Enviar imagem ou arquivo de áudio" onClick={() => input.current?.click()}>
-        <ImagePlus className="size-4" />
-      </Button>
-      <Button type="button" variant="outline" size="icon" aria-label="Gravar áudio" title="Gravar mensagem de voz" onClick={() => void comecarGravacao()}>
-        <Mic className="size-4" />
-      </Button>
-
       {aberto
         ? createPortal(
             <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm">
@@ -275,4 +279,4 @@ export function BotoesAnexo({ conversaId, respostaA, aoEnviado }: { conversaId: 
         : null}
     </>
   );
-}
+});

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Maximize2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { VEREDITOS, type MarcacaoRevisao, type RevisaoPeca } from "./revisao-tipos";
+import { VEREDITOS, type MarcacaoRevisao, type RevisaoPeca, type VereditoRevisao } from "./revisao-tipos";
 
 /** A imagem com os retângulos numerados por cima. Clicar numa marcação a destaca (e a lista acompanha). */
 export function PecaMarcada({
@@ -108,16 +108,32 @@ function Visualizador({ revisao, aoFechar }: { revisao: RevisaoPeca; aoFechar: (
   );
 }
 
-/** A peça dentro do balão do chat: miniatura com as marcações, resumo dos apontamentos e botão para ampliar. */
-export function RevisaoCard({ revisao, minha }: { revisao: RevisaoPeca; minha: boolean }) {
+/**
+ * A peça dentro do balão do chat: miniatura com as marcações, resumo dos apontamentos e botão para ampliar.
+ * No pedido de revisão mostra a situação (`status`: aguardando, ajustes ou aprovada) e um botão de ação, se houver.
+ */
+export function RevisaoCard({
+  revisao,
+  minha,
+  status,
+  acao,
+}: {
+  revisao: RevisaoPeca;
+  minha: boolean;
+  status?: VereditoRevisao;
+  acao?: { rotulo: string; aoClicar: () => void };
+}) {
   const [aberto, setAberto] = useState(false);
   const [destaque, setDestaque] = useState<number | null>(null);
-  const v = VEREDITOS[revisao.veredito] ?? VEREDITOS.ajustes;
+  const ehPedido = revisao.tipo === "pedido";
+  const v = VEREDITOS[ehPedido ? (status ?? "aguardando") : revisao.veredito] ?? VEREDITOS.ajustes;
 
   return (
     <div className={cn("mb-1 mt-1 space-y-2 rounded-xl border p-2 text-foreground", minha ? "border-white/30 bg-background" : "bg-background")}>
       <div className="flex items-center justify-between gap-2">
-        <span className="truncate text-xs font-semibold">🖼️ {revisao.nome || "Peça em revisão"}</span>
+        <span className="truncate text-xs font-semibold">
+          {ehPedido ? "📥 Pedido de revisão" : "🖼️ Revisão"} · {revisao.nome || "peça"}
+        </span>
         <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold", v.classe)}>{v.rotulo}</span>
       </div>
       <div className="relative">
@@ -131,6 +147,11 @@ export function RevisaoCard({ revisao, minha }: { revisao: RevisaoPeca; minha: b
         </button>
       </div>
       {revisao.marcacoes.length > 0 ? <ListaApontamentos marcacoes={revisao.marcacoes} destaque={destaque} onDestaque={setDestaque} /> : null}
+      {acao ? (
+        <button type="button" onClick={acao.aoClicar} className="w-full rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90">
+          {acao.rotulo}
+        </button>
+      ) : null}
       {aberto ? <Visualizador revisao={revisao} aoFechar={() => setAberto(false)} /> : null}
     </div>
   );

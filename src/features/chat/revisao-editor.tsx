@@ -8,7 +8,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { enviarRevisao } from "./revisao-actions";
 import { PecaMarcada } from "./revisao-card";
-import { MAX_MARCACOES, VEREDITOS, type MarcacaoRevisao, type VereditoRevisao } from "./revisao-tipos";
+import { MAX_MARCACOES, VEREDITOS, VEREDITOS_REVISOR, type MarcacaoRevisao, type VereditoRevisao } from "./revisao-tipos";
+
+/** Peça que já está na conversa (um pedido de revisão) e vai ser revisada sem reenviar a imagem. */
+export interface PecaInicial {
+  imagem: string;
+  nome: string;
+  pedidoId: string;
+}
 
 const MAX_LADO = 1800;
 const MIN_ARRASTO = 1.5; // % — abaixo disso o clique vira uma marcação pequena
@@ -42,12 +49,26 @@ async function prepararImagem(arquivo: File): Promise<string> {
 const limitar = (n: number) => Math.min(100, Math.max(0, n));
 
 /**
- * Revisão de peça dentro do chat: escolhe a imagem, desenha retângulos sobre o que precisa ser corrigido,
- * comenta cada apontamento e envia tudo como uma mensagem da conversa.
+ * Dois jeitos de usar:
+ *  • modo "pedido" (Solicitar revisão): quem criou a peça só envia a imagem e diz o que quer revisado;
+ *  • modo "revisao" (Revisar peça): o revisor desenha retângulos sobre o que precisa ser corrigido e comenta cada ponto.
  */
-export function RevisaoEditor({ conversaId, respostaA, aoFechar }: { conversaId: string; respostaA: string | null; aoFechar: () => void }) {
-  const [imagem, setImagem] = useState<string | null>(null);
-  const [nome, setNome] = useState("");
+export function RevisaoEditor({
+  conversaId,
+  respostaA,
+  modo,
+  inicial,
+  aoFechar,
+}: {
+  conversaId: string;
+  respostaA: string | null;
+  modo: "pedido" | "revisao";
+  inicial?: PecaInicial;
+  aoFechar: () => void;
+}) {
+  const ehPedido = modo === "pedido";
+  const [imagem, setImagem] = useState<string | null>(inicial?.imagem ?? null);
+  const [nome, setNome] = useState(inicial?.nome ?? "");
   const [marcacoes, setMarcacoes] = useState<MarcacaoRevisao[]>([]);
   const [rascunho, setRascunho] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const [destaque, setDestaque] = useState<number | null>(null);
@@ -132,7 +153,17 @@ export function RevisaoEditor({ conversaId, respostaA, aoFechar }: { conversaId:
     if (!imagem) return;
     setErro(null);
     startTransition(async () => {
-      const r = await enviarRevisao(conversaId, { imagem, nome, veredito, marcacoes, comentario, respostaA });
+      const r = await enviarRevisao(conversaId, {
+        imagem: inicial ? "" : imagem,
+        imagemUrl: inicial?.imagem,
+        pedidoId: inicial?.pedidoId ?? null,
+        tipo: modo,
+        nome,
+        veredito,
+        marcacoes,
+        comentario,
+        respostaA,
+      });
       if (r.erro) setErro(r.erro);
       else aoFechar();
     });
@@ -143,8 +174,12 @@ export function RevisaoEditor({ conversaId, respostaA, aoFechar }: { conversaId:
       <div className="flex max-h-full w-full max-w-6xl flex-col overflow-hidden rounded-2xl border bg-background text-foreground shadow-2xl">
         <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
           <div>
-            <h2 className="font-semibold">Revisar peça</h2>
-            <p className="text-xs text-muted-foreground">Arraste sobre a imagem para marcar o que precisa ser corrigido e comente cada ponto.</p>
+            <h2 className="font-semibold">{ehPedido ? "Solicitar revisão" : "Revisar peça"}</h2>
+            <p className="text-xs text-muted-foreground">
+              {ehPedido
+                ? "Envie a peça para quem vai revisar. Os apontamentos chegam aqui no chat e você faz os ajustes."
+                : "Arraste sobre a imagem para marcar o que precisa ser corrigido e comente cada ponto."}
+            </p>
           </div>
           <button type="button" onClick={aoFechar} disabled={pendente} aria-label="Fechar" className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground">
             <X className="size-5" />
@@ -165,7 +200,7 @@ export function RevisaoEditor({ conversaId, respostaA, aoFechar }: { conversaId:
               className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-6 py-16 text-center transition-colors hover:border-primary hover:bg-primary/5"
             >
               {lendo ? <Loader2 className="size-8 animate-spin text-primary" /> : <ImagePlus className="size-8 text-primary" />}
-              <span className="font-medium">{lendo ? "Preparando a imagem…" : "Escolha a imagem da peça"}</span>
+              <span className="font-medium">{lendo ? "Preparando a imagem…" : ehPedido ? "Escolha a imagem da peça para revisão" : "Escolha a imagem da peça"}</span>
               <span className="text-sm text-muted-foreground">Clique, arraste um arquivo para cá ou cole um print (Ctrl+V). PNG, JPG ou WebP.</span>
             </button>
             {erro ? <p className="mt-3 text-sm text-destructive">{erro}</p> : null}
@@ -175,6 +210,7 @@ export function RevisaoEditor({ conversaId, respostaA, aoFechar }: { conversaId:
             <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto p-4 lg:grid-cols-[1fr_340px]">
               <div className="flex min-h-0 items-start justify-center overflow-auto rounded-lg bg-muted/40 p-2">
                 <PecaMarcada imagem={imagem} marcacoes={marcacoes} destaque={destaque} onDestaque={setDestaque} className="max-h-[62vh] w-auto">
+                  {ehPedido ? null : (
                   <div
                     ref={area}
                     onPointerDown={comecar}
@@ -193,22 +229,55 @@ export function RevisaoEditor({ conversaId, respostaA, aoFechar }: { conversaId:
                       />
                     ) : null}
                   </div>
+                  )}
                 </PecaMarcada>
               </div>
 
+              {ehPedido ? (
+                <div className="flex min-h-0 flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sobre a peça</p>
+                    <button
+                      type="button"
+                      onClick={() => setImagem(null)}
+                      className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                    >
+                      Trocar imagem
+                    </button>
+                  </div>
+                  <input
+                    value={nome}
+                    onChange={(e) => setNome(e.target.value)}
+                    placeholder="Nome da peça (ex.: Banner Black Friday)"
+                    maxLength={120}
+                    className="h-10 rounded-lg border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                  <Textarea
+                    value={comentario}
+                    onChange={(e) => setComentario(e.target.value)}
+                    placeholder="O que você quer que seja revisado? (opcional)"
+                    rows={4}
+                    maxLength={1500}
+                    className="min-h-0 resize-none text-sm"
+                  />
+                  <p className="text-xs text-muted-foreground">Quem revisar vai marcar na imagem o que precisa mudar. Depois da revisão, você ajusta e envia a nova versão.</p>
+                </div>
+              ) : (
               <div className="flex min-h-0 flex-col gap-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Apontamentos ({marcacoes.length})</p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setImagem(null);
-                      setMarcacoes([]);
-                    }}
-                    className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
-                  >
-                    Trocar imagem
-                  </button>
+                  {inicial ? null : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImagem(null);
+                        setMarcacoes([]);
+                      }}
+                      className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                    >
+                      Trocar imagem
+                    </button>
+                  )}
                 </div>
 
                 {marcacoes.length === 0 ? (
@@ -242,7 +311,7 @@ export function RevisaoEditor({ conversaId, respostaA, aoFechar }: { conversaId:
 
                 <div className="space-y-2 border-t pt-3">
                   <div className="grid grid-cols-2 gap-1.5 rounded-xl bg-muted p-1">
-                    {(Object.keys(VEREDITOS) as VereditoRevisao[]).map((k) => (
+                    {VEREDITOS_REVISOR.map((k) => (
                       <button
                         key={k}
                         type="button"
@@ -256,6 +325,7 @@ export function RevisaoEditor({ conversaId, respostaA, aoFechar }: { conversaId:
                   <Textarea value={comentario} onChange={(e) => setComentario(e.target.value)} placeholder="Comentário geral (opcional)" rows={2} maxLength={1500} className="min-h-0 resize-none text-sm" />
                 </div>
               </div>
+              )}
             </div>
 
             <div className="flex items-center justify-between gap-3 border-t px-4 py-3">
@@ -266,7 +336,7 @@ export function RevisaoEditor({ conversaId, respostaA, aoFechar }: { conversaId:
                 </Button>
                 <Button type="button" onClick={enviar} disabled={pendente}>
                   {pendente ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-                  Enviar revisão
+                  {ehPedido ? "Solicitar revisão" : "Enviar revisão"}
                 </Button>
               </div>
             </div>
