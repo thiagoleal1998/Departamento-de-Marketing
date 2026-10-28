@@ -68,15 +68,17 @@ export function ZoomPan({
   }, []);
 
   function descer(e: React.PointerEvent) {
-    e.currentTarget.setPointerCapture(e.pointerId);
+    // O ponteiro só é "preso" a esta área quando ela mesma vai mover/dar zoom; senão o conteúdo (ex.: o desenho de uma marcação) recebe o soltar do mouse.
     ponteiros.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     moveu.current = false;
     if (ponteiros.current.size === 2) {
       const [a, b] = [...ponteiros.current.values()];
       pinca.current = { dist: Math.hypot(a.x - b.x, a.y - b.y), escala };
       arrasto.current = null;
+      e.currentTarget.setPointerCapture(e.pointerId);
     } else if (!bloquearArrasto || e.button === 1) {
       arrasto.current = { x: e.clientX, y: e.clientY, px: pos.x, py: pos.y };
+      e.currentTarget.setPointerCapture(e.pointerId);
     }
   }
   function mover(e: React.PointerEvent) {
