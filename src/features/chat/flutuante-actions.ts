@@ -38,7 +38,7 @@ export async function naoLidasPorConversa(): Promise<Record<string, number>> {
   }
 }
 
-type Mensagem = { id: string; autor_id: string; texto: string; created_at: string; resposta_a?: string | null; revisao?: import("./revisao-tipos").RevisaoPeca | null };
+type Mensagem = { id: string; autor_id: string; texto: string; created_at: string; resposta_a?: string | null; revisao?: import("./revisao-tipos").RevisaoPeca | null; anexo?: import("./anexo-tipos").AnexoChat | null };
 
 /** Abre (ou cria) a conversa direta com a pessoa — ou a sala geral, se `outroId` for nulo — e devolve as últimas mensagens. */
 export async function abrirConversaFlutuante(
@@ -65,7 +65,8 @@ export async function abrirConversaFlutuante(
   // Com a coluna de resposta (migration 0075); sem ela, carrega do jeito antigo.
   const consulta = (colunas: string) =>
     supabase.from("chat_mensagens").select(colunas).eq("conversa_id", conversaId).order("created_at", { ascending: false }).limit(40);
-  let { data: msgs, error } = await consulta("id, autor_id, texto, created_at, resposta_a, revisao");
+  let { data: msgs, error } = await consulta("id, autor_id, texto, created_at, resposta_a, revisao, anexo");
+  if (error) ({ data: msgs, error } = await consulta("id, autor_id, texto, created_at, resposta_a, revisao"));
   if (error) ({ data: msgs, error } = await consulta("id, autor_id, texto, created_at, resposta_a"));
   if (error) ({ data: msgs, error } = await consulta("id, autor_id, texto, created_at"));
   if (error) return { erro: "Não foi possível carregar as mensagens." };

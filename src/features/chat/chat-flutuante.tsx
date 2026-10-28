@@ -14,6 +14,9 @@ import { ReacoesDaMensagem, SeletorReacao, useReacoes } from "./reacoes";
 import { IndicadorDigitando, useDigitando } from "./digitando";
 import { StatusLeitura, useLeituras } from "./leituras";
 import { RevisaoCard } from "./revisao-card";
+import { AnexoMensagem } from "./anexo-mensagem";
+import { BotoesAnexo } from "./anexo-envio";
+import { TEXTOS_AUTOMATICOS, type AnexoChat } from "./anexo-tipos";
 import type { RevisaoPeca } from "./revisao-tipos";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +27,7 @@ interface Msg {
   created_at: string;
   resposta_a?: string | null;
   revisao?: RevisaoPeca | null;
+  anexo?: AnexoChat | null;
 }
 
 const hora = (iso: string) => new Date(iso).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
@@ -294,7 +298,8 @@ export function ChatFlutuante({
                         <Citacao nome={original ? quem(original) : "Mensagem anterior"} texto={original?.texto ?? null} minha={minha} onIr={original ? () => irPara(original.id) : undefined} />
                       ) : null}
                       {m.revisao?.imagem ? <RevisaoCard revisao={m.revisao} minha={minha} /> : null}
-                      <p className="whitespace-pre-wrap break-words">{m.texto}</p>
+                      {m.anexo?.url ? <AnexoMensagem anexo={m.anexo} /> : null}
+                      {m.anexo?.url && TEXTOS_AUTOMATICOS.includes(m.texto) ? null : <p className="whitespace-pre-wrap break-words">{m.texto}</p>}
                       <ReacoesDaMensagem reacoes={dela} usuarioId={usuarioId} nomeDe={(id) => nomes.get(id) ?? "—"} onReagir={(e) => void reagir(m.id, e)} minha={minha} />
                       <p className={cn("mt-0.5 text-right text-[10px]", minha ? "opacity-80" : "text-muted-foreground")}>
                         {hora(m.created_at)}
@@ -328,6 +333,7 @@ export function ChatFlutuante({
               void enviar();
             }}
           >
+            {conversaId ? <BotoesAnexo conversaId={conversaId} respostaA={respondendoA?.id ?? null} aoEnviado={() => setRespondendoA(null)} /> : null}
             <textarea
               ref={caixa}
               value={texto}

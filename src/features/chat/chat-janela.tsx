@@ -22,6 +22,9 @@ import { ReacoesDaMensagem, SeletorReacao, useReacoes } from "./reacoes";
 import { IndicadorDigitando, useDigitando } from "./digitando";
 import { StatusLeitura, useLeituras } from "./leituras";
 import { RevisaoCard } from "./revisao-card";
+import { AnexoMensagem } from "./anexo-mensagem";
+import { BotoesAnexo } from "./anexo-envio";
+import { TEXTOS_AUTOMATICOS, type AnexoChat } from "./anexo-tipos";
 import { RevisaoEditor } from "./revisao-editor";
 import type { RevisaoPeca } from "./revisao-tipos";
 import { CONVERSA_GERAL } from "./constantes";
@@ -41,6 +44,7 @@ export interface MensagemView {
   solicitacao_id?: string | null;
   resposta_a?: string | null;
   revisao?: RevisaoPeca | null;
+  anexo?: AnexoChat | null;
 }
 
 export interface ProjetoOpcao {
@@ -334,7 +338,8 @@ export function ChatJanela({
                     <Citacao nome={original ? quem(original) : "Mensagem anterior"} texto={original?.texto ?? null} minha={minha} onIr={original ? () => irPara(original.id) : undefined} />
                   ) : null}
                   {m.revisao?.imagem ? <RevisaoCard revisao={m.revisao} minha={minha} /> : null}
-                  <p className="whitespace-pre-wrap break-words">{m.texto}</p>
+                  {m.anexo?.url ? <AnexoMensagem anexo={m.anexo} /> : null}
+                  {m.anexo?.url && TEXTOS_AUTOMATICOS.includes(m.texto) ? null : <p className="whitespace-pre-wrap break-words">{m.texto}</p>}
                   <ReacoesDaMensagem reacoes={dela} usuarioId={meuId} nomeDe={(id) => nomes[id] ?? "—"} onReagir={(e) => void reagir(m.id, e)} minha={minha} />
                   {m.solicitacao_id && mensagens.find((x) => x.solicitacao_id === m.solicitacao_id)?.id === m.id ? (
                     <SolicitacaoCard
@@ -622,6 +627,7 @@ export function ChatJanela({
             <ClipboardPlus className="size-4" />
             <span className="hidden lg:inline">Solicitar criação</span>
           </Button>
+          <BotoesAnexo conversaId={conversaId} respostaA={respondendoA?.id ?? null} aoEnviado={() => setRespondendoA(null)} />
           <Button
             type="button"
             variant="outline"
