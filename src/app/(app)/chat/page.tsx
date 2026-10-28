@@ -1,5 +1,4 @@
 import Link from "@/components/shared/link";
-import { redirect } from "next/navigation";
 import { Users, User } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import { ehLideranca } from "@/lib/permissions";
@@ -73,6 +72,8 @@ export default async function ChatPage({
       ? pessoas.find((p) => p.id !== usuario.id && resp.split(",").some((r) => ehResponsavel(p.nome, [r])))?.id
       : undefined);
   const pessoaDaAta = com && com !== usuario.id && nomes[com] ? com : null;
+  // Sem redirecionar: a conversa direta é aberta (ou criada) na própria carga da página.
+  let conversaDaAta: string | null = null;
   if (pessoaDaAta && !c) {
     let conv = outraPessoaConversa.get(pessoaDaAta);
     if (!conv) {
@@ -80,16 +81,13 @@ export default async function ChatPage({
       conv = (data as string | null) ?? undefined;
     }
     if (conv) {
-      const q = new URLSearchParams({ c: conv });
-      if (tarefa) q.set("tarefa", tarefa);
-      if (ata) q.set("ata", ata);
-      if (titulo) q.set("titulo", titulo);
-      redirect("/chat?" + q.toString());
+      diretas.set(conv, pessoaDaAta);
+      outraPessoaConversa.set(pessoaDaAta, conv);
+      conversaDaAta = conv;
     }
   }
 
-  const conversaId =
-    c && (c === CONVERSA_GERAL || diretas.has(c)) ? c : CONVERSA_GERAL;
+  const conversaId = conversaDaAta ?? (c && (c === CONVERSA_GERAL || diretas.has(c)) ? c : CONVERSA_GERAL);
 
   // Assunto trazido pela Ata ou por um link: a tarefa (se a pessoa a enxerga) e/ou o tópico da ata.
   const tituloSobre = (titulo ?? "").trim().slice(0, 200);

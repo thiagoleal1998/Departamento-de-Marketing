@@ -59,6 +59,7 @@ export interface ProjetoOpcao {
 
 function hora(iso: string): string {
   return new Date(iso).toLocaleTimeString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
     hour: "2-digit",
     minute: "2-digit",
   });
