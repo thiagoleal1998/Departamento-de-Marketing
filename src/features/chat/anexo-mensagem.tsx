@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Mic, X } from "lucide-react";
+import { ZoomPan } from "@/components/ui/zoom-pan";
 import { duracaoTexto, type AnexoChat } from "./anexo-tipos";
 
 /** Imagem ou áudio dentro do balão: a imagem amplia ao clicar; o áudio tem player próprio. */
@@ -36,11 +37,14 @@ export function AnexoMensagem({ anexo }: { anexo: AnexoChat }) {
       </button>
       {ampliada
         ? createPortal(
-            <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm" onMouseDown={(e) => e.target === e.currentTarget && setAmpliada(false)}>
-              <button type="button" onClick={() => setAmpliada(false)} aria-label="Fechar" className="absolute right-4 top-4 rounded-full bg-black/50 p-2 text-white hover:bg-black/70">
+            <div className="fixed inset-0 z-[150] bg-black/85 backdrop-blur-sm">
+              <button type="button" onClick={() => setAmpliada(false)} aria-label="Fechar" className="absolute right-4 top-4 z-10 rounded-full bg-black/50 p-2 text-white hover:bg-black/70">
                 <X className="size-5" />
               </button>
-              <img src={anexo.url} alt={anexo.nome} className="max-h-full max-w-full rounded-lg object-contain shadow-2xl" />
+              <p className="pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-xs text-white/80">Roda do mouse ou pinça para dar zoom · arraste para mover · duplo clique amplia</p>
+              <ZoomPan className="size-full">
+                <img src={anexo.url} alt={anexo.nome} draggable={false} className="max-h-[92vh] max-w-[96vw] select-none rounded-lg object-contain shadow-2xl" />
+              </ZoomPan>
             </div>,
             document.body
           )

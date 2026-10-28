@@ -29,6 +29,7 @@ import { RevisaoEditor, type PecaInicial } from "./revisao-editor";
 import { GradeEmojis, ItemMenu, MenuSuspenso } from "./menu-chat";
 import type { RevisaoPeca } from "./revisao-tipos";
 import { CONVERSA_GERAL } from "./constantes";
+import { tocarSomChat } from "./som";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -152,6 +153,7 @@ export function ChatJanela({
         },
         (payload) => {
           const m = payload.new as MensagemView;
+          tocarSomChat();
           setMensagens((atual) =>
             atual.some((x) => x.id === m.id) ? atual : [...atual, m]
           );

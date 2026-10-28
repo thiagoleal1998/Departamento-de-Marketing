@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Maximize2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ZoomPan } from "@/components/ui/zoom-pan";
 import { VEREDITOS, type MarcacaoRevisao, type RevisaoPeca, type VereditoRevisao } from "./revisao-tipos";
 
 /** A imagem com os retângulos numerados por cima. Clicar numa marcação a destaca (e a lista acompanha). */
@@ -92,9 +93,9 @@ function Visualizador({ revisao, aoFechar }: { revisao: RevisaoPeca; aoFechar: (
           </button>
         </div>
         <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto p-4 lg:grid-cols-[1fr_320px]">
-          <div className="flex min-h-0 items-start justify-center overflow-auto rounded-lg bg-muted/40 p-2">
-            <PecaMarcada imagem={revisao.imagem} marcacoes={revisao.marcacoes} destaque={destaque} onDestaque={setDestaque} className="max-h-[75vh] w-auto" />
-          </div>
+          <ZoomPan className="h-[72vh] rounded-lg bg-muted/40">
+            <PecaMarcada imagem={revisao.imagem} marcacoes={revisao.marcacoes} destaque={destaque} onDestaque={setDestaque} className="max-h-[68vh] w-auto" />
+          </ZoomPan>
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {revisao.marcacoes.length} {revisao.marcacoes.length === 1 ? "apontamento" : "apontamentos"}
