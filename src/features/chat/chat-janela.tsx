@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Send, Loader2, Link2, ClipboardPlus, ScanSearch, Paperclip, Smile, Mic, ImageIcon, FilePlus2, ChevronDown, X } from "lucide-react";
+import { Send, Loader2, Link2, ClipboardPlus, ScanSearch, Paperclip, Smile, Mic, ImageIcon, FilePlus2, ChevronDown, X, ClipboardList, NotebookPen, Search } from "lucide-react";
 import { criarClienteBrowser } from "@/lib/supabase/client";
 import { enviarMensagem, marcarConversaLida } from "./actions";
 import {
@@ -12,6 +12,8 @@ import {
   type TarefaParaResponder,
 } from "./vinculos-actions";
 import { VinculoCard } from "./vinculo-card";
+import { alvosParaChat, enviarMensagemSobre } from "./sobre-actions";
+import type { AlvoChat, SobreEscolhido } from "./sobre-tipos";
 import { SolicitacaoCard } from "./solicitacao-card";
 import { SolicitacaoForm } from "./solicitacao-form";
 import { refsDe, type DadosVinculo, type ItemEstoqueChat, type RefItem } from "./vinculo-tipos";
@@ -72,6 +74,7 @@ export function ChatJanela({
   pessoas,
   podeCriarTarefa,
   outroId,
+  sobreInicial = null,
 }: {
   conversaId: string;
   meuId: string;
@@ -83,6 +86,8 @@ export function ChatJanela({
   podeCriarTarefa: boolean;
   /** Na conversa direta, a outra pessoa (responsável sugerido). */
   outroId: string | null;
+  /** Assunto já escolhido ao chegar pela Ata (tarefa ou tópico). */
+  sobreInicial?: SobreEscolhido | null;
 }) {
   const [mensagens, setMensagens] = useState<MensagemView[]>(mensagensIniciais);
   const [texto, setTexto] = useState("");
@@ -112,6 +117,18 @@ export function ChatJanela({
 
   // Vínculos (estoque / tarefa) da próxima mensagem.
   const [vincular, setVincular] = useState(false);
+  // Falar sobre uma tarefa do quadro ou um tópico da ata.
+  const [sobre, setSobre] = useState<SobreEscolhido | null>(sobreInicial);
+  const [escolhendoSobre, setEscolhendoSobre] = useState(false);
+  const [alvos, setAlvos] = useState<AlvoChat[] | null>(null);
+  const [buscaSobre, setBuscaSobre] = useState("");
+  function abrirSobre() {
+    setEscolhendoSobre(true);
+    if (alvos === null) void alvosParaChat().then(setAlvos);
+  }
+  useEffect(() => {
+    if (sobreInicial) caixaRef.current?.focus();
+  }, [sobreInicial]);
   const [solicitando, setSolicitando] = useState(false);
 
   // Responder sobre uma tarefa citada nesta conversa (dá baixa no estoque e conclui).
@@ -229,6 +246,8 @@ export function ChatJanela({
   }
 
   function limparVinculo() {
+    setSobre(null);
+    setEscolhendoSobre(false);
     setVincular(false);
     setRespTarefaId("");
     setRespEntradas({});
@@ -260,6 +279,8 @@ export function ChatJanela({
             concluir: respConcluir,
             andamento: false,
           })
+        : sobre
+        ? await enviarMensagemSobre(conversaId, conteudo, sobre, respondendoA?.id ?? null)
         : temVinculo
         ? await enviarMensagemVinculada(conversaId, conteudo, {
             projeto: projetoId
@@ -422,6 +443,69 @@ export function ChatJanela({
       {respondendoA ? <BarraResposta nome={quem(respondendoA)} texto={respondendoA.texto} onCancelar={() => setRespondendoA(null)} /> : null}
       <form onSubmit={enviar} className="border-t p-3">
         {erro ? <p className="mb-2 text-xs text-destructive">{erro}</p> : null}
+
+        {sobre ? (
+          <div className="mb-2 flex items-center gap-2 rounded-xl border bg-muted/50 px-3 py-2 text-xs">
+            {sobre.tipo === "ata" ? <NotebookPen className="size-4 shrink-0 text-primary" /> : <ClipboardList className="size-4 shrink-0 text-primary" />}
+            <span className="min-w-0 flex-1 truncate">
+              <span className="text-muted-foreground">{sobre.tipo === "ata" ? "Sobre o tópico da ata: " : "Sobre a tarefa: "}</span>
+              <span className="font-medium">{sobre.titulo}</span>
+            </span>
+            <button type="button" onClick={() => setSobre(null)} aria-label="Tirar o assunto" className="rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+              <X className="size-3.5" />
+            </button>
+          </div>
+        ) : null}
+
+        {escolhendoSobre ? (
+          <div className="mb-2 space-y-2 rounded-xl border bg-background p-3 text-sm shadow-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground">Falar sobre uma tarefa ou tópico da ata</span>
+              <button type="button" onClick={() => setEscolhendoSobre(false)} className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                <X className="size-3.5" /> Fechar
+              </button>
+            </div>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input value={buscaSobre} onChange={(e) => setBuscaSobre(e.target.value)} placeholder="Buscar pelo nome…" aria-label="Buscar tarefa ou tópico" className="h-9 pl-8" />
+            </div>
+            <div className="max-h-56 space-y-0.5 overflow-y-auto">
+              {alvos === null ? (
+                <p className="flex items-center gap-2 px-1 py-3 text-xs text-muted-foreground">
+                  <Loader2 className="size-3.5 animate-spin" /> Carregando…
+                </p>
+              ) : (
+                (() => {
+                  const q = buscaSobre.trim().toLowerCase();
+                  const lista = alvos.filter((a) => !q || a.titulo.toLowerCase().includes(q) || a.detalhe.toLowerCase().includes(q));
+                  if (lista.length === 0) return <p className="px-1 py-3 text-xs text-muted-foreground">Nada encontrado.</p>;
+                  return lista.map((a) => (
+                    <button
+                      key={a.chave}
+                      type="button"
+                      onClick={() => {
+                        setSobre({ tipo: a.tipo, titulo: a.titulo, tarefaId: a.tarefaId });
+                        setEscolhendoSobre(false);
+                        setBuscaSobre("");
+                        caixaRef.current?.focus();
+                      }}
+                      className="flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-accent"
+                    >
+                      {a.tipo === "ata" ? <NotebookPen className="mt-0.5 size-4 shrink-0 text-primary" /> : <ClipboardList className="mt-0.5 size-4 shrink-0 text-sky-500" />}
+                      <span className="min-w-0 flex-1">
+                        <span className="line-clamp-2 block text-sm font-medium leading-tight">{a.titulo}</span>
+                        <span className="text-[11px] text-muted-foreground">
+                          {a.tipo === "ata" ? "Tópico da ata" : "Tarefa"}
+                          {a.detalhe ? " · " + a.detalhe : ""}
+                        </span>
+                      </span>
+                    </button>
+                  ));
+                })()
+              )}
+            </div>
+          </div>
+        ) : null}
 
         {respondendoA && !vincular && !respondendo && tarefasResp.length > 0 ? (
           <button
@@ -637,7 +721,7 @@ export function ChatJanela({
         ) : null}
 
         <div className="flex items-end gap-1 rounded-3xl border bg-muted/40 px-1.5 py-1.5">
-          <MenuSuspenso icone={<Paperclip className="size-5" />} rotulo="Anexar" titulo="Anexar" ativo={vincular || temVinculo || respondendo}>
+          <MenuSuspenso icone={<Paperclip className="size-5" />} rotulo="Anexar" titulo="Anexar" ativo={vincular || temVinculo || respondendo || !!sobre}>
             {(fechar) => (
               <>
                 <ItemMenu
@@ -659,6 +743,16 @@ export function ChatJanela({
                     fechar();
                     if (vincular) limparVinculo();
                     else setVincular(true);
+                  }}
+                />
+                <ItemMenu
+                  icone={<NotebookPen className="size-4" />}
+                  cor="bg-amber-500/15 text-amber-600"
+                  texto="Tarefa ou tópico da ata"
+                  detalhe="Falar sobre um assunto da equipe"
+                  onClick={() => {
+                    fechar();
+                    abrirSobre();
                   }}
                 />
                 <ItemMenu

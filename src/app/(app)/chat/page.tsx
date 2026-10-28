@@ -1,4 +1,5 @@
 import Link from "@/components/shared/link";
+import { redirect } from "next/navigation";
 import { Users, User } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import { ehLideranca } from "@/lib/permissions";
@@ -8,6 +9,7 @@ import { abrirConversaDireta } from "@/features/chat/actions";
 import { CONVERSA_GERAL } from "@/features/chat/constantes";
 import { ChatJanela, type MensagemView, type ProjetoOpcao } from "@/features/chat/chat-janela";
 import type { ItemEstoqueChat } from "@/features/chat/vinculo-tipos";
+import type { SobreEscolhido } from "@/features/chat/sobre-tipos";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -22,9 +24,9 @@ interface PessoaLite {
 export default async function ChatPage({
   searchParams,
 }: {
-  searchParams: Promise<{ c?: string }>;
+  searchParams: Promise<{ c?: string; com?: string; tarefa?: string; ata?: string; titulo?: string }>;
 }) {
-  const { c } = await searchParams;
+  const { c, com, tarefa, ata, titulo } = await searchParams;
   const usuario = await exigirUsuario();
   const supabase = await criarClienteServidor();
 
@@ -62,8 +64,36 @@ export default async function ChatPage({
     Array.from(diretas.entries()).map(([conv, outro]) => [outro, conv])
   );
 
+  // Vindo da Ata: abre a conversa direta com a pessoa responsável (cria se ainda não existir).
+  const pessoaDaAta = com && com !== usuario.id && nomes[com] ? com : null;
+  if (pessoaDaAta && !c) {
+    let conv = outraPessoaConversa.get(pessoaDaAta);
+    if (!conv) {
+      const { data } = await supabase.rpc("chat_abrir_direta", { p_outro: pessoaDaAta });
+      conv = (data as string | null) ?? undefined;
+    }
+    if (conv) {
+      const q = new URLSearchParams({ c: conv });
+      if (tarefa) q.set("tarefa", tarefa);
+      if (ata) q.set("ata", ata);
+      if (titulo) q.set("titulo", titulo);
+      redirect("/chat?" + q.toString());
+    }
+  }
+
   const conversaId =
     c && (c === CONVERSA_GERAL || diretas.has(c)) ? c : CONVERSA_GERAL;
+
+  // Assunto trazido pela Ata ou por um link: a tarefa (se a pessoa a enxerga) e/ou o tópico da ata.
+  const tituloSobre = (titulo ?? "").trim().slice(0, 200);
+  let sobreInicial: SobreEscolhido | null = null;
+  if (tarefa && /^[0-9a-f-]{36}$/i.test(tarefa)) {
+    const { data: t } = await supabase.from("tarefas").select("id, titulo").eq("id", tarefa).maybeSingle();
+    const tt = t as { id: string; titulo: string } | null;
+    sobreInicial = { tipo: ata ? "ata" : "tarefa", titulo: tituloSobre || tt?.titulo || "Tarefa", tarefaId: tt?.id ?? null };
+  } else if (ata && tituloSobre) {
+    sobreInicial = { tipo: "ata", titulo: tituloSobre, tarefaId: null };
+  }
   const ehGeral = conversaId === CONVERSA_GERAL;
   const tituloConversa = ehGeral
     ? "Sala geral do time"
@@ -176,6 +206,7 @@ export default async function ChatPage({
               pessoas={pessoas}
               podeCriarTarefa={ehLideranca(usuario.role)}
               outroId={ehGeral ? null : diretas.get(conversaId) ?? null}
+              sobreInicial={sobreInicial}
             />
           </div>
         </section>

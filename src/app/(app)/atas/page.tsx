@@ -77,6 +77,14 @@ function paraCard(
   };
 }
 
+/** Link para o chat já falando sobre o item: com o responsável (se for alguém do painel) e a tarefa ligada. */
+function linkChat(it: ItemAta, tarefaId: string | null | undefined, meuId: string) {
+  const q = new URLSearchParams({ ata: "1", titulo: it.titulo.slice(0, 200) });
+  if (tarefaId) q.set("tarefa", tarefaId);
+  if (it.responsavel_id && it.responsavel_id !== meuId) q.set("com", it.responsavel_id);
+  return "/chat?" + q.toString();
+}
+
 export default async function AtasPage({
   searchParams,
 }: {
@@ -261,6 +269,7 @@ export default async function AtasPage({
                         .map((it) => (
                           <ItemCard
                             key={it.id}
+                            chatHref={linkChat(it, vivo.get(it.serie)?.tarefa_id, usuario.id)}
                             it={{
                               ...paraCard(it, agora, {
                                 situacao: true,
@@ -349,6 +358,7 @@ export default async function AtasPage({
                       {lista.map((it) => (
                         <ItemCard
                           key={it.id}
+                          chatHref={linkChat(it, null, usuario.id)}
                           it={paraCard(it, agora, {
                             situacao: false,
                             responsavel: nomeResp(it),

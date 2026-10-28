@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "@/components/shared/link";
-import { ChevronDown, ExternalLink, KanbanSquare, NotebookPen, Pencil, X } from "lucide-react";
+import { ChevronDown, ExternalLink, KanbanSquare, MessageCircle, NotebookPen, Pencil, X } from "lucide-react";
 import { ItemEditor, type PessoaOpcao } from "./editor-reuniao";
 import type { ItemAta } from "./tipos";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,8 @@ export interface ItemCardDados {
 export interface AcoesItem {
   tarefaHref: string | null;
   ataHref: string | null;
+  /** Abre o chat já falando sobre este item (com o responsável, quando há). */
+  chatHref?: string | null;
   editor: { item: ItemAta; reuniaoId: string; pessoas: PessoaOpcao[] } | null;
 }
 
@@ -43,7 +45,7 @@ const TOM: Record<string, string> = {
 };
 
 /** Item da ata: resumo fechado; ao clicar, abre o card completo no próprio bloco. */
-export function ItemCard({ it, acoes }: { it: ItemCardDados; acoes?: AcoesItem }) {
+export function ItemCard({ it, acoes, chatHref }: { it: ItemCardDados; acoes?: AcoesItem; chatHref?: string | null }) {
   const router = useRouter();
   const [aberto, setAberto] = useState(false);
   const [editando, setEditando] = useState(false);
@@ -132,24 +134,31 @@ export function ItemCard({ it, acoes }: { it: ItemCardDados; acoes?: AcoesItem }
             </a>
           ) : null}
 
-          {acoes ? (
+          {acoes || chatHref ? (
             <div className="flex flex-wrap gap-2 border-t pt-3">
-              {acoes.editor ? (
+              {acoes?.editor ? (
                 <Button type="button" size="sm" variant={editando ? "secondary" : "default"} className="h-8" onClick={() => setEditando((v) => !v)}>
                   {editando ? <X className="size-3.5" /> : <Pencil className="size-3.5" />} {editando ? "Fechar edição" : "Editar"}
                 </Button>
               ) : null}
-              {acoes.tarefaHref ? (
+              {acoes?.tarefaHref ? (
                 <Button asChild size="sm" variant="outline" className="h-8">
                   <Link href={acoes.tarefaHref}>
                     <KanbanSquare className="size-3.5" /> Abrir tarefa
                   </Link>
                 </Button>
               ) : null}
-              {acoes.ataHref ? (
+              {acoes?.ataHref ? (
                 <Button asChild size="sm" variant="outline" className="h-8">
                   <Link href={acoes.ataHref}>
                     <NotebookPen className="size-3.5" /> Abrir na ata
+                  </Link>
+                </Button>
+              ) : null}
+              {chatHref ? (
+                <Button asChild size="sm" variant="outline" className="h-8">
+                  <Link href={chatHref}>
+                    <MessageCircle className="size-3.5" /> Falar no chat
                   </Link>
                 </Button>
               ) : null}
