@@ -5,6 +5,7 @@ import { MODELO_IA, obterClienteIA } from "@/lib/ai/gemini";
 import { blocosNacional, type Oferta } from "@/features/divulgacao/tipos";
 import type { DestinoMonitorado, LpLocal } from "./destinos";
 import { destinosDasOfertas } from "./destinos";
+import { nomeCorreto } from "@/features/comercial/ajustes";
 
 export interface Lugar {
   lugar: string;
@@ -86,7 +87,14 @@ export async function destinosDoDia(ofertas: Oferta[], lps: LpLocal[], prazoFina
   for (const o of ofertas) {
     if (o.tipo === "nacional") {
       for (const b of blocosNacional(o).slice(0, 6)) {
-        if (b.produto) textos.push({ tipo: "nacional", texto: recorte([b.produto, b.temporada, b.vantagem && b.vantagem.slice(0, 400)]) });
+        if (!b.produto) continue;
+        const nome = nomeCorreto(b.produto.split("\n")[0].trim());
+        const lp = lps.find((l) => l.cidade && l.nome.toLowerCase().includes(nome.toLowerCase()));
+        const local = lp?.cidade ? `Local conhecido: ${lp.cidade}${lp.estado ? `, ${lp.estado}` : ""}, Brasil` : null;
+        textos.push({
+          tipo: "nacional",
+          texto: recorte(["(Oferta NACIONAL: o lugar fica no Brasil)", nome, local, b.temporada, b.vantagem && b.vantagem.slice(0, 400)]),
+        });
       }
     } else if (o.produto) {
       textos.push({ tipo: "internacional", texto: recorte([o.produto, o.vantagem]) });
