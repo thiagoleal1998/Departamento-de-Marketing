@@ -1,4 +1,8 @@
-import { Info } from "lucide-react";
+"use client";
+
+import { useId, useState } from "react";
+import { ChevronDown, Info } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type Aba = "divulgacao" | "rd" | "operacional" | "atividade";
 
@@ -71,42 +75,63 @@ const TEXTOS: Record<Aba, Texto> = {
   },
 };
 
-/** “Como apuramos estes dados”: de onde vêm as informações e como cada número é calculado, na aba aberta. */
+/** “Como apuramos estes dados”: de onde vêm as informações e como cada número é calculado, na aba aberta. Abre e fecha com animação suave. */
 export function ComoApuramos({ aba }: { aba: Aba }) {
   const t = TEXTOS[aba];
+  const [aberto, setAberto] = useState(false);
+  const id = useId();
   return (
-    <details className="group rounded-xl border bg-card text-sm">
-      <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 font-medium hover:bg-accent/40">
-        <Info className="size-4 text-muted-foreground" aria-hidden />
-        Como apuramos estes dados · {t.titulo}
-        <span className="ml-auto text-xs font-normal text-muted-foreground group-open:hidden">ver fontes e fórmulas</span>
-      </summary>
-      <div className="space-y-3 border-t px-4 py-3">
-        <section>
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">De onde vêm as informações</h3>
-          <ul className="mt-1 list-disc space-y-1 pl-5">
-            {t.fontes.map((f) => (
-              <li key={f}>{f}</li>
-            ))}
-          </ul>
-        </section>
-        <section>
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Como cada número é calculado</h3>
-          <ul className="mt-1 list-disc space-y-1 pl-5">
-            {t.calculos.map((c) => (
-              <li key={c}>{c}</li>
-            ))}
-          </ul>
-        </section>
-        <section>
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">O que observar</h3>
-          <ul className="mt-1 list-disc space-y-1 pl-5">
-            {t.limites.map((l) => (
-              <li key={l}>{l}</li>
-            ))}
-          </ul>
-        </section>
+    <section className="rounded-xl border bg-card text-sm">
+      <button
+        type="button"
+        onClick={() => setAberto((v) => !v)}
+        aria-expanded={aberto}
+        aria-controls={id}
+        className="flex w-full items-center gap-2 rounded-xl px-4 py-3 text-left font-medium transition-colors hover:bg-accent/40"
+      >
+        <Info className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+        <span>Como apuramos estes dados · {t.titulo}</span>
+        <span className="ml-auto flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
+          {aberto ? "Fechar" : "Ver fontes e fórmulas"}
+          <ChevronDown className={cn("size-4 transition-transform duration-300 ease-out", aberto && "rotate-180")} aria-hidden />
+        </span>
+      </button>
+      {/* A altura anima de 0 ao tamanho do conteúdo (grid 0fr → 1fr), sem precisar medir nada. */}
+      <div id={id} className={cn("grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none", aberto ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0")}>
+        <div className="overflow-hidden" aria-hidden={!aberto}>
+          <div className="space-y-3 border-t px-4 py-3">
+            <section>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">De onde vêm as informações</h3>
+              <ul className="mt-1 list-disc space-y-1 pl-5">
+                {t.fontes.map((x) => (
+                  <li key={x}>{x}</li>
+                ))}
+              </ul>
+            </section>
+            <section>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Como cada número é calculado</h3>
+              <ul className="mt-1 list-disc space-y-1 pl-5">
+                {t.calculos.map((x) => (
+                  <li key={x}>{x}</li>
+                ))}
+              </ul>
+            </section>
+            <section>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">O que observar</h3>
+              <ul className="mt-1 list-disc space-y-1 pl-5">
+                {t.limites.map((x) => (
+                  <li key={x}>{x}</li>
+                ))}
+              </ul>
+            </section>
+            <div className="flex justify-end">
+              <button type="button" onClick={() => setAberto(false)} tabIndex={aberto ? 0 : -1} className="rounded-full border px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-    </details>
+    </section>
   );
 }
