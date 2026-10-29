@@ -12,6 +12,7 @@ import { pode } from "@/lib/permissions";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { mapaDePerfis } from "@/features/chamados/data";
 import { GestaoAbas } from "@/features/perfis/gestao-abas";
+import { participaDaEscala } from "@/features/feriados/participantes";
 import { feriadosDoAno } from "@/features/feriados/calendario";
 import { hojeSP } from "@/features/divulgacao/tipos";
 import { PageHeader } from "@/components/shared/page-header";
@@ -62,7 +63,7 @@ export default async function GestaoPage() {
     supabase.from("escala_feriados").select("data, profile_id").gte("data", `${ano}-01-01`).lte("data", `${ano}-12-31`),
     supabase.from("feriados_extras").select("data").gte("data", `${ano}-01-01`).lte("data", `${ano}-12-31`),
     supabase.from("escala_avisos").select("data").gte("data", `${ano}-01-01`).lte("data", `${ano}-12-31`),
-    supabase.from("profiles").select("id, nome").eq("ativo", true).order("nome", { ascending: true }),
+    supabase.from("profiles").select("id, nome, cargo").eq("ativo", true).order("nome", { ascending: true }),
     supabase.from("chamado_historico").select("chamado_id, para, created_at").eq("campo", "status").order("created_at", { ascending: true }),
   ]);
   const chamados = (data as Chamado[] | null) ?? [];
@@ -74,7 +75,7 @@ export default async function GestaoPage() {
   const registradas = new Set([...escala.map((e) => e.data), ...((avisosR.data as { data: string }[] | null) ?? []).map((a) => a.data)]);
   const contados = [...registradas].filter((d) => datasFeriado.has(d) && d <= hoje);
   const proximos = [...registradas].filter((d) => datasFeriado.has(d) && d > hoje);
-  const feriadosPorPessoa = ((pessoasR.data as { id: string; nome: string }[] | null) ?? []).map((p) => {
+  const feriadosPorPessoa = ((pessoasR.data as { id: string; nome: string; cargo: string | null }[] | null) ?? []).filter((p) => participaDaEscala(p.cargo)).map((p) => {
     const trabalhou = contados.filter((d) => escala.some((e) => e.data === d && e.profile_id === p.id)).length;
     const escalado = proximos.filter((d) => escala.some((e) => e.data === d && e.profile_id === p.id)).length;
     return { nome: p.nome, trabalhou, folgou: contados.length - trabalhou, escalado, folgaProx: proximos.length - escalado };
