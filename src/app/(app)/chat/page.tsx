@@ -1,6 +1,4 @@
-import { Users } from "lucide-react";
-import { Avatar } from "@/components/ui/avatar";
-import { ListaConversas } from "@/features/chat/lista-conversas";
+import { ChatAgora } from "@/features/chat/chat-agora";
 import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { exigirUsuario } from "@/lib/auth";
 import { ehLideranca } from "@/lib/permissions";
@@ -9,11 +7,10 @@ import { criarClienteServidor } from "@/lib/supabase/server";
 import { obterDiretorio } from "@/features/equipe/diretorio";
 import { nomesDeExibicao } from "@/features/equipe/exibicao";
 import { CONVERSA_GERAL } from "@/features/chat/constantes";
-import { ChatJanela, type MensagemView, type ProjetoOpcao } from "@/features/chat/chat-janela";
+import type { MensagemView, ProjetoOpcao } from "@/features/chat/chat-janela";
 import type { ItemEstoqueChat } from "@/features/chat/vinculo-tipos";
 import type { SobreEscolhido } from "@/features/chat/sobre-tipos";
 import { PageHeader } from "@/components/shared/page-header";
-import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -149,41 +146,19 @@ export default async function ChatPage({
         descricao="Converse ao vivo com a equipe: sala geral ou conversas diretas."
       />
 
-      <Card className="grid h-[calc(100vh-15rem)] min-h-[420px] grid-cols-1 overflow-hidden md:grid-cols-[260px_1fr]">
-        {/* Lista de conversas */}
-        <ListaConversas
-          pessoas={outras.map((p) => ({ id: p.id, nome: p.nome, foto: p.foto, conversa: outraPessoaConversa.get(p.id) ?? null }))}
-          conversaAtiva={conversaId}
-          naoLidasIniciais={Object.fromEntries(naoLidas)}
-        />
-
-        {/* Conversa */}
-        <section className="flex min-h-0 flex-col">
-          <header className="flex items-center gap-2.5 border-b px-4 py-2.5 text-sm font-semibold">
-            {ehGeral ? (
-              <Users className="size-5 text-muted-foreground" />
-            ) : (
-              <Avatar nome={tituloConversa} src={pessoas.find((p) => p.id === diretas.get(conversaId))?.foto} className="size-8 text-[11px]" />
-            )}
-            {tituloConversa}
-          </header>
-          <div className="min-h-0 flex-1">
-            <ChatJanela
-              key={conversaId}
-              conversaId={conversaId}
-              meuId={usuario.id}
-              mensagensIniciais={mensagens}
-              nomes={nomes}
-              itens={itens}
-              projetos={projetos}
-              pessoas={pessoas}
-              podeCriarTarefa={ehLideranca(usuario.role)}
-              outroId={ehGeral ? null : diretas.get(conversaId) ?? null}
-              sobreInicial={sobreInicial}
-            />
-          </div>
-        </section>
-      </Card>
+      <ChatAgora
+        meuId={usuario.id}
+        pessoas={outras.map((p) => ({ id: p.id, nome: p.nome, foto: p.foto, conversa: outraPessoaConversa.get(p.id) ?? null }))}
+        todas={pessoas.map((p) => ({ id: p.id, nome: p.nome }))}
+        nomes={nomes}
+        itens={itens}
+        projetos={projetos}
+        podeCriarTarefa={ehLideranca(usuario.role)}
+        conversaInicial={conversaId}
+        mensagensIniciais={mensagens}
+        sobreInicial={sobreInicial}
+        naoLidasIniciais={Object.fromEntries(naoLidas)}
+      />
     </div>
   );
 }

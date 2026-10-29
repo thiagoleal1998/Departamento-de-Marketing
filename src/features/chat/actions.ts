@@ -103,8 +103,8 @@ export async function marcarConversaLida(conversaId: string) {
       ultima_leitura: agora,
     });
   }
-
-  revalidatePath("/", "layout");
+  // Sem revalidatePath: recarregar a tela inteira a cada leitura deixava a troca de conversa lenta. Os números de
+  // não lidas (menu, topo e lista do chat) se atualizam sozinhos pelo quadro ao vivo (contagem-chat).
 }
 
 /** Abre (ou cria) a conversa direta com outra pessoa e vai até ela. */

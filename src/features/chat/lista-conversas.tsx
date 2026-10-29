@@ -1,12 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import Link from "@/components/shared/link";
-import { Users } from "lucide-react";
+import { Loader2, Users } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { abrirConversaDireta } from "./actions";
 import { CONVERSA_GERAL } from "./constantes";
 import { useChatContagem } from "./contagem-chat";
 
@@ -31,41 +28,52 @@ export function ListaConversas({
   pessoas,
   conversaAtiva,
   naoLidasIniciais,
+  abrindo,
+  aoEscolher,
+  aoPrepararConversa,
+  aoSurgirConversaNova,
 }: {
   pessoas: PessoaDaLista[];
   conversaAtiva: string;
   /** Não lidas por conversa, como o servidor viu ao abrir a página. */
   naoLidasIniciais: Record<string, number>;
+  /** Pessoa cuja conversa está sendo criada agora. */
+  abrindo: string | null;
+  aoEscolher: (alvo: { tipo: "geral" } | { tipo: "pessoa"; id: string }) => void;
+  /** Passou o mouse: já vai buscando as mensagens para a troca ser instantânea. */
+  aoPrepararConversa: (conversa: string) => void;
+  /** Chegou mensagem de uma conversa que ainda não estava na lista. */
+  aoSurgirConversaNova: () => void;
 }) {
-  const router = useRouter();
   const vivo = useChatContagem();
   const por = vivo.carregado ? vivo.porConversa : naoLidasIniciais;
   const ehGeral = conversaAtiva === CONVERSA_GERAL;
 
-  // Mensagem numa conversa que ainda não estava na lista (alguém começou a falar com você): recarrega a lista uma vez.
   const conhecidas = new Set<string>([CONVERSA_GERAL]);
   for (const p of pessoas) if (p.conversa) conhecidas.add(p.conversa);
   const desconhecida = Object.keys(por).find((c) => !conhecidas.has(c));
-  const jaRecarregou = useRef<string | null>(null);
+  const jaAvisou = useRef<string | null>(null);
   useEffect(() => {
-    if (desconhecida && jaRecarregou.current !== desconhecida) {
-      jaRecarregou.current = desconhecida;
-      router.refresh();
+    if (desconhecida && jaAvisou.current !== desconhecida) {
+      jaAvisou.current = desconhecida;
+      aoSurgirConversaNova();
     }
-  }, [desconhecida, router]);
+  }, [desconhecida, aoSurgirConversaNova]);
 
   const nGeral = ehGeral ? 0 : por[CONVERSA_GERAL] ?? 0;
 
   return (
     <aside className="overflow-y-auto border-b md:border-b-0 md:border-r">
-      <Link
-        href="/chat"
-        className={cn("flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors hover:bg-accent/50", ehGeral && "bg-accent")}
+      <button
+        type="button"
+        onClick={() => aoEscolher({ tipo: "geral" })}
+        onMouseEnter={() => aoPrepararConversa(CONVERSA_GERAL)}
+        className={cn("flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-accent/50", ehGeral && "bg-accent")}
       >
         <Users className="size-4" />
         <span className="flex-1">Sala geral</span>
         {nGeral > 0 ? <Selo valor={nGeral} /> : null}
-      </Link>
+      </button>
 
       <p className="px-4 pb-1 pt-3 text-xs font-semibold uppercase text-muted-foreground">Pessoas</p>
       {pessoas.map((p) => {
@@ -73,31 +81,23 @@ export function ListaConversas({
         const ativa = !!conv && conv === conversaAtiva;
         // A conversa aberta é lida na hora: nunca mostra número nela.
         const n = conv && !ativa ? por[conv] ?? 0 : 0;
-        const conteudo = (
-          <>
+        return (
+          <button
+            key={p.id}
+            type="button"
+            onClick={() => aoEscolher({ tipo: "pessoa", id: p.id })}
+            onMouseEnter={() => conv && aoPrepararConversa(conv)}
+            onFocus={() => conv && aoPrepararConversa(conv)}
+            className={cn(
+              "flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm transition-colors hover:bg-accent/50",
+              ativa && "bg-accent font-medium",
+              !conv && "text-muted-foreground hover:text-foreground"
+            )}
+          >
             <Avatar nome={p.nome} src={p.foto} className="size-7 text-[10px]" />
             <span className={cn("flex-1 truncate", n > 0 && "font-semibold")}>{p.nome}</span>
-            {n > 0 ? <Selo valor={n} /> : null}
-          </>
-        );
-        return conv ? (
-          <Link
-            key={p.id}
-            href={`/chat?c=${conv}`}
-            className={cn("flex items-center gap-2 px-4 py-2.5 text-sm transition-colors hover:bg-accent/50", ativa && "bg-accent font-medium")}
-          >
-            {conteudo}
-          </Link>
-        ) : (
-          <form key={p.id} action={abrirConversaDireta}>
-            <input type="hidden" name="usuario_id" value={p.id} />
-            <button
-              type="submit"
-              className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
-            >
-              {conteudo}
-            </button>
-          </form>
+            {abrindo === p.id ? <Loader2 className="size-4 animate-spin" /> : n > 0 ? <Selo valor={n} /> : null}
+          </button>
         );
       })}
     </aside>
