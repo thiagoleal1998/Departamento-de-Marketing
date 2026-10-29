@@ -121,6 +121,24 @@ export async function RelatorioOperacional() {
             vazio="Nada esperando aprovação."
           />
           <BarrasHorizontais
+            titulo="Por que os prazos das tarefas são adiados"
+            descricao={
+              d.prazosTarefas.semTabela
+                ? "O histórico das tarefas ainda não foi ativado (falta rodar a migration 0087)."
+                : `Motivo escolhido ao adiar o prazo de uma tarefa. ${d.prazosTarefas.adiados} adiamento(s) registrado(s), ${d.prazosTarefas.adiadosComMotivo} com motivo. Este registro começou agora e cresce a cada prazo alterado.`
+            }
+            itens={d.prazosTarefas.motivos}
+            tom={1}
+            vazio="Nenhum adiamento de prazo registrado ainda."
+          />
+          <BarrasHorizontais
+            titulo="Adiamentos de prazo por pessoa"
+            descricao="Em nome de quem estava a tarefa quando o prazo foi adiado (responsável atual da tarefa)."
+            itens={d.prazosTarefas.porPessoa}
+            tom={1}
+            vazio="Nenhum adiamento de prazo registrado ainda."
+          />
+          <BarrasHorizontais
             titulo="Tarefas atrasadas por pessoa"
             descricao="Quem concentra as tarefas com prazo vencido."
             itens={d.atrasadasPorPessoa.map(([rotulo, valor]) => ({ rotulo, valor }))}

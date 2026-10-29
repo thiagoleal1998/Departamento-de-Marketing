@@ -55,6 +55,7 @@ const TEXTOS: Record<Aba, Texto> = {
       "Atas, por reunião realizada: itens = linhas da ata; em aberto = não concluídos nem cancelados; novos = assunto que aparece pela primeira vez; % concluído = concluídos ÷ itens; adiado = item aberto cujo prazo ficou mais tarde que na reunião anterior do mesmo assunto.",
       "Reuniões até concluir = média de reuniões em que um assunto aparece até ser concluído. Motivos, tipos de demanda e adiamentos por pessoa vêm do que está registrado nas atas.",
       "Leitura rápida: compara a média das últimas 4 reuniões com a das 4 anteriores.",
+      "Adiamentos de prazo das tarefas: vêm da linha do tempo do card. Cada vez que o prazo de uma tarefa que já tinha prazo é mudado para uma data posterior, o painel exige o motivo (lista) e registra. O gráfico conta esses registros por motivo e por responsável da tarefa. Só entram mudanças feitas depois de o recurso existir.",
       "Quem solicita: conta as tarefas por valor do campo Solicitante (lista do organograma). A área é a do organograma de cada solicitante. O mês é o da criação da tarefa, e dá para filtrar por mês. Reuniões (de vendas, de Marketing, V4, MKT <> Grupos/Inter/COM) contam como uma área própria. Tarefas sem solicitante informado não entram nesses gráficos; o aviso mostra quantas entram.",
     ],
     limites: [

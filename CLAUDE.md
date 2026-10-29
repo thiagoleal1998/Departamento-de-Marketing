@@ -111,6 +111,7 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 
 ### Tarefas (Operacional)
 - **Solicitante**: campo de lista (nomes do organograma da Litoral Verde, em `src/features/operacional/solicitantes.ts`) no card e no novo card. Para atualizar o organograma (entradas, saídas, cargos), edite essa lista. Coluna `tarefas.solicitante` (migration 0086).
+- **Linha do tempo do card** (`tarefa_historico`, migration 0087): status, prazo, responsável, colaborador, solicitante, prioridade e título geram registros (`src/features/operacional/historico.ts`). **Adiar o prazo** de uma tarefa que já tinha prazo exige **motivo** da lista (`MOTIVOS_PRAZO`, os mesmos das atas) e uma observação opcional; a validação é no servidor (`salvarTarefa`). Os adiamentos e motivos alimentam Relatórios → Evolução do operacional. Mudanças de prazo feitas por outros caminhos (ex.: sincronização com a ata) ainda não são registradas.
 - Campos de data usam sempre `InputData` / `SeletorData` (calendário do painel), nunca `<input type="date">`.
 
 ### Atas (`src/features/atas/`)

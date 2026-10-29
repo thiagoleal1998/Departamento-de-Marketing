@@ -3,6 +3,7 @@ import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { diaBrasilia } from "@/lib/utils";
 import { areaDoSolicitante } from "@/features/operacional/solicitantes";
+import { rotuloMotivo } from "@/features/operacional/historico-tipos";
 import { carregarAtas, carregarMembros, itemAberto, type ItemAta } from "@/features/atas/data";
 import { calcularRelatorio, type Relatorio } from "@/features/atas/relatorios-calculo";
 
@@ -66,6 +67,18 @@ export interface DadosOperacional {
   reunioes: PontoReuniao[];
   meses: PontoMes[];
   statusAtual: { rotulo: string; valor: number }[];
+  /** Mudanças de prazo das tarefas, registradas na linha do tempo do card (com o motivo escolhido). */
+  prazosTarefas: {
+    semTabela: boolean;
+    /** Mudanças de prazo de tarefas que já tinham prazo. */
+    mudancas: number;
+    adiados: number;
+    antecipados: number;
+    /** Adiamentos em que o motivo foi informado. */
+    adiadosComMotivo: number;
+    motivos: { rotulo: string; valor: number }[];
+    porPessoa: { rotulo: string; valor: number }[];
+  };
   /** Quem pede as tarefas (campo Solicitante). */
   solicitantes: {
     /** Tarefas com solicitante informado, e o total de tarefas. */
@@ -88,6 +101,7 @@ export interface DadosOperacional {
 }
 
 interface TarefaLinha {
+  id: string;
   titulo: string;
   status: string;
   prazo: string | null;
@@ -105,7 +119,7 @@ export async function dadosOperacional(): Promise<DadosOperacional> {
   const cliente = servicoDisponivel() ? criarClienteAdmin() : await criarClienteServidor();
 
   const [{ data: tarefasData, error: tarefasErro }, { data: perfisData }, atas, membros] = await Promise.all([
-    cliente.from("tarefas").select("titulo, status, prazo, responsavel_id, responsaveis_notion, created_at, solicitante").limit(5000),
+    cliente.from("tarefas").select("id, titulo, status, prazo, responsavel_id, responsaveis_notion, created_at, solicitante").limit(5000),
     cliente.from("profiles").select("id, nome"),
     carregarAtas().catch(() => ({ reunioes: [], itens: [] as ItemAta[] })),
     carregarMembros().catch(() => []),
@@ -115,7 +129,7 @@ export async function dadosOperacional(): Promise<DadosOperacional> {
   let semColunaSolicitante = false;
   if (tarefasErro) {
     semColunaSolicitante = true;
-    const { data: de } = await cliente.from("tarefas").select("titulo, status, prazo, responsavel_id, responsaveis_notion, created_at").limit(5000);
+    const { data: de } = await cliente.from("tarefas").select("id, titulo, status, prazo, responsavel_id, responsaveis_notion, created_at").limit(5000);
     tarefas = (de as TarefaLinha[] | null) ?? [];
   }
   const nomes = new Map(((perfisData as { id: string; nome: string }[] | null) ?? []).map((p) => [p.id, p.nome.split(" ")[0]]));
@@ -177,6 +191,33 @@ export async function dadosOperacional(): Promise<DadosOperacional> {
   const aprovacaoPorPessoa = Array.from(contAprov.entries())
     .map(([s, valor]) => ({ rotulo: ROTULO_APROVADOR[s] ?? ROTULO_STATUS_TAREFA[s] ?? s, valor }))
     .sort((a, b) => b.valor - a.valor);
+
+  // ---- Mudanças de prazo das tarefas (linha do tempo do card) ----
+  const { data: histData, error: histErro } = await cliente.from("tarefa_historico").select("tarefa_id, de, para, motivo").eq("campo", "prazo").limit(5000);
+  const porId = new Map(tarefas.map((t) => [t.id, t]));
+  const motivosCont = new Map<string, number>();
+  const prazoPessoa = new Map<string, number>();
+  let mudancas = 0;
+  let adiadosN = 0;
+  let antecipadosN = 0;
+  let adiadosComMotivo = 0;
+  for (const h of (histData as { tarefa_id: string; de: string | null; para: string | null; motivo: string | null }[] | null) ?? []) {
+    if (!h.de || !h.para) continue; // só mudanças de um prazo que já existia
+    mudancas++;
+    if (h.para > h.de) {
+      adiadosN++;
+      const rot = rotuloMotivo(h.motivo);
+      if (rot) {
+        adiadosComMotivo++;
+        motivosCont.set(rot, (motivosCont.get(rot) ?? 0) + 1);
+      }
+      const t = porId.get(h.tarefa_id);
+      const pessoa = t ? quem(t) : "Sem responsável";
+      prazoPessoa.set(pessoa, (prazoPessoa.get(pessoa) ?? 0) + 1);
+    } else if (h.para < h.de) antecipadosN++;
+  }
+  const ordem2 = (m: Map<string, number>, max: number) => Array.from(m.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "pt-BR")).slice(0, max).map(([rotulo, valor]) => ({ rotulo, valor }));
+  const prazosTarefas = { semTabela: !!histErro, mudancas, adiados: adiadosN, antecipados: antecipadosN, adiadosComMotivo, motivos: ordem2(motivosCont, 8), porPessoa: ordem2(prazoPessoa, 8) };
 
   // ---- Quem solicita (campo Solicitante das tarefas) ----
   const porSolic = new Map<string, { total: number; abertas: number }>();
@@ -318,10 +359,14 @@ export async function dadosOperacional(): Promise<DadosOperacional> {
       texto: `Quem mais pede tarefas: ${top.rotulo} (${top.valor} de ${solicitantes.comDado} com solicitante informado)${area ? `; a área que mais pede é ${area.rotulo} (${area.valor})` : ""}.`,
     });
   }
+  if (prazosTarefas.adiados > 0) {
+    const m = prazosTarefas.motivos[0];
+    insights.push({ tom: "atencao", texto: `${prazosTarefas.adiados} adiamento(s) de prazo em tarefas registrado(s) no quadro${m ? `; o motivo mais citado é "${m.rotulo}" (${m.valor})` : ""}.` });
+  }
   const motivo = relatorioAtas?.motivos[0];
   if (motivo) insights.push({ tom: "atencao", texto: `Principal motivo de adiamento nas atas: ${motivo[0]} (${motivo[1]} ocorrência(s)).` });
   const tipo = relatorioAtas?.porTipo.filter((t) => t.total >= 5).sort((a, b) => b.adiamentos / b.total - a.adiamentos / a.total)[0];
   if (tipo && tipo.adiamentos > 0) insights.push({ tom: "atencao", texto: `Tipo de demanda que mais atrasa: ${tipo.tipo} (${tipo.adiamentos} adiamento(s) em ${tipo.total} item(ns)).` });
 
-  return { geradoEm: new Date().toISOString(), kpis, reunioes, meses, statusAtual, atrasadas, atrasadasPorPessoa, solicitantes, paradasEmAprovacao: paradasEmAprovacao.map(({ status: _s, ...resto }) => resto), aprovacaoPorPessoa, relatorioAtas, insights };
+  return { geradoEm: new Date().toISOString(), kpis, reunioes, meses, statusAtual, atrasadas, atrasadasPorPessoa, solicitantes, prazosTarefas, paradasEmAprovacao: paradasEmAprovacao.map(({ status: _s, ...resto }) => resto), aprovacaoPorPessoa, relatorioAtas, insights };
 }

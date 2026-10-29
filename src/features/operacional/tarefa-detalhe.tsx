@@ -24,6 +24,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { diaBrasilia } from "@/lib/utils";
 import { InputData } from "@/components/ui/input-data";
 import { SelectSolicitante } from "./select-solicitante";
+import { LinhaDoTempoTarefa } from "./linha-do-tempo-tarefa";
+import { MOTIVOS_PRAZO } from "./historico-tipos";
 
 const ORDEM_STATUS: TarefaStatus[] = [
   "a_fazer",
@@ -73,6 +75,13 @@ export function TarefaDetalhe({
   const [link, setLink] = useState(tarefa.link ?? "");
   const [linkSite, setLinkSite] = useState(tarefa.link_site ?? "");
   const [solicitante, setSolicitante] = useState(tarefa.solicitante ?? "");
+  // Mudança de prazo: motivo (lista) e observação; versaoHist recarrega a linha do tempo depois de salvar.
+  const [motivoPrazo, setMotivoPrazo] = useState("");
+  const [detalhePrazo, setDetalhePrazo] = useState("");
+  const [versaoHist, setVersaoHist] = useState(0);
+  const prazoOriginal = diaBrasilia(tarefa.prazo);
+  const mudouPrazo = !!prazoOriginal && prazo !== prazoOriginal;
+  const adiando = !!prazoOriginal && !!prazo && prazo > prazoOriginal;
   const [lembretes, setLembretes] = useState<number[]>(tarefa.lembretes);
   const [conteudo, setConteudo] = useState(tarefa.conteudo ?? "");
   const [pasta, setPasta] = useState<{ raiz: RaizPasta; caminho: string }>({
@@ -115,6 +124,10 @@ export function TarefaDetalhe({
   function salvar() {
     setErro(null);
     setSalvo(false);
+    if (adiando && !motivoPrazo) {
+      setErro("Informe o motivo do adiamento do prazo.");
+      return;
+    }
     startTransition(async () => {
       const res = await salvarTarefa(tarefa.id, {
         titulo,
@@ -132,12 +145,17 @@ export function TarefaDetalhe({
         link_site: linkSite,
         lembretes,
         solicitante,
+        prazo_motivo: mudouPrazo ? motivoPrazo : "",
+        prazo_motivo_detalhe: mudouPrazo ? detalhePrazo : "",
       });
       if (res.erro) {
         setErro(res.erro);
         return;
       }
       setSalvo(true);
+      setMotivoPrazo("");
+      setDetalhePrazo("");
+      setVersaoHist((v) => v + 1);
       const nomePessoa =
         pessoas.find((p) => p.id === responsavelId)?.nome ?? null;
       onSalvo({
@@ -287,6 +305,27 @@ export function TarefaDetalhe({
                 <option value="5">5 (mais baixa)</option>
               </Select>
             </div>
+            {mudouPrazo ? (
+              <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50/70 p-3 sm:col-span-2 dark:bg-amber-950/30">
+                <Label htmlFor="td-motivo-prazo">
+                  {adiando ? "Motivo do adiamento do prazo" : prazo ? "Motivo da mudança do prazo (opcional)" : "Motivo de retirar o prazo (opcional)"}
+                  {adiando ? <span className="text-destructive"> *</span> : null}
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  De {prazoOriginal.slice(8)}/{prazoOriginal.slice(5, 7)}/{prazoOriginal.slice(0, 4)}
+                  {prazo ? ` para ${prazo.slice(8)}/${prazo.slice(5, 7)}/${prazo.slice(0, 4)}` : " para sem prazo"}. O motivo fica na linha do tempo do card e entra nos relatórios.
+                </p>
+                <Select id="td-motivo-prazo" value={motivoPrazo} onChange={(e) => setMotivoPrazo(e.target.value)} aria-label="Motivo da mudança do prazo">
+                  <option value="">Escolha o motivo…</option>
+                  {MOTIVOS_PRAZO.map(([chave, rotulo]) => (
+                    <option key={chave} value={chave}>
+                      {rotulo}
+                    </option>
+                  ))}
+                </Select>
+                <Input value={detalhePrazo} onChange={(e) => setDetalhePrazo(e.target.value)} maxLength={300} placeholder="Algo a acrescentar? (opcional)" aria-label="Observação sobre o motivo" className="h-9 text-sm" />
+              </div>
+            ) : null}
             <div className="space-y-1.5">
               <Label htmlFor="td-tag">Tags</Label>
               <Input
@@ -349,6 +388,8 @@ export function TarefaDetalhe({
           <ConteudoCard valor={conteudo} onChange={setConteudo} />
 
           <AnexosTarefa tarefaId={tarefa.id} />
+
+          <LinhaDoTempoTarefa tarefaId={tarefa.id} criadaEm={tarefa.criada_em} versao={versaoHist} />
 
           <ConversaDoCard tarefaId={tarefa.id} pessoas={pessoas} usuarioId={usuarioId} responsavelId={tarefa.responsavel_id} />
 

@@ -10,7 +10,9 @@ import { registrarAcao } from "@/features/atividade/registro";
 import { TAREFA_STATUS_META } from "@/types";
 import { normalizarLembretes } from "@/lib/lembretes";
 import type { TarefaStatus } from "@/types";
-import { prazoParaGravar } from "@/lib/utils";
+import { diaBrasilia, prazoParaGravar } from "@/lib/utils";
+import { registrarEventosTarefa, type NovoEvento } from "./historico";
+import { MOTIVOS_PRAZO } from "./historico-tipos";
 
 /** Move uma tarefa para outra coluna do kanban (novo status). */
 export async function moverTarefa(tarefaId: string, novoStatus: TarefaStatus) {
@@ -38,7 +40,10 @@ export async function moverTarefa(tarefaId: string, novoStatus: TarefaStatus) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (user) await registrarAcao(user.id, "Moveu a tarefa de coluna", `${antes.titulo} → ${TAREFA_STATUS_META[novoStatus]?.label ?? novoStatus}`, "/operacional");
+    if (user) {
+      await registrarAcao(user.id, "Moveu a tarefa de coluna", `${antes.titulo} → ${TAREFA_STATUS_META[novoStatus]?.label ?? novoStatus}`, "/operacional");
+      await registrarEventosTarefa(tarefaId, user.id, [{ campo: "status", de: TAREFA_STATUS_META[antes.status as TarefaStatus]?.label ?? antes.status, para: TAREFA_STATUS_META[novoStatus]?.label ?? novoStatus }]);
+    }
   }
   revalidatePath("/operacional");
 }
@@ -109,6 +114,9 @@ export interface DadosTarefa {
   link_site?: string;
   lembretes?: number[];
   solicitante?: string;
+  /** Motivo (chave da lista) da mudança do prazo; obrigatório ao ADIAR um prazo que já existia. */
+  prazo_motivo?: string;
+  prazo_motivo_detalhe?: string;
 }
 
 /** Limpa o caminho: sem letra de unidade no começo, sem barras sobrando. */
@@ -147,8 +155,18 @@ export async function salvarTarefa(
   if (linkSite && !/^https?:\/\//i.test(linkSite)) return { erro: "O link do site deve começar com http:// ou https://." };
 
   // A leitura passa pela RLS: só enxerga o card quem é da liderança ou o responsável atual.
-  const { data: antes } = await supabase.from("tarefas").select("status, responsavel_id").eq("id", tarefaId).maybeSingle();
+  const { data: antes } = await supabase.from("tarefas").select("status, responsavel_id, prazo, titulo, prioridade").eq("id", tarefaId).maybeSingle();
   if (!antes) return { erro: "Você não tem permissão para editar este card." };
+  // Colaborador e solicitante ficam em colunas à parte (sem as migrations 0070/0086 a leitura falha e segue sem elas).
+  const { data: extra } = await supabase.from("tarefas").select("colaborador_id, solicitante").eq("id", tarefaId).maybeSingle();
+  const antesExtra = (extra as { colaborador_id: string | null; solicitante: string | null } | null) ?? { colaborador_id: null, solicitante: null };
+
+  // Prazo adiado (nova data depois da anterior): é preciso dizer o motivo, escolhido na lista.
+  const diaAntes = antes.prazo ? diaBrasilia(antes.prazo as string) : null;
+  const diaDepois = d.prazo || null;
+  const adiando = !!diaAntes && !!diaDepois && diaDepois > diaAntes;
+  const motivoPrazo = MOTIVOS_PRAZO.some(([k]) => k === d.prazo_motivo) ? (d.prazo_motivo as string) : null;
+  if (adiando && !motivoPrazo) return { erro: "Informe o motivo do adiamento do prazo." };
 
   // Quem passa o card a outra pessoa deixa de ser o responsável, e a regra de atualização do banco
   // (liderança ou responsável) barraria a própria gravação. Como a permissão já foi conferida acima,
@@ -233,6 +251,33 @@ export async function salvarTarefa(
       titulo: "Card passado para você: " + titulo,
       link: "/operacional?tarefa=" + tarefaId,
     });
+  }
+  // Linha do tempo do card: o que mudou (com o motivo, quando o prazo mudou).
+  try {
+    const rotulo = (s: string) => TAREFA_STATUS_META[s as TarefaStatus]?.label ?? s;
+    const eventos: NovoEvento[] = [];
+    if (antes.status !== d.status) eventos.push({ campo: "status", de: rotulo(antes.status as string), para: rotulo(d.status) });
+    if (diaAntes !== diaDepois) {
+      eventos.push({ campo: "prazo", de: diaAntes, para: diaDepois, motivo: motivoPrazo, detalhe: d.prazo_motivo_detalhe?.trim() || null });
+    }
+    if ((antes.titulo as string) !== titulo) eventos.push({ campo: "titulo", de: antes.titulo as string, para: titulo });
+    if ((antes.prioridade ?? null) !== (d.prioridade ?? null)) eventos.push({ campo: "prioridade", de: antes.prioridade ? String(antes.prioridade) : null, para: d.prioridade ? String(d.prioridade) : null });
+    const solicitanteDepois = d.solicitante !== undefined ? d.solicitante.trim() || null : antesExtra.solicitante;
+    if ((antesExtra.solicitante ?? null) !== solicitanteDepois) eventos.push({ campo: "solicitante", de: antesExtra.solicitante, para: solicitanteDepois });
+    const respDepois = d.responsavel_id || null;
+    const colabDepois = d.colaborador_id !== undefined ? d.colaborador_id || null : antesExtra.colaborador_id;
+    const respMudou = (antes.responsavel_id ?? null) !== respDepois;
+    const colabMudou = (antesExtra.colaborador_id ?? null) !== colabDepois;
+    if ((respMudou || colabMudou) && servicoDisponivel()) {
+      const ids = [antes.responsavel_id, respDepois, antesExtra.colaborador_id, colabDepois].filter((x): x is string => !!x);
+      const { data: ps } = await criarClienteAdmin().from("profiles").select("id, nome").in("id", ids);
+      const nome = (id: string | null) => (id ? ((ps as { id: string; nome: string }[] | null) ?? []).find((p) => p.id === id)?.nome ?? null : null);
+      if (respMudou) eventos.push({ campo: "responsavel", de: nome(antes.responsavel_id ?? null), para: nome(respDepois) });
+      if (colabMudou) eventos.push({ campo: "colaborador", de: nome(antesExtra.colaborador_id), para: nome(colabDepois) });
+    }
+    await registrarEventosTarefa(tarefaId, user.id, eventos);
+  } catch {
+    // o histórico é complementar
   }
   await registrarAcao(user.id, "Editou a tarefa", titulo, "/operacional");
   revalidatePath("/operacional");
@@ -372,6 +417,7 @@ export async function criarTarefaCard(d: NovoCard): Promise<{ ok?: boolean; erro
     await avisarDiretoria({ titulo: "Para aprovar: " + titulo, link: "/executivo" });
   }
   await registrarAcao(user.id, "Criou a tarefa", titulo, "/operacional");
+  await registrarEventosTarefa(id, user.id, [{ campo: "criada", para: titulo }]);
   revalidatePath("/operacional");
   return { ok: true, id };
 }
