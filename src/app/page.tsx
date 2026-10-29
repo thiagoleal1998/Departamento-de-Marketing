@@ -200,7 +200,7 @@ export default async function HomePage() {
       </main>
 
       <footer className="relative z-10 border-t border-white/10 py-8 text-center text-xs text-slate-400">
-        Litoral Verde Operadora · Departamento de marketing{versao ? ` · v${versao}` : ""}
+        Departamento de Marketing · Litoral Verde Operadora{versao ? ` · v${versao}` : ""}
       </footer>
     </div>
   );
