@@ -34,6 +34,7 @@ import { RevisaoEditor, type PecaInicial } from "./revisao-editor";
 import { GradeEmojis, ItemMenu, MenuSuspenso } from "./menu-chat";
 import type { RevisaoPeca } from "./revisao-tipos";
 import { CONVERSA_GERAL } from "./constantes";
+import { TextoComLinks } from "./texto-com-links";
 import { tocarSomChat } from "./som";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -529,7 +530,7 @@ export function ChatJanela({
                   ) : null}
                   {rev ? <RevisaoCard revisao={rev} minha={minha} status={situacao} acao={acaoRevisao} /> : null}
                   {m.anexo?.url ? <AnexoMensagem anexo={m.anexo} /> : null}
-                  {m.anexo?.url && TEXTOS_AUTOMATICOS.includes(m.texto) ? null : <p className="whitespace-pre-wrap break-words">{m.texto}</p>}
+                  {m.anexo?.url && TEXTOS_AUTOMATICOS.includes(m.texto) ? null : <TextoComLinks texto={m.texto} minha={minha} />}
                   <ReacoesDaMensagem reacoes={dela} usuarioId={meuId} nomeDe={(id) => nomes[id] ?? "—"} onReagir={(e) => void reagir(m.id, e)} minha={minha} />
                   {m.solicitacao_id && mensagens.find((x) => x.solicitacao_id === m.solicitacao_id)?.id === m.id ? (
                     <SolicitacaoCard

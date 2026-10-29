@@ -15,6 +15,7 @@ import { ReacoesDaMensagem, SeletorReacao, useReacoes } from "./reacoes";
 import { IndicadorDigitando, useDigitando } from "./digitando";
 import { StatusLeitura, useLeituras } from "./leituras";
 import { RevisaoCard } from "./revisao-card";
+import { TextoComLinks } from "./texto-com-links";
 import { tocarSomChat, tocarSomChatPorAviso } from "./som";
 import { AnexoMensagem } from "./anexo-mensagem";
 import { AnexoEnvio, type ComandosAnexo } from "./anexo-envio";
@@ -315,7 +316,7 @@ export function ChatFlutuante({
                       ) : null}
                       {m.revisao?.imagem ? <RevisaoCard revisao={m.revisao} minha={minha} /> : null}
                       {m.anexo?.url ? <AnexoMensagem anexo={m.anexo} /> : null}
-                      {m.anexo?.url && TEXTOS_AUTOMATICOS.includes(m.texto) ? null : <p className="whitespace-pre-wrap break-words">{m.texto}</p>}
+                      {m.anexo?.url && TEXTOS_AUTOMATICOS.includes(m.texto) ? null : <TextoComLinks texto={m.texto} minha={minha} />}
                       <ReacoesDaMensagem reacoes={dela} usuarioId={usuarioId} nomeDe={(id) => nomes.get(id) ?? "—"} onReagir={(e) => void reagir(m.id, e)} minha={minha} />
                       <p className={cn("mt-0.5 text-right text-[10px]", minha ? "opacity-80" : "text-muted-foreground")}>
                         {hora(m.created_at)}
