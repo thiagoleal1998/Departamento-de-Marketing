@@ -11,7 +11,21 @@ import { Button } from "@/components/ui/button";
 export default function ErroDaTela({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
     console.error("Erro na tela:", error);
-  }, [error]);
+    // "Connection closed": a conexão com o servidor caiu no meio do carregamento (queda rápida, função reiniciando).
+    // Tenta de novo sozinho uma vez, sem a pessoa precisar clicar.
+    if (/connection closed/i.test(error.message ?? "")) {
+      try {
+        const chave = "erro-conexao-tentou";
+        if (!sessionStorage.getItem(chave)) {
+          sessionStorage.setItem(chave, "1");
+          setTimeout(() => reset(), 800);
+          setTimeout(() => sessionStorage.removeItem(chave), 15_000);
+        }
+      } catch {
+        /* sem sessionStorage: fica o botão */
+      }
+    }
+  }, [error, reset]);
 
   return (
     <div className="mx-auto max-w-xl space-y-4 rounded-xl border border-destructive/40 bg-destructive/5 p-6">

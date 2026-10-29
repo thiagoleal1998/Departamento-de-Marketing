@@ -41,6 +41,7 @@ npx vercel deploy --prod --yes --scope marketing-2073 --token "$VERCEL_TOKEN"
 - **Nunca** usar o escopo antigo `people-and-growth` (nem mexer no projeto `people-growth`, que não é deste painel).
 - Antes de publicar: `npx tsc --noEmit` e `npx next lint` precisam passar.
 - Publicar em lote (uma vez por conjunto de mudanças): o plano Hobby tem limite de CPU. Links internos usam `@/components/shared/link` (prefetch desligado).
+- Telas com trabalho lento no servidor (IA, notícias, planilhas) precisam de **limite de tempo por bloco** (`ComLimite`, `src/components/shared/com-limite.tsx`): a função da Vercel morre aos 60 s e o navegador mostra "Connection closed" na tela inteira. Para ver erros de produção: `npx vercel logs --deployment departamento-de-marketing-lv.vercel.app --scope marketing-2073 --token "$VERCEL_TOKEN" --since 10m --query 'level:error'` (o Hobby só guarda logs recentes).
 - Se aparecer erro estranho de tela logo após publicar (ex.: `e[o] is not a function`), pode ser cache de build: publicar de novo com `--force`.
 
 ### 4. Interface sempre moderna e consistente

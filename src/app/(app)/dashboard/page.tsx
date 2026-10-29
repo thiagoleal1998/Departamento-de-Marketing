@@ -22,6 +22,7 @@ import { NoticiasTurismo } from "@/features/noticias/noticias-turismo";
 import { NoticiasGerais } from "@/features/noticias/noticias-gerais";
 import { EsqueletoAgenda, EsqueletoAlertas, EsqueletoDivulgacao, EsqueletoPainel } from "@/components/shared/esqueleto";
 import { PageHeader } from "@/components/shared/page-header";
+import { ComLimite } from "@/components/shared/com-limite";
 import { DataCard } from "@/components/shared/data-card";
 import { EmptyState } from "@/components/shared/empty-state";
 import {
@@ -82,19 +83,19 @@ export default async function DashboardPage() {
               <p className="text-sm text-muted-foreground">Veja o panorama da operação e o que precisa da sua atenção.</p>
             </div>
             <Suspense fallback={<EsqueletoAgenda />}>
-              <AgendaHoje />
+              <ComLimite de={AgendaHoje} titulo="A agenda de hoje" ms={25_000} />
             </Suspense>
           </div>
           {/* As duas caixas começam e terminam na mesma altura. */}
           <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(0,1fr)_440px]">
             <div className="min-w-0 [&>*]:h-full">
               <Suspense fallback={<EsqueletoAlertas />}>
-                <AlertasDestinos />
+                <ComLimite de={AlertasDestinos} titulo="Os alertas dos destinos" ms={40_000} />
               </Suspense>
             </div>
             <div className="[&>*]:h-full">
               <Suspense fallback={<EsqueletoDivulgacao />}>
-                <DivulgacaoHoje />
+                <ComLimite de={DivulgacaoHoje} titulo="A divulgação do dia" ms={40_000} />
               </Suspense>
             </div>
           </div>
@@ -105,7 +106,7 @@ export default async function DashboardPage() {
 
       {lideranca ? (
         <Suspense fallback={<EsqueletoPainel />}>
-          <PainelLideranca />
+          <ComLimite de={PainelLideranca} titulo="O painel da liderança" ms={30_000} />
         </Suspense>
       ) : null}
 
@@ -113,15 +114,15 @@ export default async function DashboardPage() {
         <>
           {/* Calendário do mês e do seguinte, alternando sozinho (abaixo do que precisa de atenção). */}
           <Suspense fallback={<div className="h-80 animate-pulse rounded-2xl bg-muted/50" />}>
-            <CalendarioMes />
+            <ComLimite de={CalendarioMes} titulo="O calendário" ms={25_000} />
           </Suspense>
           {/* Principais notícias do turismo (Panrotas e outras fontes do setor). */}
           <Suspense fallback={<div className="h-72 animate-pulse rounded-2xl bg-muted/50" />}>
-            <NoticiasTurismo />
+            <ComLimite de={NoticiasTurismo} titulo="As notícias do turismo" ms={30_000} />
           </Suspense>
           {/* Principais notícias de política e economia dos grandes jornais. */}
           <Suspense fallback={<div className="h-96 animate-pulse rounded-2xl bg-muted/50" />}>
-            <NoticiasGerais />
+            <ComLimite de={NoticiasGerais} titulo="As notícias gerais" ms={30_000} />
           </Suspense>
         </>
       ) : null}
