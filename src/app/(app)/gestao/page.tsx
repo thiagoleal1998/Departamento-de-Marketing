@@ -144,21 +144,29 @@ export default async function GestaoPage() {
     <div className="space-y-6">
       <PageHeader
         titulo="Gestão"
-        descricao="Indicadores e performance dos chamados de marketing."
+        descricao="Indicadores dos chamados da Central de Solicitações, escala de feriados, fluxos e processos, perfis e férias."
       />
       <GestaoAbas ativa="indicadores" />
 
+      <section className="space-y-1">
+        <h2 className="text-base font-semibold">Chamados (Central de Solicitações)</h2>
+        <p className="text-xs text-muted-foreground">
+          Os números abaixo contam <strong>apenas os chamados</strong> abertos pela Central de Solicitações. Não incluem as tarefas do quadro nem os itens das atas — para o andamento delas, veja <strong>Relatórios → Evolução do operacional</strong>.
+        </p>
+      </section>
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <DataCard titulo="Total de chamados" valor={chamados.length} icone={Ticket} />
-        <DataCard titulo="Em aberto" valor={abertos.length} icone={Clock} />
-        <DataCard titulo="Em andamento" valor={emAndamento.length} icone={Timer} />
+        <DataCard titulo="Total de chamados" valor={chamados.length} icone={Ticket} href="/chamados" />
+        <DataCard titulo="Chamados em aberto" valor={abertos.length} icone={Clock} />
+        <DataCard titulo="Chamados em andamento" valor={emAndamento.length} icone={Timer} />
         <DataCard
-          titulo="Resolvidos"
+          titulo="Chamados resolvidos"
           valor={finalizados.length}
           icone={CheckCircle2}
+          descricao="Resolvidos ou fechados"
         />
         <DataCard
-          titulo="Atrasados"
+          titulo="Chamados atrasados"
           valor={atrasados.length}
           icone={AlertTriangle}
           descricao="Abertos após o prazo"
@@ -167,14 +175,14 @@ export default async function GestaoPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <DataCard
-          titulo="Aguardando aprovação"
+          titulo="Chamados aguardando aprovação"
           valor={aguardandoAprovacao.length}
           icone={Stamp}
           descricao="Pendentes do gerente"
           href="/chamados"
         />
         <DataCard
-          titulo="Tempo médio de resolução"
+          titulo="Tempo médio de resolução dos chamados"
           valor={tempoMedio === "—" ? "—" : `${tempoMedio} dias`}
           icone={Timer}
           descricao={`Da abertura à conclusão · média de ${tempos.length} chamado(s) concluído(s)`}
@@ -220,11 +228,15 @@ export default async function GestaoPage() {
         </CardContent>
       </Card>
 
+      <section className="space-y-1">
+        <h2 className="text-base font-semibold">Chamados: distribuição</h2>
+        <p className="text-xs text-muted-foreground">Como os chamados se dividem por status, canal, departamento, segmento e responsável.</p>
+      </section>
       <div className="grid gap-6 lg:grid-cols-2">
         {graficos.map((g) => (
           <Card key={g.titulo}>
             <CardHeader>
-              <CardTitle className="text-base">{g.titulo}</CardTitle>
+              <CardTitle className="text-base">Chamados {g.titulo.charAt(0).toLowerCase() + g.titulo.slice(1)}</CardTitle>
             </CardHeader>
             <CardContent>
               <BarChartH dados={g.dados} />
