@@ -46,7 +46,7 @@ export async function RelatorioOperacional() {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <Indicador rotulo="Tarefas abertas" valor={String(d.kpis.tarefasAbertas)} detalhe="no quadro, hoje" />
         <Indicador rotulo="Tarefas atrasadas" valor={String(d.kpis.atrasadas)} detalhe="prazo já passou" tom={d.kpis.atrasadas > 0 ? "atencao" : "bom"} />
-        <Indicador rotulo="Esperando aprovação" valor={String(d.kpis.emAprovacao)} detalhe="aprovação ou alterações" tom={d.kpis.emAprovacao > 5 ? "atencao" : undefined} />
+        <Indicador rotulo="Esperando aprovação" valor={String(d.kpis.emAprovacao)} detalhe={d.aprovacaoPorPessoa.map((x) => `${x.rotulo.replace("Aprovação do ", "").replace(" (voltaram para o time)", "")} ${x.valor}`).join(" · ") || "aprovação ou alterações"} tom={d.kpis.emAprovacao > 5 ? "atencao" : undefined} />
         <Indicador rotulo="Reuniões até concluir" valor={d.kpis.mediaReunioesAteConcluir !== null ? dec(d.kpis.mediaReunioesAteConcluir) : "—"} detalhe="média por demanda da ata" />
         <Indicador rotulo="Concluídos na última ata" valor={d.kpis.pctConcluidosUltima !== null ? `${dec(d.kpis.pctConcluidosUltima, 0)}%` : "—"} detalhe="dos itens da reunião" />
         <Indicador rotulo="Adiados (últimas 4 atas)" valor={d.kpis.pctAdiadosUltimas4 !== null ? `${dec(d.kpis.pctAdiadosUltimas4, 0)}%` : "—"} detalhe="itens com prazo empurrado" />
@@ -108,6 +108,13 @@ export async function RelatorioOperacional() {
             descricao="Onde estão paradas as tarefas que ainda não foram concluídas."
             itens={d.statusAtual.map((s) => ({ rotulo: s.rotulo, valor: s.valor }))}
             vazio="Nenhuma tarefa aberta."
+          />
+          <BarrasHorizontais
+            titulo="Esperando aprovação: de quem?"
+            descricao="Em quais mãos está cada tarefa que aguarda aprovação ou voltou para alterações."
+            itens={d.aprovacaoPorPessoa}
+            tom={2}
+            vazio="Nada esperando aprovação."
           />
           <BarrasHorizontais
             titulo="Tarefas atrasadas por pessoa"
@@ -190,7 +197,9 @@ export async function RelatorioOperacional() {
                     <span className="block truncate font-medium" title={t.titulo}>
                       {t.titulo}
                     </span>
-                    <span className="text-xs text-muted-foreground">{t.etapa}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {t.etapa} · tarefa de {t.responsavel}
+                    </span>
                   </span>
                   <span className="shrink-0 text-xs text-muted-foreground">criada há {t.dias} dia(s)</span>
                 </li>

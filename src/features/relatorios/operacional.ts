@@ -67,7 +67,9 @@ export interface DadosOperacional {
   statusAtual: { rotulo: string; valor: number }[];
   atrasadas: TarefaAtrasada[];
   atrasadasPorPessoa: [string, number][];
-  paradasEmAprovacao: { titulo: string; etapa: string; dias: number }[];
+  paradasEmAprovacao: { titulo: string; etapa: string; responsavel: string; dias: number }[];
+  /** Quem está com a aprovação (Marco, Gustavo, Thiago) e quantas tarefas voltaram para alterações. */
+  aprovacaoPorPessoa: { rotulo: string; valor: number }[];
   relatorioAtas: Relatorio | null;
   insights: { tom: "bom" | "atencao" | "neutro"; texto: string }[];
 }
@@ -141,8 +143,19 @@ export async function dadosOperacional(): Promise<DadosOperacional> {
 
   const paradasEmAprovacao = abertas
     .filter((t) => t.status.startsWith("aprovacao_") || t.status === "alteracoes")
-    .map((t) => ({ titulo: t.titulo, etapa: ROTULO_STATUS_TAREFA[t.status] ?? t.status, dias: diasEntre(diaBrasilia(t.created_at), hoje) }))
+    .map((t) => ({ titulo: t.titulo, etapa: ROTULO_STATUS_TAREFA[t.status] ?? t.status, responsavel: quem(t), dias: diasEntre(diaBrasilia(t.created_at), hoje), status: t.status }))
     .sort((a, b) => b.dias - a.dias);
+  const ROTULO_APROVADOR: Record<string, string> = {
+    aprovacao_marco: "Aprovação do Marco",
+    aprovacao_gustavo: "Aprovação do Gustavo",
+    aprovacao_thiago: "Aprovação do Thiago",
+    alteracoes: "Alterações (voltaram para o time)",
+  };
+  const contAprov = new Map<string, number>();
+  for (const t of paradasEmAprovacao) contAprov.set(t.status, (contAprov.get(t.status) ?? 0) + 1);
+  const aprovacaoPorPessoa = Array.from(contAprov.entries())
+    .map(([s, valor]) => ({ rotulo: ROTULO_APROVADOR[s] ?? ROTULO_STATUS_TAREFA[s] ?? s, valor }))
+    .sort((a, b) => b.valor - a.valor);
 
   // ---- Atas: por reunião ----
   const ordem = atas.reunioes.filter((r) => r.estado === "realizada").sort((a, b) => a.data.localeCompare(b.data));
@@ -245,12 +258,13 @@ export async function dadosOperacional(): Promise<DadosOperacional> {
     insights.push({ tom: "bom", texto: "Nenhuma tarefa atrasada hoje." });
   }
   if (paradasEmAprovacao.length > 0) {
-    insights.push({ tom: "atencao", texto: `${paradasEmAprovacao.length} tarefa(s) esperando aprovação ou alteração; a mais antiga foi criada há ${paradasEmAprovacao[0].dias} dia(s).` });
+    const detalhe = aprovacaoPorPessoa.map((x) => `${x.rotulo.replace("Aprovação do ", "")} ${x.valor}`).join(", ");
+    insights.push({ tom: "atencao", texto: `${paradasEmAprovacao.length} tarefa(s) esperando aprovação ou alteração (${detalhe}); a mais antiga foi criada há ${paradasEmAprovacao[0].dias} dia(s).` });
   }
   const motivo = relatorioAtas?.motivos[0];
   if (motivo) insights.push({ tom: "atencao", texto: `Principal motivo de adiamento nas atas: ${motivo[0]} (${motivo[1]} ocorrência(s)).` });
   const tipo = relatorioAtas?.porTipo.filter((t) => t.total >= 5).sort((a, b) => b.adiamentos / b.total - a.adiamentos / a.total)[0];
   if (tipo && tipo.adiamentos > 0) insights.push({ tom: "atencao", texto: `Tipo de demanda que mais atrasa: ${tipo.tipo} (${tipo.adiamentos} adiamento(s) em ${tipo.total} item(ns)).` });
 
-  return { geradoEm: new Date().toISOString(), kpis, reunioes, meses, statusAtual, atrasadas, atrasadasPorPessoa, paradasEmAprovacao, relatorioAtas, insights };
+  return { geradoEm: new Date().toISOString(), kpis, reunioes, meses, statusAtual, atrasadas, atrasadasPorPessoa, paradasEmAprovacao: paradasEmAprovacao.map(({ status: _s, ...resto }) => resto), aprovacaoPorPessoa, relatorioAtas, insights };
 }
