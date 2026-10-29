@@ -2,6 +2,7 @@ import "server-only";
 import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { diaBrasilia } from "@/lib/utils";
+import { areaDoSolicitante } from "@/features/operacional/solicitantes";
 import { carregarAtas, carregarMembros, itemAberto, type ItemAta } from "@/features/atas/data";
 import { calcularRelatorio, type Relatorio } from "@/features/atas/relatorios-calculo";
 
@@ -65,6 +66,16 @@ export interface DadosOperacional {
   reunioes: PontoReuniao[];
   meses: PontoMes[];
   statusAtual: { rotulo: string; valor: number }[];
+  /** Quem pede as tarefas (campo Solicitante). */
+  solicitantes: {
+    /** Tarefas com solicitante informado, e o total de tarefas. */
+    comDado: number;
+    total: number;
+    porPessoa: { rotulo: string; valor: number; detalhe: string }[];
+    porArea: { rotulo: string; valor: number; detalhe: string }[];
+    /** Campo ainda não existe no banco (migration 0086 não rodada). */
+    semColuna: boolean;
+  };
   atrasadas: TarefaAtrasada[];
   atrasadasPorPessoa: [string, number][];
   paradasEmAprovacao: { titulo: string; etapa: string; responsavel: string; dias: number }[];
@@ -81,6 +92,7 @@ interface TarefaLinha {
   responsavel_id: string | null;
   responsaveis_notion: string | null;
   created_at: string;
+  solicitante?: string | null;
 }
 
 const media = (v: number[]) => (v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0);
@@ -90,13 +102,20 @@ export async function dadosOperacional(): Promise<DadosOperacional> {
   const hoje = diaBrasilia(new Date());
   const cliente = servicoDisponivel() ? criarClienteAdmin() : await criarClienteServidor();
 
-  const [{ data: tarefasData }, { data: perfisData }, atas, membros] = await Promise.all([
-    cliente.from("tarefas").select("titulo, status, prazo, responsavel_id, responsaveis_notion, created_at").limit(5000),
+  const [{ data: tarefasData, error: tarefasErro }, { data: perfisData }, atas, membros] = await Promise.all([
+    cliente.from("tarefas").select("titulo, status, prazo, responsavel_id, responsaveis_notion, created_at, solicitante").limit(5000),
     cliente.from("profiles").select("id, nome"),
     carregarAtas().catch(() => ({ reunioes: [], itens: [] as ItemAta[] })),
     carregarMembros().catch(() => []),
   ]);
-  const tarefas = (tarefasData as TarefaLinha[] | null) ?? [];
+  let tarefas = (tarefasData as TarefaLinha[] | null) ?? [];
+  // Sem a migration 0086 a coluna "solicitante" não existe e a consulta inteira falharia: repete sem ela.
+  let semColunaSolicitante = false;
+  if (tarefasErro) {
+    semColunaSolicitante = true;
+    const { data: de } = await cliente.from("tarefas").select("titulo, status, prazo, responsavel_id, responsaveis_notion, created_at").limit(5000);
+    tarefas = (de as TarefaLinha[] | null) ?? [];
+  }
   const nomes = new Map(((perfisData as { id: string; nome: string }[] | null) ?? []).map((p) => [p.id, p.nome.split(" ")[0]]));
   const quem = (t: TarefaLinha) => (t.responsavel_id ? nomes.get(t.responsavel_id) : null) ?? t.responsaveis_notion?.split(/[,;]/)[0]?.trim().split(" ")[0] ?? "Sem responsável";
 
@@ -156,6 +175,32 @@ export async function dadosOperacional(): Promise<DadosOperacional> {
   const aprovacaoPorPessoa = Array.from(contAprov.entries())
     .map(([s, valor]) => ({ rotulo: ROTULO_APROVADOR[s] ?? ROTULO_STATUS_TAREFA[s] ?? s, valor }))
     .sort((a, b) => b.valor - a.valor);
+
+  // ---- Quem solicita (campo Solicitante das tarefas) ----
+  const porSolic = new Map<string, { total: number; abertas: number }>();
+  const porAreaMapa = new Map<string, { total: number; abertas: number }>();
+  let comSolicitante = 0;
+  for (const t of tarefas) {
+    const nome = t.solicitante?.trim();
+    if (!nome) continue;
+    comSolicitante++;
+    const aberta = t.status !== "concluida" ? 1 : 0;
+    const a = porSolic.get(nome) ?? { total: 0, abertas: 0 };
+    a.total++;
+    a.abertas += aberta;
+    porSolic.set(nome, a);
+    const area = areaDoSolicitante(nome);
+    const b = porAreaMapa.get(area) ?? { total: 0, abertas: 0 };
+    b.total++;
+    b.abertas += aberta;
+    porAreaMapa.set(area, b);
+  }
+  const ordenar = (m: Map<string, { total: number; abertas: number }>, max: number) =>
+    Array.from(m.entries())
+      .sort((x, y) => y[1].total - x[1].total || x[0].localeCompare(y[0], "pt-BR"))
+      .slice(0, max)
+      .map(([rotulo, v]) => ({ rotulo, valor: v.total, detalhe: `${v.abertas} aberta(s)` }));
+  const solicitantes = { comDado: comSolicitante, total: tarefas.length, porPessoa: ordenar(porSolic, 10), porArea: ordenar(porAreaMapa, 8), semColuna: semColunaSolicitante };
 
   // ---- Atas: por reunião ----
   const ordem = atas.reunioes.filter((r) => r.estado === "realizada").sort((a, b) => a.data.localeCompare(b.data));
@@ -261,10 +306,18 @@ export async function dadosOperacional(): Promise<DadosOperacional> {
     const detalhe = aprovacaoPorPessoa.map((x) => `${x.rotulo.replace("Aprovação do ", "")} ${x.valor}`).join(", ");
     insights.push({ tom: "atencao", texto: `${paradasEmAprovacao.length} tarefa(s) esperando aprovação ou alteração (${detalhe}); a mais antiga foi criada há ${paradasEmAprovacao[0].dias} dia(s).` });
   }
+  if (solicitantes.porPessoa.length > 0) {
+    const top = solicitantes.porPessoa[0];
+    const area = solicitantes.porArea[0];
+    insights.push({
+      tom: "neutro",
+      texto: `Quem mais pede tarefas: ${top.rotulo} (${top.valor} de ${solicitantes.comDado} com solicitante informado)${area ? `; a área que mais pede é ${area.rotulo} (${area.valor})` : ""}.`,
+    });
+  }
   const motivo = relatorioAtas?.motivos[0];
   if (motivo) insights.push({ tom: "atencao", texto: `Principal motivo de adiamento nas atas: ${motivo[0]} (${motivo[1]} ocorrência(s)).` });
   const tipo = relatorioAtas?.porTipo.filter((t) => t.total >= 5).sort((a, b) => b.adiamentos / b.total - a.adiamentos / a.total)[0];
   if (tipo && tipo.adiamentos > 0) insights.push({ tom: "atencao", texto: `Tipo de demanda que mais atrasa: ${tipo.tipo} (${tipo.adiamentos} adiamento(s) em ${tipo.total} item(ns)).` });
 
-  return { geradoEm: new Date().toISOString(), kpis, reunioes, meses, statusAtual, atrasadas, atrasadasPorPessoa, paradasEmAprovacao: paradasEmAprovacao.map(({ status: _s, ...resto }) => resto), aprovacaoPorPessoa, relatorioAtas, insights };
+  return { geradoEm: new Date().toISOString(), kpis, reunioes, meses, statusAtual, atrasadas, atrasadasPorPessoa, solicitantes, paradasEmAprovacao: paradasEmAprovacao.map(({ status: _s, ...resto }) => resto), aprovacaoPorPessoa, relatorioAtas, insights };
 }

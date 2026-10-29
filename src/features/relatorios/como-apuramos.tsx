@@ -55,6 +55,7 @@ const TEXTOS: Record<Aba, Texto> = {
       "Atas, por reunião realizada: itens = linhas da ata; em aberto = não concluídos nem cancelados; novos = assunto que aparece pela primeira vez; % concluído = concluídos ÷ itens; adiado = item aberto cujo prazo ficou mais tarde que na reunião anterior do mesmo assunto.",
       "Reuniões até concluir = média de reuniões em que um assunto aparece até ser concluído. Motivos, tipos de demanda e adiamentos por pessoa vêm do que está registrado nas atas.",
       "Leitura rápida: compara a média das últimas 4 reuniões com a das 4 anteriores.",
+      "Quem solicita: conta as tarefas por valor do campo Solicitante (lista do organograma). A área é a do organograma de cada solicitante. Tarefas sem solicitante informado não entram nesses gráficos; o aviso mostra quantas entram.",
     ],
     limites: [
       "As tarefas guardam a data de criação, mas não a de conclusão. Por isso o painel não mede quantos dias cada tarefa levou para ser feita; esse tempo só existe, em reuniões, para os itens das atas.",

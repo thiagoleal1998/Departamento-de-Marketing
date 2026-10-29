@@ -99,6 +99,36 @@ export async function RelatorioOperacional() {
         </div>
       </div>
 
+      {/* Quem solicita */}
+      <div>
+        <h2 className="mb-1 text-base font-semibold">Quem solicita</h2>
+        <p className="mb-3 text-xs text-muted-foreground">
+          {d.solicitantes.semColuna ? (
+            "O campo Solicitante ainda não foi ativado no banco (falta rodar a migration 0086)."
+          ) : (
+            <>
+              Vem do campo <strong>Solicitante</strong> das tarefas. <strong>{d.solicitantes.comDado}</strong> de <strong>{d.solicitantes.total}</strong> tarefa(s) têm solicitante informado
+              {d.solicitantes.comDado < d.solicitantes.total ? ": o campo é novo, então os gráficos se completam à medida que as tarefas são criadas ou editadas com o solicitante." : "."}
+            </>
+          )}
+        </p>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <BarrasHorizontais
+            titulo="Quem mais pede tarefas"
+            descricao="Tarefas por solicitante (os 10 que mais pedem), com quantas ainda estão abertas."
+            itens={d.solicitantes.porPessoa}
+            vazio="Ainda não há tarefas com solicitante informado."
+          />
+          <BarrasHorizontais
+            titulo="De qual área vêm os pedidos"
+            descricao="Tarefas por área do organograma do solicitante."
+            itens={d.solicitantes.porArea}
+            tom={2}
+            vazio="Ainda não há tarefas com solicitante informado."
+          />
+        </div>
+      </div>
+
       {/* Pontos de correção */}
       <div>
         <h2 className="mb-3 text-base font-semibold">Pontos de correção</h2>
