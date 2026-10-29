@@ -21,6 +21,7 @@ const estadoInicial: EstadoPerfil = {};
 
 export function PerfilForm({
   nome,
+  nomeExibicao,
   cargo,
   email,
   papel,
@@ -29,6 +30,7 @@ export function PerfilForm({
 }: {
   unidades: Unidades;
   nome: string;
+  nomeExibicao: string | null;
   cargo: string | null;
   email: string;
   papel: Papel;
@@ -148,6 +150,11 @@ export function PerfilForm({
           <div className="space-y-1.5">
             <Label htmlFor="nome">Nome *</Label>
             <Input id="nome" name="nome" defaultValue={nome} required />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="nome_exibicao">Como você quer ser chamado(a)</Label>
+            <Input id="nome_exibicao" name="nome_exibicao" defaultValue={nomeExibicao ?? ""} maxLength={60} placeholder="Ex.: Gustavo Moken" />
+            <p className="text-xs text-muted-foreground">É o nome que os colegas veem no chat. Deixe em branco para usar o nome completo.</p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">

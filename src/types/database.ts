@@ -30,6 +30,8 @@ export interface Profile {
   visao_executiva?: boolean;
   /** Letra da unidade de rede de cada raiz de pasta (ex.: { corporativo: "X" }). */
   pasta_unidades?: Record<string, string> | null;
+  /** Como a pessoa quer ser chamada no chat (migration 0084); vazio = nome completo. */
+  nome_exibicao?: string | null;
   /** Até quando a pessoa já viu as alterações do Comercial (migration 0074). */
   comercial_visto_em?: string | null;
   created_at: string;

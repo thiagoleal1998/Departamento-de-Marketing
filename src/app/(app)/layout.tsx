@@ -6,6 +6,7 @@ import { MobileNav } from "@/components/layout/mobile-nav";
 import { exigirUsuario } from "@/lib/auth";
 import { obterConfig } from "@/lib/config";
 import { contagensDoMenu } from "@/features/notificacoes/menu";
+import { nomesDeExibicao } from "@/features/equipe/exibicao";
 import { obterDiretorio } from "@/features/equipe/diretorio";
 import { ChatFlutuante } from "@/features/chat/chat-flutuante";
 import { RastreadorAtividade } from "@/features/atividade/rastreador";
@@ -18,14 +19,15 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const usuario = await exigirUsuario();
-  const [{ textos, logo }, contagens, diretorio] = await Promise.all([
+  const [{ textos, logo }, contagens, diretorio, exibicao] = await Promise.all([
     obterConfig(),
     contagensDoMenu(),
     obterDiretorio(),
+    nomesDeExibicao(),
   ]);
   const colegas = Array.from(diretorio.values())
     .filter((p) => p.id !== usuario.id)
-    .map((p) => ({ id: p.id, nome: p.nome }))
+    .map((p) => ({ id: p.id, nome: exibicao.get(p.id) ?? p.nome }))
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
   return (

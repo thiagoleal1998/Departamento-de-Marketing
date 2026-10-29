@@ -7,6 +7,7 @@ import { ehLideranca } from "@/lib/permissions";
 import { ehResponsavel } from "@/lib/responsaveis";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { obterDiretorio } from "@/features/equipe/diretorio";
+import { nomesDeExibicao } from "@/features/equipe/exibicao";
 import { abrirConversaDireta } from "@/features/chat/actions";
 import { CONVERSA_GERAL } from "@/features/chat/constantes";
 import { ChatJanela, type MensagemView, type ProjetoOpcao } from "@/features/chat/chat-janela";
@@ -49,9 +50,11 @@ export default async function ChatPage({
     const { data: fs } = await criarClienteAdmin().from("profiles").select("id, avatar_url").eq("ativo", true);
     for (const p of (fs as { id: string; avatar_url: string | null }[] | null) ?? []) fotos.set(p.id, p.avatar_url);
   }
+  // Cada pessoa aparece pelo nome que escolheu no perfil (se não escolheu, o nome completo).
+  const exibicao = await nomesDeExibicao();
   const pessoas: PessoaLite[] = Array.from(diretorio.values()).map((p) => ({
     id: p.id,
-    nome: p.nome,
+    nome: exibicao.get(p.id) ?? p.nome,
     foto: fotos.get(p.id) ?? null,
   }));
   const nomes: Record<string, string> = Object.fromEntries(
@@ -79,7 +82,7 @@ export default async function ChatPage({
   const com =
     comParam ??
     (resp
-      ? pessoas.find((p) => p.id !== usuario.id && resp.split(",").some((r) => ehResponsavel(p.nome, [r])))?.id
+      ? pessoas.find((p) => p.id !== usuario.id && resp.split(",").some((r) => ehResponsavel(diretorio.get(p.id)?.nome ?? p.nome, [r])))?.id
       : undefined);
   const pessoaDaAta = com && com !== usuario.id && nomes[com] ? com : null;
   // Sem redirecionar: a conversa direta é aberta (ou criada) na própria carga da página.

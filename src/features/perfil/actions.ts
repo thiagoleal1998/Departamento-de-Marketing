@@ -68,6 +68,13 @@ export async function atualizarMeuPerfil(
     if (errUnidades) return { erro: "Perfil salvo, mas as unidades não: falta rodar a migration 0069 no Supabase." };
   }
 
+  // Nome de exibição, gravado à parte: sem a migration 0084 o restante do perfil salva igual.
+  if (formData.has("nome_exibicao")) {
+    const exibicao = String(formData.get("nome_exibicao") ?? "").trim().slice(0, 60) || null;
+    const { error: errExibicao } = await supabase.from("profiles").update({ nome_exibicao: exibicao }).eq("id", user.id);
+    if (errExibicao) return { erro: "Perfil salvo, mas o nome de exibição não: falta rodar a migration 0084 no Supabase." };
+  }
+
   revalidatePath("/perfil");
   revalidatePath("/", "layout");
   return { ok: true };

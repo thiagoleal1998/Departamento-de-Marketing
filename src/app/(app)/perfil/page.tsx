@@ -17,6 +17,7 @@ export default async function PerfilPage() {
       />
       <PerfilForm
         nome={usuario.nome}
+        nomeExibicao={usuario.nome_exibicao ?? null}
         cargo={usuario.cargo}
         email={usuario.email}
         papel={usuario.role}
