@@ -5,11 +5,21 @@
 export interface Solicitante {
   nome: string;
   cargo: string;
-  /** Área do organograma (Diretoria, Vendas, Produtos e operações…). */
+  /** Área do organograma (Diretoria, Vendas, Produtos e operações…) ou "Reuniões". */
   area: string;
 }
 
 const L = (nome: string, cargo: string, area: string): Solicitante => ({ nome, cargo, area });
+
+/** Reuniões de onde também surgem pedidos (aparecem no topo da lista, na ordem em que acontecem no dia a dia). */
+export const REUNIOES: Solicitante[] = [
+  L("Reunião de vendas", "", "Reuniões"),
+  L("Reunião de Marketing", "", "Reuniões"),
+  L("Reunião V4", "", "Reuniões"),
+  L("Reunião MKT <> Grupos", "", "Reuniões"),
+  L("Reunião MKT <> Inter", "", "Reuniões"),
+  L("Reunião MKT <> COM", "", "Reuniões"),
+];
 
 export const SOLICITANTES: Solicitante[] = [
   // Conselho e diretoria
@@ -80,8 +90,8 @@ export const SOLICITANTES: Solicitante[] = [
   L("Cesar Ricart", "Estagiário de Marketing", "T.I. e Marketing"),
 ];
 
-/** Nomes em ordem alfabética, para a lista de escolha. */
-export const SOLICITANTES_ORDENADOS = [...SOLICITANTES].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+/** Lista de escolha: primeiro as reuniões, depois as pessoas em ordem alfabética. */
+export const SOLICITANTES_ORDENADOS = [...REUNIOES, ...[...SOLICITANTES].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))];
 
 /** Área do solicitante no organograma; "Fora do organograma" se o nome não estiver na lista. */
-export const areaDoSolicitante = (nome: string): string => SOLICITANTES.find((s) => s.nome === nome)?.area ?? "Fora do organograma";
+export const areaDoSolicitante = (nome: string): string => [...REUNIOES, ...SOLICITANTES].find((s) => s.nome === nome)?.area ?? "Fora do organograma";

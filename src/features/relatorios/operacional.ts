@@ -73,6 +73,8 @@ export interface DadosOperacional {
     total: number;
     porPessoa: { rotulo: string; valor: number; detalhe: string }[];
     porArea: { rotulo: string; valor: number; detalhe: string }[];
+    /** Uma linha por tarefa com solicitante (o filtro de mês e o gráfico por mês são feitos na tela). */
+    linhas: { mes: string; solicitante: string; area: string; aberta: boolean }[];
     /** Campo ainda não existe no banco (migration 0086 não rodada). */
     semColuna: boolean;
   };
@@ -180,10 +182,12 @@ export async function dadosOperacional(): Promise<DadosOperacional> {
   const porSolic = new Map<string, { total: number; abertas: number }>();
   const porAreaMapa = new Map<string, { total: number; abertas: number }>();
   let comSolicitante = 0;
+  const linhasSolic: { mes: string; solicitante: string; area: string; aberta: boolean }[] = [];
   for (const t of tarefas) {
     const nome = t.solicitante?.trim();
     if (!nome) continue;
     comSolicitante++;
+    linhasSolic.push({ mes: diaBrasilia(t.created_at).slice(0, 7), solicitante: nome, area: areaDoSolicitante(nome), aberta: t.status !== "concluida" });
     const aberta = t.status !== "concluida" ? 1 : 0;
     const a = porSolic.get(nome) ?? { total: 0, abertas: 0 };
     a.total++;
@@ -200,7 +204,7 @@ export async function dadosOperacional(): Promise<DadosOperacional> {
       .sort((x, y) => y[1].total - x[1].total || x[0].localeCompare(y[0], "pt-BR"))
       .slice(0, max)
       .map(([rotulo, v]) => ({ rotulo, valor: v.total, detalhe: `${v.abertas} aberta(s)` }));
-  const solicitantes = { comDado: comSolicitante, total: tarefas.length, porPessoa: ordenar(porSolic, 10), porArea: ordenar(porAreaMapa, 8), semColuna: semColunaSolicitante };
+  const solicitantes = { comDado: comSolicitante, total: tarefas.length, porPessoa: ordenar(porSolic, 10), porArea: ordenar(porAreaMapa, 8), linhas: linhasSolic, semColuna: semColunaSolicitante };
 
   // ---- Atas: por reunião ----
   const ordem = atas.reunioes.filter((r) => r.estado === "realizada").sort((a, b) => a.data.localeCompare(b.data));
