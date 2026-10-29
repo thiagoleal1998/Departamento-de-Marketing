@@ -48,6 +48,7 @@ export default async function DesenvolvimentoPage() {
     listarColaboradores(),
   ]);
   const nomePorId = new Map(pessoas.map((p) => [p.id, p.nome] as const));
+  const fotoPorId = new Map(pessoas.map((p) => [p.id, p.avatar_url] as const));
 
   return (
     <div className="space-y-6">
@@ -105,7 +106,7 @@ export default async function DesenvolvimentoPage() {
                   className="flex items-center justify-between gap-3 rounded-lg border bg-card p-3 transition-colors hover:border-primary/40 hover:bg-accent/30"
                 >
                   <div className="flex items-center gap-3">
-                    <Avatar nome={nomePorId.get(f.colaborador_id)} className="size-8" />
+                    <Avatar nome={nomePorId.get(f.colaborador_id)} src={fotoPorId.get(f.colaborador_id)} className="size-8" />
                     <div>
                       <p className="text-sm font-medium">
                         {nomePorId.get(f.colaborador_id) ?? "—"}
@@ -144,7 +145,7 @@ export default async function DesenvolvimentoPage() {
                   className="flex items-center justify-between gap-3 rounded-lg border bg-card p-3 transition-colors hover:border-primary/40 hover:bg-accent/30"
                 >
                   <div className="flex items-center gap-3">
-                    <Avatar nome={nomePorId.get(c.colaborador_id)} className="size-8" />
+                    <Avatar nome={nomePorId.get(c.colaborador_id)} src={fotoPorId.get(c.colaborador_id)} className="size-8" />
                     <div>
                       <p className="text-sm font-medium">
                         {nomePorId.get(c.colaborador_id) ?? "—"}
@@ -207,7 +208,7 @@ export default async function DesenvolvimentoPage() {
                 href={`/desenvolvimento/colaborador/${p.id}`}
                 className="flex items-center gap-3 rounded-lg border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/30"
               >
-                <Avatar nome={p.nome} />
+                <Avatar nome={p.nome} src={p.avatar_url} />
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{p.nome}</p>
                   <p className="truncate text-xs text-muted-foreground">

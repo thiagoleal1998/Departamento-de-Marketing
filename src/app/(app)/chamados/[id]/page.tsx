@@ -241,7 +241,7 @@ export default async function ChamadoDetalhePage({
                     const autor: Profile | undefined = perfis.get(c.autor_id);
                     return (
                       <li key={c.id} className="flex gap-3">
-                        <Avatar nome={autor?.nome} className="size-8" />
+                        <Avatar nome={autor?.nome} src={autor?.avatar_url} className="size-8" />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium">
