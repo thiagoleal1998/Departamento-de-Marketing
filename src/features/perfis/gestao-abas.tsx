@@ -1,11 +1,12 @@
 import Link from "@/components/shared/link";
-import { BarChart3, Brain, CalendarCheck, Palmtree } from "lucide-react";
+import { BarChart3, Brain, CalendarCheck, Palmtree, Workflow } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /** Abas da área de Gestão: indicadores, perfis comportamentais e férias. */
-export function GestaoAbas({ ativa }: { ativa: "indicadores" | "perfis" | "ferias" | "feriados" }) {
+export function GestaoAbas({ ativa }: { ativa: "indicadores" | "processos" | "perfis" | "ferias" | "feriados" }) {
   const abas = [
     { chave: "indicadores", href: "/gestao", label: "Indicadores", icone: BarChart3 },
+    { chave: "processos", href: "/gestao/processos", label: "Fluxos e processos", icone: Workflow },
     {
       chave: "perfis",
       href: "/gestao/perfis",

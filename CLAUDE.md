@@ -101,6 +101,13 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 - **Falar sobre algo**: menu do clipe → "Tarefa ou tópico da ata"; Ata e item do Calendário têm o botão "Falar no chat" (abre conversa com o responsável, sem redirecionar). Vínculo com estoque/tarefa/projeto continua em "Estoque ou tarefa".
 - **Som de notificação** (`som.ts`): toca **uma vez por mensagem recebida** (nunca ao enviar), deduplicado por id da mensagem; sem intervalo mínimo que descarte mensagens. O aviso do navegador sai em silêncio quando o painel está aberto (o próprio painel toca `public/sons/notificacao.mp3`).
 
+### Fluxos e processos (Gestão > aba "Fluxos e processos", `src/features/processos/`)
+- Hierarquia: Departamento → Macroprocessos (`proc_macroprocessos`, editáveis) → Processos (`proc_processos`, código MKT-<SIGLA>-001) → Fluxos (`proc_fluxos`: JSON `{nodes, edges}`; `dados` = rascunho de trabalho, `publicado` = última versão em vigor) → Etapas (nós do fluxo). Histórico em `proc_historico`. Migration 0085.
+- **Processo ≠ tarefa**: o processo é o modelo permanente; as tarefas do quadro são execuções. Não misturar.
+- Editor visual com React Flow (`@xyflow/react`, `editor-fluxo.tsx`): blocos Início/Atividade/Decisão/Aprovação/Documento/Processo vinculado/Fim, ligações com "Sim/Não", desfazer/refazer, salvamento automático, painel da etapa. Visões do mesmo dado: fluxograma, lista de etapas, por responsável. Fluxo **atual** × **proposto** (melhorias ainda não implantadas).
+- Regras de qualidade (`validacao.ts`): para **publicar**, o processo tem objetivo, entrega final e dono; toda atividade tem responsável; toda aprovação tem critério; toda decisão tem ≥2 caminhos com nome; o fluxo tem Início e Fim. **Rascunhos incompletos podem ser salvos.** Editar um processo publicado o põe "em revisão" e a versão publicada continua a vigente. Revisão periódica a cada 6 meses.
+- Escrita só da liderança (RLS `eh_lideranca()`); leitura para todo usuário logado (quem só lê vê a versão publicada). Fases futuras: biblioteca de procedimentos e anexos (2), permissões Administrador/Gestor/Editor/Leitor e aprovação de mudanças (3), exportação PNG/PDF, modelos e relatórios (4).
+
 ### Atas (`src/features/atas/`)
 - Pendências vêm da última ata, com o andamento real da tarefa ligada (`vivo.ts`). Itens têm "Falar no chat".
 
