@@ -171,7 +171,7 @@ export function ChatJanela({
         },
         (payload) => {
           const m = payload.new as MensagemView;
-          if (m.autor_id !== meuId) tocarSomChat();
+          if (m.autor_id !== meuId) tocarSomChat(m.id);
           setMensagens((atual) =>
             atual.some((x) => x.id === m.id) ? atual : [...atual, m]
           );

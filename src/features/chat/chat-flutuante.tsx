@@ -14,7 +14,7 @@ import { ReacoesDaMensagem, SeletorReacao, useReacoes } from "./reacoes";
 import { IndicadorDigitando, useDigitando } from "./digitando";
 import { StatusLeitura, useLeituras } from "./leituras";
 import { RevisaoCard } from "./revisao-card";
-import { tocarSomChat } from "./som";
+import { tocarSomChat, tocarSomChatPorAviso } from "./som";
 import { AnexoMensagem } from "./anexo-mensagem";
 import { AnexoEnvio, type ComandosAnexo } from "./anexo-envio";
 import { GradeEmojis, ItemMenu, MenuSuspenso } from "./menu-chat";
@@ -131,7 +131,7 @@ export function ChatFlutuante({
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
     const ouvir = (e: MessageEvent) => {
-      if (e.data?.tipo === "som-chat") tocarSomChat();
+      if (e.data?.tipo === "som-chat") tocarSomChatPorAviso();
     };
     navigator.serviceWorker.addEventListener("message", ouvir);
     return () => navigator.serviceWorker.removeEventListener("message", ouvir);
@@ -145,7 +145,7 @@ export function ChatFlutuante({
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_mensagens" }, (p) => {
         const m = p.new as Msg & { conversa_id: string };
         if (m.autor_id === usuarioId) return;
-        tocarSomChat();
+        tocarSomChat(m.id);
         const chave = m.conversa_id === CONVERSA_GERAL ? "geral" : m.autor_id;
         // A conversa aberta no chat rápido já mostra a mensagem e marca como lida.
         if (atual.current.aberto && atual.current.com === chave) return;
@@ -177,7 +177,7 @@ export function ChatFlutuante({
       .channel("chat-flutuante-" + conversaId)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_mensagens", filter: "conversa_id=eq." + conversaId }, (p) => {
         const m = p.new as Msg;
-        if (m.autor_id !== usuarioId) tocarSomChat();
+        if (m.autor_id !== usuarioId) tocarSomChat(m.id);
         setMensagens((l) => (l.some((x) => x.id === m.id) ? l : [...l, m]));
         void marcarConversaLida(conversaId);
       })
