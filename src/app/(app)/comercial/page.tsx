@@ -10,8 +10,10 @@ import { BotaoMarcarVisto } from "@/features/comercial/botao-visto";
 import { ConferenciaPainel } from "@/features/comercial/conferencia-painel";
 import { conferir, type LpCompleta, type LpSistema } from "@/features/comercial/conferencia";
 import { achaComplexos, mesclarDuplicados, nomeCorreto } from "@/features/comercial/ajustes";
+import { ROTULO_SITUACAO } from "@/features/comercial/conferencia";
 import { MarcarVisto } from "@/features/notificacoes/marcar-visto";
 import { PeriodosSazonais } from "@/features/comercial/sazonal-painel";
+import { BuscaGeral, type ItemBusca } from "@/features/comercial/busca-geral";
 import { sincronizarPeriodo } from "@/features/comercial/sazonal";
 import {
   PERIODOS_SAZONAIS,
@@ -70,9 +72,9 @@ interface Linha {
 export default async function ComercialPage({
   searchParams,
 }: {
-  searchParams: Promise<{ aba?: string; alterados?: string; vistas?: string }>;
+  searchParams: Promise<{ aba?: string; alterados?: string; vistas?: string; abrir?: string }>;
 }) {
-  const { aba: abaRaw, alterados, vistas: verVistas } = await searchParams;
+  const { aba: abaRaw, alterados, vistas: verVistas, abrir } = await searchParams;
   const usuario = await exigirUsuario();
   const supabase = await criarClienteServidor();
 
@@ -245,6 +247,21 @@ export default async function ComercialPage({
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
   const divergentes = todosReais.filter((p) => p.conferencia.divergencia).length;
 
+  // Busca geral: todos os produtos de todas as abas (inclusive os só do cadastro de LPs) e os hotéis dos períodos sazonais.
+  const norma = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const itensBusca: ItemBusca[] = [
+    ...todos.map((p) => ({
+      chave: p.chave,
+      nome: p.nome,
+      aba: p.secao,
+      etiquetas: [ROTULO_SITUACAO[p.conferencia.situacao], ...(p.soLp ? ["só no cadastro de LPs"] : []), ...(p.sazonais?.length ? p.sazonais.map((z) => z.periodoNome) : [])],
+      texto: norma((p.partes ? p.partes.flatMap((x) => [x.nome, ...x.campos.flatMap((c) => c.linhas.map((l) => l.t))]) : p.campos.flatMap((c) => c.linhas.map((l) => l.t))).join(" ")).slice(0, 1500),
+    })),
+    ...periodosView.flatMap((per) =>
+      per.hoteis.map((h) => ({ chave: "", nome: h.hotel, aba: SAZONAL, etiquetas: [per.nome, h.status.split("\n")[0].slice(0, 40)], texto: norma([h.condicao, h.observacao, h.status].join(" ")).slice(0, 600) }))
+    ),
+  ];
+
   // Alterações recentes por aba (para o aviso das abas).
   const alteradosPorSecao = new Map<string, number>();
   for (const l of linhas) if (recente.has(l.chave)) alteradosPorSecao.set(l.secao, (alteradosPorSecao.get(l.secao) ?? 0) + 1);
@@ -342,6 +359,7 @@ export default async function ComercialPage({
         />
       ) : (
         <>
+          <BuscaGeral itens={itensBusca} />
           <nav aria-label="Abas" className="flex flex-wrap gap-1 border-b">
             {abas.map((s) => (
               <Link
@@ -404,7 +422,8 @@ export default async function ComercialPage({
                 </p>
               ) : null}
               <ListaProdutos
-                key={`${ativa}-${alterados ?? ""}`}
+                key={`${ativa}-${alterados ?? ""}-${abrir ?? ""}`}
+                abrirInicial={abrir ?? null}
                 produtos={produtos}
                 somenteAlterados={alterados === "1"}
                 mostrarAba={ativa === ATIVOS}

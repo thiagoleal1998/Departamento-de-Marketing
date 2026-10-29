@@ -378,16 +378,19 @@ export function ListaProdutos({
   produtos,
   somenteAlterados: inicial = false,
   mostrarAba = false,
+  abrirInicial = null,
 }: {
   produtos: ProdutoView[];
   somenteAlterados?: boolean;
   /** Exibe de qual aba da planilha cada produto veio. */
   mostrarAba?: boolean;
+  /** Produto a abrir já ao carregar (vindo da busca geral). */
+  abrirInicial?: string | null;
 }) {
   const [situacao, setSituacao] = useState<"todas" | SituacaoLp | "divergentes">("todas");
   const [busca, setBusca] = useState("");
   const [soAlterados, setSoAlterados] = useState(inicial);
-  const [aberto, setAberto] = useState<string | null>(null);
+  const [aberto, setAberto] = useState<string | null>(abrirInicial);
   const qtdAlterados = produtos.filter((p) => p.alteracao).length;
 
   const visiveis = useMemo(() => {
