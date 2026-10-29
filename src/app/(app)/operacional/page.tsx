@@ -87,6 +87,7 @@ export default async function OperacionalPage({
       tag: t.tag ?? null,
       link: t.link ?? null,
       link_site: t.link_site ?? null,
+      solicitante: t.solicitante ?? null,
       codigo: codigoTarefa(t.numero, t.ano),
       criada_em: t.created_at,
       lembretes: normalizarLembretes(t.lembretes),

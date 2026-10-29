@@ -116,6 +116,8 @@ export interface Tarefa {
   colaborador_id?: string | null;
   /** URL do nosso site (o `link` é a URL de referência). */
   link_site?: string | null;
+  /** Quem pediu a tarefa, escolhido na lista do organograma (migration 0086). */
+  solicitante?: string | null;
   /** Código TAFMKT - numero/ano (migration 0072). */
   numero?: number | null;
   ano?: number | null;

@@ -108,6 +108,7 @@ export interface DadosTarefa {
   colaborador_id?: string | null;
   link_site?: string;
   lembretes?: number[];
+  solicitante?: string;
 }
 
 /** Limpa o caminho: sem letra de unidade no começo, sem barras sobrando. */
@@ -119,6 +120,7 @@ function limparPasta(raiz: string | null | undefined, caminho: string | undefine
 const AVISO_PASTA = "O card foi salvo, mas o caminho da pasta não: falta rodar a migration 0069 no Supabase.";
 const AVISO_LEMBRETES = "O card foi salvo, mas os lembretes não: falta rodar a migration 0073 no Supabase.";
 const AVISO_LINK_SITE = "O card foi salvo, mas o link do site não: falta rodar a migration 0071 no Supabase.";
+const AVISO_SOLICITANTE = "O card foi salvo, mas o solicitante não: falta rodar a migration 0086 no Supabase.";
 const AVISO_COLABORADOR = "O card foi salvo, mas o colaborador não: falta rodar a migration 0070 no Supabase.";
 
 /** Salva as propriedades e o conteúdo de um card (como a página do Notion). */
@@ -183,6 +185,11 @@ export async function salvarTarefa(
   if (d.link_site !== undefined) {
     const { error: errSite } = await gravador.from("tarefas").update({ link_site: linkSite || null }).eq("id", tarefaId);
     if (errSite) avisoPasta = avisoPasta ?? AVISO_LINK_SITE;
+  }
+  // Solicitante: à parte (migration 0086).
+  if (d.solicitante !== undefined) {
+    const { error: errSol } = await gravador.from("tarefas").update({ solicitante: d.solicitante.trim().slice(0, 120) || null }).eq("id", tarefaId);
+    if (errSol) avisoPasta = avisoPasta ?? AVISO_SOLICITANTE;
   }
   // Colaborador: também à parte (migration 0070). Quem entra agora é avisado.
   if (d.colaborador_id !== undefined) {
@@ -283,6 +290,7 @@ export interface NovoCard {
   colaborador_id?: string | null;
   link_site?: string;
   lembretes?: number[];
+  solicitante?: string;
 }
 
 /**
@@ -319,7 +327,7 @@ export async function criarTarefaCard(d: NovoCard): Promise<{ ok?: boolean; erro
       descricao: d.descricao.trim() || null,
       status: d.status,
       responsavel_id: responsavel,
-      prazo: d.prazo || null,
+      prazo: prazoParaGravar(d.prazo),
       prioridade: d.prioridade,
       tag: d.tag.trim() || null,
       link: link || null,
@@ -333,6 +341,8 @@ export async function criarTarefaCard(d: NovoCard): Promise<{ ok?: boolean; erro
     await admin.from("tarefas").update(limparPasta(d.pasta_raiz, d.pasta_caminho)).eq("id", id);
   }
 
+  // Sem a migration 0086 o card é criado do mesmo jeito, só sem o solicitante.
+  if (d.solicitante?.trim()) await admin.from("tarefas").update({ solicitante: d.solicitante.trim().slice(0, 120) }).eq("id", id);
   // Sem a migration 0071 o card é criado do mesmo jeito, só sem o link do site.
   if (linkSite) await admin.from("tarefas").update({ link_site: linkSite }).eq("id", id);
   // Sem a migration 0073 o card é criado do mesmo jeito, só sem os lembretes.

@@ -23,6 +23,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { diaBrasilia } from "@/lib/utils";
 import { InputData } from "@/components/ui/input-data";
+import { SelectSolicitante } from "./select-solicitante";
 
 const ORDEM_STATUS: TarefaStatus[] = [
   "a_fazer",
@@ -71,6 +72,7 @@ export function TarefaDetalhe({
   const [tag, setTag] = useState(tarefa.tag ?? "");
   const [link, setLink] = useState(tarefa.link ?? "");
   const [linkSite, setLinkSite] = useState(tarefa.link_site ?? "");
+  const [solicitante, setSolicitante] = useState(tarefa.solicitante ?? "");
   const [lembretes, setLembretes] = useState<number[]>(tarefa.lembretes);
   const [conteudo, setConteudo] = useState(tarefa.conteudo ?? "");
   const [pasta, setPasta] = useState<{ raiz: RaizPasta; caminho: string }>({
@@ -129,6 +131,7 @@ export function TarefaDetalhe({
         colaborador_id: colaboradorId || null,
         link_site: linkSite,
         lembretes,
+        solicitante,
       });
       if (res.erro) {
         setErro(res.erro);
@@ -149,6 +152,7 @@ export function TarefaDetalhe({
         tag: tag.trim() || null,
         link: link.trim() || null,
         link_site: linkSite.trim() || null,
+        solicitante: solicitante.trim() || null,
         lembretes,
         conteudo: conteudo || null,
         colaborador_id: colaboradorId || null,
@@ -254,6 +258,10 @@ export function TarefaDetalhe({
                     </option>
                   ))}
               </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="td-solic">Solicitante</Label>
+              <SelectSolicitante id="td-solic" value={solicitante} onChange={setSolicitante} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="td-prazo">Prazo</Label>

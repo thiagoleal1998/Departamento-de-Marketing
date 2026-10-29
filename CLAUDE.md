@@ -109,6 +109,10 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 - Regras de qualidade (`validacao.ts`): para **publicar**, o processo tem objetivo, entrega final e dono; toda atividade tem responsável; toda aprovação tem critério; toda decisão tem ≥2 caminhos com nome; o fluxo tem Início e Fim. **Rascunhos incompletos podem ser salvos.** Editar um processo publicado o põe "em revisão" e a versão publicada continua a vigente. Revisão periódica a cada 6 meses.
 - Escrita só da liderança (RLS `eh_lideranca()`); leitura para todo usuário logado (quem só lê vê a versão publicada). Fases futuras: biblioteca de procedimentos e anexos (2), permissões Administrador/Gestor/Editor/Leitor e aprovação de mudanças (3), exportação PNG/PDF, modelos e relatórios (4).
 
+### Tarefas (Operacional)
+- **Solicitante**: campo de lista (nomes do organograma da Litoral Verde, em `src/features/operacional/solicitantes.ts`) no card e no novo card. Para atualizar o organograma (entradas, saídas, cargos), edite essa lista. Coluna `tarefas.solicitante` (migration 0086).
+- Campos de data usam sempre `InputData` / `SeletorData` (calendário do painel), nunca `<input type="date">`.
+
 ### Atas (`src/features/atas/`)
 - Pendências vêm da última ata, com o andamento real da tarefa ligada (`vivo.ts`). Itens têm "Falar no chat".
 

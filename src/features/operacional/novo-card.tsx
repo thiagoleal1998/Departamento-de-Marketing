@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { InputData } from "@/components/ui/input-data";
+import { SelectSolicitante } from "./select-solicitante";
 
 /** Janela para criar um card no quadro de tarefas. */
 export function NovoCardDialogo({
@@ -44,6 +45,7 @@ export function NovoCardDialogo({
   const [tag, setTag] = useState("");
   const [link, setLink] = useState("");
   const [linkSite, setLinkSite] = useState("");
+  const [solicitante, setSolicitante] = useState("");
   const [lembretes, setLembretes] = useState<number[]>([]);
   const [pasta, setPasta] = useState<{ raiz: RaizPasta; caminho: string }>({ raiz: "corporativo", caminho: "" });
   const [erro, setErro] = useState<string | null>(null);
@@ -75,6 +77,7 @@ export function NovoCardDialogo({
         link,
         colaborador_id: colaborador || null,
         link_site: linkSite,
+        solicitante,
         lembretes,
         pasta_raiz: pasta.raiz,
         pasta_caminho: pasta.caminho,
@@ -139,6 +142,10 @@ export function NovoCardDialogo({
                   </option>
                 ))}
             </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="nc-solic">Solicitante</Label>
+            <SelectSolicitante id="nc-solic" value={solicitante} onChange={setSolicitante} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="nc-prazo">Prazo</Label>

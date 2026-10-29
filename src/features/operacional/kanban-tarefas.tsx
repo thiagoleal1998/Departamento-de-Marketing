@@ -34,6 +34,8 @@ export interface TarefaView {
   tag: string | null;
   link: string | null;
   link_site: string | null;
+  /** Quem pediu a tarefa (lista do organograma). */
+  solicitante: string | null;
   /** TAFMKT - 001/2026 e a data de criação do card. */
   codigo: string | null;
   criada_em: string | null;
