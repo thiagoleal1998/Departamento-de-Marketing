@@ -3,6 +3,7 @@ import { NotebookPen, AlertTriangle, CalendarClock } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth";
 import { mapaDePerfis } from "@/features/chamados/data";
 import { ehLideranca } from "@/lib/permissions";
+import { obterDiretorio } from "@/features/equipe/diretorio";
 import { estadoVivoPorSerie } from "@/features/atas/vivo";
 import { criarReuniao } from "@/features/atas/actions";
 import { ItemCard, type ItemCardDados } from "@/features/atas/item-card";
@@ -77,12 +78,15 @@ function paraCard(
   };
 }
 
-/** Link para o chat já falando sobre o item: com o responsável (se for alguém do painel) e a tarefa ligada. */
-function linkChat(it: ItemAta, tarefaId: string | null | undefined, meuId: string) {
+/** Dados para falar no chat sobre o item: o assunto (e a tarefa ligada) vai na conversa; quem escolhe com quem é a pessoa. */
+function chatDoItem(it: ItemAta, tarefaId: string | null | undefined, meuId: string, pessoas: { id: string; nome: string }[]) {
   const q = new URLSearchParams({ ata: "1", titulo: it.titulo.slice(0, 200) });
   if (tarefaId) q.set("tarefa", tarefaId);
-  if (it.responsavel_id && it.responsavel_id !== meuId) q.set("com", it.responsavel_id);
-  return "/chat?" + q.toString();
+  return {
+    query: q.toString(),
+    sugeridoId: it.responsavel_id && it.responsavel_id !== meuId ? it.responsavel_id : null,
+    pessoas: pessoas.filter((p) => p.id !== meuId),
+  };
 }
 
 export default async function AtasPage({
@@ -97,6 +101,7 @@ export default async function AtasPage({
   const idUltima = reunioes[reunioes.length - 1]?.id;
   const vivo = await estadoVivoPorSerie(itens.filter((it) => it.reuniao_id === idUltima && it.secao === "ata"));
   const lideranca = ehLideranca(usuario.role);
+  const pessoasChat = Array.from((await obterDiretorio()).values()).map((p) => ({ id: p.id, nome: p.nome }));
   const pessoasOpcoes = lideranca ? await listarPessoasOpcoes() : [];
   const hojeBR = new Date().toLocaleDateString("en-CA", { timeZone: FUSO });
   const aba =
@@ -269,7 +274,7 @@ export default async function AtasPage({
                         .map((it) => (
                           <ItemCard
                             key={it.id}
-                            chatHref={linkChat(it, vivo.get(it.serie)?.tarefa_id, usuario.id)}
+                            chat={chatDoItem(it, vivo.get(it.serie)?.tarefa_id, usuario.id, pessoasChat)}
                             it={{
                               ...paraCard(it, agora, {
                                 situacao: true,
@@ -358,7 +363,7 @@ export default async function AtasPage({
                       {lista.map((it) => (
                         <ItemCard
                           key={it.id}
-                          chatHref={linkChat(it, null, usuario.id)}
+                          chat={chatDoItem(it, null, usuario.id, pessoasChat)}
                           it={paraCard(it, agora, {
                             situacao: false,
                             responsavel: nomeResp(it),

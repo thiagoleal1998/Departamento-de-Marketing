@@ -28,6 +28,15 @@ export interface ItemCardDados {
   responsavelDetalhe?: string | null;
 }
 
+/** Para falar no chat sobre o item: parâmetros da conversa e as pessoas que dá para escolher. */
+export interface ChatDoItem {
+  /** aaa=...&bbb=... (sem o destinatário) */
+  query: string;
+  /** Responsável do item (aparece primeiro, destacado). */
+  sugeridoId: string | null;
+  pessoas: { id: string; nome: string }[];
+}
+
 /** Ações do item nas pendências: abrir a tarefa no quadro, abrir na ata e (liderança) editar ali mesmo. */
 export interface AcoesItem {
   tarefaHref: string | null;
@@ -45,7 +54,44 @@ const TOM: Record<string, string> = {
 };
 
 /** Item da ata: resumo fechado; ao clicar, abre o card completo no próprio bloco. */
-export function ItemCard({ it, acoes, chatHref }: { it: ItemCardDados; acoes?: AcoesItem; chatHref?: string | null }) {
+/** "Falar no chat": a pessoa escolhe com quem (ou a sala geral) antes de abrir a conversa. */
+function FalarNoChat({ chat }: { chat: ChatDoItem }) {
+  const [aberto, setAberto] = useState(false);
+  const ordenadas = [...chat.pessoas].sort((a, b) => (a.id === chat.sugeridoId ? -1 : b.id === chat.sugeridoId ? 1 : a.nome.localeCompare(b.nome, "pt-BR")));
+  return (
+    <div className="w-full space-y-2">
+      <Button type="button" size="sm" variant={aberto ? "secondary" : "outline"} className="h-8" onClick={() => setAberto((v) => !v)} aria-expanded={aberto}>
+        <MessageCircle className="size-3.5" /> Falar no chat
+      </Button>
+      {aberto ? (
+        <div className="space-y-1.5 rounded-lg border bg-background p-2">
+          <p className="px-1 text-[11px] font-medium text-muted-foreground">Com quem você quer falar?</p>
+          <div className="flex flex-wrap gap-1.5">
+            {ordenadas.map((p) => (
+              <Link
+                key={p.id}
+                href={`/chat?${chat.query}&com=${p.id}`}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs font-medium transition-colors hover:bg-accent",
+                  p.id === chat.sugeridoId && "border-primary bg-primary/10"
+                )}
+                title={p.id === chat.sugeridoId ? "Responsável pelo item" : undefined}
+              >
+                {p.nome.split(" ")[0]}
+                {p.id === chat.sugeridoId ? " · responsável" : ""}
+              </Link>
+            ))}
+            <Link href={`/chat?${chat.query}`} className="rounded-full border border-dashed px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+              Sala geral
+            </Link>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export function ItemCard({ it, acoes, chat }: { it: ItemCardDados; acoes?: AcoesItem; chat?: ChatDoItem | null }) {
   const router = useRouter();
   const [aberto, setAberto] = useState(false);
   const [editando, setEditando] = useState(false);
@@ -134,7 +180,7 @@ export function ItemCard({ it, acoes, chatHref }: { it: ItemCardDados; acoes?: A
             </a>
           ) : null}
 
-          {acoes || chatHref ? (
+          {acoes || chat ? (
             <div className="flex flex-wrap gap-2 border-t pt-3">
               {acoes?.editor ? (
                 <Button type="button" size="sm" variant={editando ? "secondary" : "default"} className="h-8" onClick={() => setEditando((v) => !v)}>
@@ -155,13 +201,7 @@ export function ItemCard({ it, acoes, chatHref }: { it: ItemCardDados; acoes?: A
                   </Link>
                 </Button>
               ) : null}
-              {chatHref ? (
-                <Button asChild size="sm" variant="outline" className="h-8">
-                  <Link href={chatHref}>
-                    <MessageCircle className="size-3.5" /> Falar no chat
-                  </Link>
-                </Button>
-              ) : null}
+              {chat ? <FalarNoChat chat={chat} /> : null}
             </div>
           ) : null}
           {editando && acoes?.editor ? (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Send, Loader2, Link2, ClipboardPlus, ScanSearch, Paperclip, Smile, Mic, ImageIcon, FilePlus2, ChevronDown, X, ClipboardList, NotebookPen, Search } from "lucide-react";
+import { Send, Loader2, Link2, ClipboardPlus, ScanSearch, Paperclip, Smile, Mic, ImageIcon, FilePlus2, ChevronDown, X, ClipboardList, NotebookPen, Search, ChevronUp } from "lucide-react";
 import { criarClienteBrowser } from "@/lib/supabase/client";
 import { enviarMensagem, marcarConversaLida } from "./actions";
 import {
@@ -13,6 +13,8 @@ import {
 } from "./vinculos-actions";
 import { VinculoCard } from "./vinculo-card";
 import { alvosParaChat, enviarMensagemSobre } from "./sobre-actions";
+import { buscarNoChat, carregarMensagens, type ResultadoBusca } from "./busca-actions";
+import { SeletorData } from "@/components/ui/seletor-data";
 import type { AlvoChat, SobreEscolhido } from "./sobre-tipos";
 import { SolicitacaoCard } from "./solicitacao-card";
 import { SolicitacaoForm } from "./solicitacao-form";
@@ -192,10 +194,75 @@ export function ChatJanela({
     void marcarConversaLida(conversaId);
   }, [conversaId]);
 
-  // Rola para a última mensagem.
+  // Rola para a última mensagem: ao abrir a conversa já aparece no fim (sem animação); depois, só as novas rolam suave.
+  const primeiraRolagem = useRef(true);
+  const pularRolagem = useRef(false);
   useEffect(() => {
-    fimRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    if (pularRolagem.current) {
+      pularRolagem.current = false;
+      return;
+    }
+    const primeira = primeiraRolagem.current;
+    fimRef.current?.scrollIntoView({ behavior: primeira ? "auto" : "smooth", block: "end" });
+    if (primeira) {
+      primeiraRolagem.current = false;
+      // Imagens e cartões carregam depois e aumentam a altura: confirma que continua no fim.
+      for (const ms of [250, 900]) setTimeout(() => fimRef.current?.scrollIntoView({ behavior: "auto", block: "end" }), ms);
+    }
   }, [mensagens]);
+
+  // Mensagens anteriores e busca na conversa (por trecho do texto e/ou por dia).
+  const listaRef = useRef<HTMLDivElement>(null);
+  const [temMais, setTemMais] = useState(mensagensIniciais.length >= 100);
+  const [carregandoMais, setCarregandoMais] = useState(false);
+  const [buscando, setBuscando] = useState(false);
+  const [termoBusca, setTermoBusca] = useState("");
+  const [diaBusca, setDiaBusca] = useState("");
+  const [achadas, setAchadas] = useState<ResultadoBusca[] | null>(null);
+  const [procurando, setProcurando] = useState(false);
+
+  async function verAnteriores() {
+    const primeira = mensagens[0];
+    if (!primeira || carregandoMais) return;
+    setCarregandoMais(true);
+    const r = await carregarMensagens(conversaId, { antes: primeira.created_at });
+    const el = listaRef.current;
+    const alturaAntes = el?.scrollHeight ?? 0;
+    const topoAntes = el?.scrollTop ?? 0;
+    pularRolagem.current = true;
+    setMensagens((atual) => {
+      const ids = new Set(atual.map((m) => m.id));
+      return [...(r.mensagens as unknown as MensagemView[]).filter((m) => !ids.has(m.id)), ...atual];
+    });
+    setTemMais(r.temMais);
+    requestAnimationFrame(() => {
+      if (el) el.scrollTop = el.scrollHeight - alturaAntes + topoAntes;
+    });
+    setCarregandoMais(false);
+  }
+
+  async function procurar(termo = termoBusca, dia = diaBusca) {
+    if (!termo.trim() && !dia) {
+      setAchadas(null);
+      return;
+    }
+    setProcurando(true);
+    const r = await buscarNoChat(conversaId, termo, dia);
+    setAchadas(r.resultados);
+    setProcurando(false);
+  }
+
+  async function abrirResultado(r: ResultadoBusca) {
+    if (!mensagens.some((m) => m.id === r.id)) {
+      const c = await carregarMensagens(conversaId, { desde: r.created_at });
+      pularRolagem.current = true;
+      setMensagens(c.mensagens as unknown as MensagemView[]);
+      setTemMais(true);
+      setTimeout(() => irPara(r.id), 150);
+    } else {
+      irPara(r.id);
+    }
+  }
 
   const nomeItem = (id: string) => itens.find((i) => i.id === id)?.nome ?? "item";
   const sugestaoTitulo =
@@ -324,7 +391,90 @@ export function ChatJanela({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex-1 space-y-2 overflow-y-auto p-4">
+      <div className="flex shrink-0 items-center justify-end gap-2 border-b px-3 py-1">
+        <button
+          type="button"
+          onClick={() => setBuscando((v) => !v)}
+          className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors hover:bg-muted", buscando ? "bg-muted text-foreground" : "text-muted-foreground")}
+        >
+          <Search className="size-3.5" /> Buscar na conversa
+        </button>
+      </div>
+      {buscando ? (
+        <div className="shrink-0 space-y-2 border-b bg-muted/30 p-3">
+          <form
+            className="flex flex-wrap items-center gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void procurar();
+            }}
+          >
+            <div className="relative min-w-48 flex-1">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input value={termoBusca} onChange={(e) => setTermoBusca(e.target.value)} placeholder="Palavra ou trecho da mensagem…" aria-label="Buscar mensagens" className="h-9 pl-8" />
+            </div>
+            <SeletorData
+              value={diaBusca}
+              onChange={(v) => {
+                setDiaBusca(v);
+                void procurar(termoBusca, v);
+              }}
+              placeholder="Filtrar por dia"
+              className="w-44"
+            />
+            <Button type="submit" size="sm" className="h-9" disabled={procurando}>
+              {procurando ? <Loader2 className="size-4 animate-spin" /> : <Search className="size-4" />} Buscar
+            </Button>
+            <button
+              type="button"
+              onClick={() => {
+                setBuscando(false);
+                setAchadas(null);
+                setTermoBusca("");
+                setDiaBusca("");
+              }}
+              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <X className="size-3.5" /> Fechar
+            </button>
+          </form>
+          {achadas !== null ? (
+            achadas.length === 0 ? (
+              <p className="px-1 text-xs text-muted-foreground">Nenhuma mensagem encontrada.</p>
+            ) : (
+              <ul className="max-h-56 space-y-0.5 overflow-y-auto rounded-lg border bg-background p-1">
+                <li className="px-2 py-1 text-[11px] text-muted-foreground">
+                  {achadas.length}
+                  {achadas.length >= 60 ? "+" : ""} resultado(s) · clique para ir até a mensagem
+                </li>
+                {achadas.map((r) => (
+                  <li key={r.id}>
+                    <button type="button" onClick={() => void abrirResultado(r)} className="flex w-full flex-col rounded-md px-2 py-1.5 text-left transition-colors hover:bg-accent">
+                      <span className="text-[11px] text-muted-foreground">
+                        {new Date(r.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })} · {r.autor_id === meuId ? "Você" : nomes[r.autor_id] ?? "—"}
+                      </span>
+                      <span className="line-clamp-2 break-words text-sm">{r.texto}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )
+          ) : null}
+        </div>
+      ) : null}
+      <div ref={listaRef} className="flex-1 space-y-2 overflow-y-auto p-4">
+        {temMais && mensagens.length > 0 ? (
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={() => void verAnteriores()}
+              disabled={carregandoMais}
+              className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-60"
+            >
+              {carregandoMais ? <Loader2 className="size-3.5 animate-spin" /> : <ChevronUp className="size-3.5" />} Ver mensagens anteriores
+            </button>
+          </div>
+        ) : null}
         {mensagens.length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">
             Ainda não há mensagens. Diga olá! 👋

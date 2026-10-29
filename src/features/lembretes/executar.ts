@@ -91,7 +91,7 @@ export async function executarLembretes(agora = new Date()): Promise<ResultadoLe
     const dias = emDias(i.data, hoje);
     if (!normalizarLembretes(i.lembretes).includes(dias)) continue;
     const destinos = idsDe(i.responsaveis ?? []);
-    const ok = await avisar("calendario", i.id, dias, destinos.length > 0 ? destinos : lideranca, `Lembrete: “${i.nome}” está programado para ${quandoLembrete(dias)}.`, "/operacional/calendario");
+    const ok = await avisar("calendario", i.id, dias, destinos.length > 0 ? destinos : lideranca, `Lembrete: “${i.nome}” está programado ${dias <= 1 ? "para " : ""}${quandoLembrete(dias)}.`, "/operacional/calendario");
     if (ok) resultado.calendario++;
   }
 
