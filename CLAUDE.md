@@ -70,6 +70,7 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 
 > No Windows, se o `.next` corromper (erro `routes-manifest.json`), pare o node, apague `.next` e rode `npm run dev` de novo.
 > Não há Python no computador: scripts de apoio em Node (`.mjs`/`tsx`) no scratchpad.
+> Ao editar código por script Node, **nunca** coloque expressões regulares dentro de template literal sem `String.raw` (as barras `d`, `s` somem em silêncio e o código compila do mesmo jeito). Prefira a ferramenta de edição de arquivo e, depois, teste a função com `npx tsx`.
 
 ## Banco de dados (Supabase)
 

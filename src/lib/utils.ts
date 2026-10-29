@@ -8,7 +8,7 @@ export function cn(...inputs: ClassValue[]) {
 /** Fuso de todo o painel: datas e horas sempre no horário de Brasília (servidor e navegador mostram o mesmo dia). */
 export const FUSO_BR = "America/Sao_Paulo";
 
-const SO_DATA = /^(d{4})-(d{2})-(d{2})$/;
+const SO_DATA = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 /**
  * Dia (aaaa-mm-dd) de um prazo/data no horário de Brasília. Serve para preencher campo de data e comparar dias.
