@@ -117,3 +117,27 @@ export async function abrirConversaDireta(formData: FormData) {
   if (error || !data) redirect("/chat");
   redirect(`/chat?c=${data as string}`);
 }
+
+/** Não lidas de agora: total e por conversa (alimenta os números do menu, do topo e da lista do chat ao vivo). */
+export async function contagensChat(): Promise<{ total: number; porConversa: Record<string, number> }> {
+  const supabase = await criarClienteServidor();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { total: 0, porConversa: {} };
+  try {
+    const { data } = await supabase.rpc("chat_nao_lidas");
+    const porConversa: Record<string, number> = {};
+    let total = 0;
+    for (const l of (data as { conversa_id: string; qtd: number }[] | null) ?? []) {
+      const q = Number(l.qtd);
+      if (q > 0) {
+        porConversa[l.conversa_id] = q;
+        total += q;
+      }
+    }
+    return { total, porConversa };
+  } catch {
+    return { total: 0, porConversa: {} };
+  }
+}

@@ -1,6 +1,7 @@
 import Link from "@/components/shared/link";
 import { NomeMarca } from "@/components/shared/nome-marca";
-import { LogOut, MessagesSquare } from "lucide-react";
+import { LogOut } from "lucide-react";
+import { BotaoChatTopo } from "@/features/chat/botao-chat-topo";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,19 +47,7 @@ export async function Topbar({
         <AtivarPush />
         <AtualizarPagina />
         <ThemeToggle />
-        <Link
-          href="/chat"
-          title="Chat do time"
-          aria-label={chatNaoLidas > 0 ? "Chat do time, " + chatNaoLidas + " mensagens não lidas" : "Chat do time"}
-          className="relative inline-flex size-9 items-center justify-center rounded-md text-foreground transition-colors hover:bg-accent"
-        >
-          <MessagesSquare className="size-4" />
-          {chatNaoLidas > 0 ? (
-            <span className="absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold leading-4 text-destructive-foreground">
-              {chatNaoLidas > 99 ? "99+" : chatNaoLidas}
-            </span>
-          ) : null}
-        </Link>
+        <BotaoChatTopo naoLidas={chatNaoLidas} />
         <NotificacoesBell itens={itens} naoLidas={naoLidas} />
         <Badge variant="secondary" className="hidden sm:inline-flex">
           {PAPEL_LABEL[usuario.role]}

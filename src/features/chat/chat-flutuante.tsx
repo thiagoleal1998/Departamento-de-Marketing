@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { ExternalLink, ImageIcon, Loader2, MessageCircle, Mic, Paperclip, Send, Smile, X } from "lucide-react";
 import { criarClienteBrowser } from "@/lib/supabase/client";
 import { enviarMensagem, marcarConversaLida } from "./actions";
+import { sincronizarChatContagem } from "./contagem-chat";
 import { abrirConversaFlutuante, naoLidasPorConversa } from "./flutuante-actions";
 import { CONVERSA_GERAL } from "./constantes";
 import { BarraResposta, BotaoResponder, Citacao } from "./citacao";
@@ -113,7 +114,7 @@ export function ChatFlutuante({
     }
     setConversaId(r.conversaId);
     setMensagens(r.mensagens ?? []);
-    void marcarConversaLida(r.conversaId);
+    void marcarConversaLida(r.conversaId).then(sincronizarChatContagem);
     setPorConversa((p) => (p ? { ...p, [alvo]: 0 } : p));
     setAviso((a) => (a?.chave === alvo ? null : a));
   }, []);
@@ -179,7 +180,7 @@ export function ChatFlutuante({
         const m = p.new as Msg;
         if (m.autor_id !== usuarioId) tocarSomChat(m.id);
         setMensagens((l) => (l.some((x) => x.id === m.id) ? l : [...l, m]));
-        void marcarConversaLida(conversaId);
+        void marcarConversaLida(conversaId).then(sincronizarChatContagem);
       })
       .subscribe();
     return () => {

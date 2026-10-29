@@ -1,6 +1,6 @@
-import Link from "@/components/shared/link";
 import { Users } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
+import { ListaConversas } from "@/features/chat/lista-conversas";
 import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { exigirUsuario } from "@/lib/auth";
 import { ehLideranca } from "@/lib/permissions";
@@ -8,14 +8,12 @@ import { ehResponsavel } from "@/lib/responsaveis";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { obterDiretorio } from "@/features/equipe/diretorio";
 import { nomesDeExibicao } from "@/features/equipe/exibicao";
-import { abrirConversaDireta } from "@/features/chat/actions";
 import { CONVERSA_GERAL } from "@/features/chat/constantes";
 import { ChatJanela, type MensagemView, type ProjetoOpcao } from "@/features/chat/chat-janela";
 import type { ItemEstoqueChat } from "@/features/chat/vinculo-tipos";
 import type { SobreEscolhido } from "@/features/chat/sobre-tipos";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -153,59 +151,11 @@ export default async function ChatPage({
 
       <Card className="grid h-[calc(100vh-15rem)] min-h-[420px] grid-cols-1 overflow-hidden md:grid-cols-[260px_1fr]">
         {/* Lista de conversas */}
-        <aside className="overflow-y-auto border-b md:border-b-0 md:border-r">
-          <Link
-            href="/chat"
-            className={cn(
-              "flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors hover:bg-accent/50",
-              ehGeral && "bg-accent"
-            )}
-          >
-            <Users className="size-4" />
-            <span className="flex-1">Sala geral</span>
-            {naoLidas.get(CONVERSA_GERAL) ? (
-              <Selo valor={naoLidas.get(CONVERSA_GERAL) ?? 0} />
-            ) : null}
-          </Link>
-
-          <p className="px-4 pb-1 pt-3 text-xs font-semibold uppercase text-muted-foreground">
-            Pessoas
-          </p>
-          {outras.map((p) => {
-            const conv = outraPessoaConversa.get(p.id);
-            const ativa = conv && conv === conversaId;
-            const n = conv ? naoLidas.get(conv) ?? 0 : 0;
-            const conteudo = (
-              <>
-                <Avatar nome={p.nome} src={p.foto} className="size-7 text-[10px]" />
-                <span className="flex-1 truncate">{p.nome}</span>
-                {n > 0 ? <Selo valor={n} /> : null}
-              </>
-            );
-            return conv ? (
-              <Link
-                key={p.id}
-                href={`/chat?c=${conv}`}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2.5 text-sm transition-colors hover:bg-accent/50",
-                  ativa && "bg-accent font-medium"
-                )}
-              >
-                {conteudo}
-              </Link>
-            ) : (
-              <form key={p.id} action={abrirConversaDireta}>
-                <input type="hidden" name="usuario_id" value={p.id} />
-                <button
-                  type="submit"
-                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
-                >
-                  {conteudo}
-                </button>
-              </form>
-            );
-          })}
-        </aside>
+        <ListaConversas
+          pessoas={outras.map((p) => ({ id: p.id, nome: p.nome, foto: p.foto, conversa: outraPessoaConversa.get(p.id) ?? null }))}
+          conversaAtiva={conversaId}
+          naoLidasIniciais={Object.fromEntries(naoLidas)}
+        />
 
         {/* Conversa */}
         <section className="flex min-h-0 flex-col">
@@ -235,13 +185,5 @@ export default async function ChatPage({
         </section>
       </Card>
     </div>
-  );
-}
-
-function Selo({ valor }: { valor: number }) {
-  return (
-    <span className="flex min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[11px] font-bold leading-5 text-destructive-foreground">
-      {valor > 99 ? "99+" : valor}
-    </span>
   );
 }

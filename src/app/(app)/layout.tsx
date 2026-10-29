@@ -6,6 +6,7 @@ import { MobileNav } from "@/components/layout/mobile-nav";
 import { exigirUsuario } from "@/lib/auth";
 import { obterConfig } from "@/lib/config";
 import { contagensDoMenu } from "@/features/notificacoes/menu";
+import { OuvinteChat } from "@/features/chat/ouvinte-chat";
 import { nomesDeExibicao } from "@/features/equipe/exibicao";
 import { obterDiretorio } from "@/features/equipe/diretorio";
 import { ChatFlutuante } from "@/features/chat/chat-flutuante";
@@ -51,6 +52,7 @@ export default async function AppLayout({
         </main>
       </div>
       <RastreadorAtividade />
+      <OuvinteChat usuarioId={usuario.id} naoLidas={contagens["/chat"] ?? 0} />
       <ChatFlutuante usuarioId={usuario.id} pessoas={colegas} naoLidas={contagens["/chat"] ?? 0} />
     </div>
   );

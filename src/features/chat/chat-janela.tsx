@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { Send, Loader2, Link2, ClipboardPlus, ScanSearch, Paperclip, Smile, Mic, ImageIcon, FilePlus2, ChevronDown, X, ClipboardList, NotebookPen, Search, ChevronUp } from "lucide-react";
 import { criarClienteBrowser } from "@/lib/supabase/client";
 import { enviarMensagem, marcarConversaLida } from "./actions";
+import { sincronizarChatContagem } from "./contagem-chat";
 import {
   dadosVinculo,
   enviarMensagemVinculada,
@@ -178,7 +179,7 @@ export function ChatJanela({
             atual.some((x) => x.id === m.id) ? atual : [...atual, m]
           );
           if (m.autor_id !== meuId) {
-            void marcarConversaLida(conversaId);
+            void marcarConversaLida(conversaId).then(sincronizarChatContagem);
           }
         }
       )
@@ -191,7 +192,7 @@ export function ChatJanela({
 
   // Marca como lida ao abrir.
   useEffect(() => {
-    void marcarConversaLida(conversaId);
+    void marcarConversaLida(conversaId).then(sincronizarChatContagem);
   }, [conversaId]);
 
   // Rola para a última mensagem: ao abrir a conversa já aparece no fim (sem animação); depois, só as novas rolam suave.

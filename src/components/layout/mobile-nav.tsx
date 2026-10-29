@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { NAVEGACAO } from "@/lib/navigation";
 import { pode } from "@/lib/permissions";
 import { somarContagens, type Contagens } from "@/lib/contagens";
+import { useContagensVivas } from "@/features/chat/contagem-chat";
 import type { Papel } from "@/types";
 
 interface ItemPlano {
@@ -21,11 +22,12 @@ interface ItemPlano {
 /** Navegação horizontal para telas pequenas (abaixo da topbar). */
 export function MobileNav({
   papel,
-  contagens,
+  contagens: contagensServidor,
 }: {
   papel: Papel;
   contagens: Contagens;
 }) {
+  const contagens = useContagensVivas(contagensServidor);
   const pathname = usePathname();
   const itens = NAVEGACAO.filter((i) => (!i.requer || pode(papel, i.requer)) && (!i.soColaborador || papel === "colaborador"));
 

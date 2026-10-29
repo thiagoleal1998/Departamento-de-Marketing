@@ -10,6 +10,7 @@ import { NomeMarca } from "@/components/shared/nome-marca";
 import { NAVEGACAO, type ItemNav, type SubItemNav } from "@/lib/navigation";
 import { pode } from "@/lib/permissions";
 import { somarContagens, type Contagens } from "@/lib/contagens";
+import { useContagensVivas } from "@/features/chat/contagem-chat";
 import type { Papel } from "@/types";
 
 function estaAtivo(pathname: string, href: string, exato?: boolean) {
@@ -111,13 +112,14 @@ export function Sidebar({
   papel,
   nomePainel,
   logoUrl,
-  contagens,
+  contagens: contagensServidor,
 }: {
   papel: Papel;
   nomePainel: string;
   logoUrl: string | null;
   contagens: Contagens;
 }) {
+  const contagens = useContagensVivas(contagensServidor);
   const pathname = usePathname();
   const itens = NAVEGACAO.filter((i) => (!i.requer || pode(papel, i.requer)) && (!i.soColaborador || papel === "colaborador"));
   const principais = itens.filter((i) => !i.separado);
