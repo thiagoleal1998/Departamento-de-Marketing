@@ -11,6 +11,7 @@ import {
 } from "./tarefa";
 import { categoriaPorValor } from "./categorias";
 import { enviarImagemProjeto } from "./imagem";
+import { prazoParaGravar } from "@/lib/utils";
 import type { ProjetoStatus, EtapaStatus } from "@/types";
 
 async function usuarioId() {
@@ -160,7 +161,7 @@ export async function atualizarProjeto(projetoId: string, formData: FormData) {
 
   // Card do projeto no quadro de Tarefas (sem a migration 0078 não há ligação e nada acontece).
   try {
-    await w.db.from("tarefas").update({ titulo: nome, descricao, responsavel_id, prazo: data_fim }).eq("projeto_id", projetoId);
+    await w.db.from("tarefas").update({ titulo: nome, descricao, responsavel_id, prazo: prazoParaGravar(data_fim) }).eq("projeto_id", projetoId);
   } catch {
     // complementar
   }
@@ -168,6 +169,60 @@ export async function atualizarProjeto(projetoId: string, formData: FormData) {
   revalidatePath("/projetos");
   revalidatePath("/projetos/categoria/[slug]", "page");
   revalidatePath("/operacional");
+}
+
+export type EstadoProjeto = { ok?: boolean; erro?: string };
+
+/**
+ * Salva os dados do projeto e DIZ o resultado (a versão anterior ignorava os erros em silêncio).
+ * Mesmo comportamento de atualizarProjeto: nome, descrição, responsável, datas, capa/logo e o card em Tarefas.
+ */
+export async function salvarDadosProjeto(projetoId: string, _anterior: EstadoProjeto, formData: FormData): Promise<EstadoProjeto> {
+  try {
+    const w = await escritorDoProjeto(projetoId);
+    if (!w) return { erro: "Você não tem permissão para alterar este projeto (só a liderança e o responsável)." };
+    const nome = String(formData.get("nome") ?? "").trim();
+    if (!nome) return { erro: "Informe o nome do projeto." };
+    const descricao = String(formData.get("descricao") ?? "").trim() || null;
+    const responsavel_id = String(formData.get("responsavel_id") ?? "").trim() || null;
+    const data_inicio = String(formData.get("data_inicio") ?? "").trim() || null;
+    const data_fim = String(formData.get("data_fim") ?? "").trim() || null;
+    if (data_inicio && data_fim && data_fim < data_inicio) return { erro: "O término não pode ser antes do início." };
+
+    const { error } = await w.db.from("projetos").update({ nome, descricao, responsavel_id, data_inicio, data_fim }).eq("id", projetoId);
+    if (error) return { erro: `Não foi possível salvar o projeto: ${error.message}` };
+
+    // Capa e logo do parceiro: nova imagem substitui; "remover" tira.
+    const imagens: Record<string, string | null> = {};
+    const capa = String(formData.get("capa") ?? "");
+    const logo = String(formData.get("logo_parceiro") ?? "");
+    let avisoImagem: string | null = null;
+    if (capa) {
+      const u = await enviarImagemProjeto(capa, "capa");
+      if (u) imagens.capa_url = u;
+      else avisoImagem = "A foto de capa não pôde ser enviada (confira o tamanho e o formato).";
+    } else if (formData.get("remover_capa") === "1") imagens.capa_url = null;
+    if (logo) {
+      const u = await enviarImagemProjeto(logo, "logo");
+      if (u) imagens.logo_parceiro_url = u;
+      else avisoImagem = "O logo do parceiro não pôde ser enviado (confira o tamanho e o formato).";
+    } else if (formData.get("remover_logo_parceiro") === "1") imagens.logo_parceiro_url = null;
+    if (Object.keys(imagens).length > 0) {
+      const { error: errImg } = await w.db.from("projetos").update(imagens).eq("id", projetoId);
+      if (errImg) avisoImagem = `Os dados foram salvos, mas a imagem não: ${errImg.message}`;
+    }
+
+    // Card do projeto no quadro de Tarefas (sem a migration 0078 não há ligação e nada acontece).
+    await w.db.from("tarefas").update({ titulo: nome, descricao, responsavel_id, prazo: prazoParaGravar(data_fim) }).eq("projeto_id", projetoId);
+
+    revalidatePath(`/projetos/${projetoId}`);
+    revalidatePath("/projetos");
+    revalidatePath("/projetos/categoria/[slug]", "page");
+    revalidatePath("/operacional");
+    return avisoImagem ? { ok: true, erro: avisoImagem } : { ok: true };
+  } catch (e) {
+    return { erro: `Não foi possível salvar: ${e instanceof Error ? e.message : "erro inesperado"}` };
+  }
 }
 
 export async function atualizarCategoriaProjeto(

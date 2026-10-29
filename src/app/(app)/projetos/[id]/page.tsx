@@ -27,7 +27,6 @@ import { mapaDePerfis } from "@/features/chamados/data";
 import {
   adicionarEtapa,
   atualizarEtapa,
-  atualizarProjeto,
   removerEtapa,
   adicionarDocumento,
   removerDocumento,
@@ -40,6 +39,7 @@ import { ProjetoStatusControl } from "@/features/projetos/projeto-status-control
 import { CategoriaControl } from "@/features/projetos/categoria-control";
 import { categoriaPorValor } from "@/features/projetos/categorias";
 import { CapaProjeto } from "@/features/projetos/capa-projeto";
+import { FormProjeto } from "@/features/projetos/form-projeto";
 import { CampoImagem } from "@/features/projetos/campo-imagem";
 import { PageHeader } from "@/components/shared/page-header";
 import {
@@ -536,7 +536,7 @@ export default async function ProjetoDetalhePage({
                   <summary className="flex cursor-pointer list-none items-center gap-2 px-6 py-4 text-sm font-semibold hover:bg-accent/40">
                     <Pencil className="size-4" /> Editar dados do projeto
                   </summary>
-                  <form action={atualizarProjeto.bind(null, id)} className="space-y-3 border-t px-6 py-4">
+                  <FormProjeto projetoId={id}>
                     <div className="space-y-1.5">
                       <Label htmlFor="proj-nome">Nome *</Label>
                       <Input id="proj-nome" name="nome" defaultValue={projeto.nome} required />
@@ -568,12 +568,7 @@ export default async function ProjetoDetalhePage({
                     </div>
                     <CampoImagem name="capa" rotulo="Foto de capa" formato="capa" atual={projeto.capa_url} />
                     <CampoImagem name="logo_parceiro" rotulo="Logo do parceiro" formato="logo" atual={projeto.logo_parceiro_url} />
-                    <div className="flex justify-end">
-                      <Button type="submit" size="sm">
-                        <Save className="size-4" /> Salvar
-                      </Button>
-                    </div>
-                  </form>
+                  </FormProjeto>
                 </details>
               </CardContent>
             </Card>
