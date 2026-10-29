@@ -39,6 +39,7 @@ import { tocarSomChat } from "./som";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { InputData } from "@/components/ui/input-data";
 
 export interface MensagemView {
   id: string;
@@ -858,7 +859,7 @@ export function ChatJanela({
                           </option>
                         ))}
                     </Select>
-                    <Input type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} aria-label="Prazo" />
+                    <InputData  value={prazo} onChange={(e) => setPrazo(e.target.value)} aria-label="Prazo" />
                     <Input
                       value={tituloTarefa}
                       onChange={(e) => setTituloTarefa(e.target.value)}

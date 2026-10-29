@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { diaBrasilia } from "@/lib/utils";
+import { InputData } from "@/components/ui/input-data";
 
 /** Formulário de solicitação de criação (separado das mensagens comuns do chat). */
 export function SolicitacaoForm({
@@ -173,7 +174,7 @@ export function SolicitacaoForm({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="sol-prazo">Prazo desejado</Label>
-            <Input id="sol-prazo" type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} />
+            <InputData id="sol-prazo"  value={prazo} onChange={(e) => setPrazo(e.target.value)} />
           </div>
           {!edicao ? (
             <div className="space-y-1.5 sm:col-span-2">

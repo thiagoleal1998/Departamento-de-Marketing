@@ -55,6 +55,7 @@ import {
 import { formatarDataHora, formatarData, diaBrasilia } from "@/lib/utils";
 import { CHAMADO_TIPO_LABEL } from "@/types";
 import type { Profile } from "@/types/database";
+import { InputData } from "@/components/ui/input-data";
 
 export const dynamic = "force-dynamic";
 
@@ -549,10 +550,10 @@ export default async function ChamadoDetalhePage({
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="prazo_sla">Prazo (SLA)</Label>
-                    <Input
+                    <InputData
                       id="prazo_sla"
                       name="prazo_sla"
-                      type="date"
+                      
                       defaultValue={
                         chamado.prazo_sla
                           ? diaBrasilia(chamado.prazo_sla)

@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { InputData } from "@/components/ui/input-data";
 
 /** Janela para criar um card no quadro de tarefas. */
 export function NovoCardDialogo({
@@ -141,7 +142,7 @@ export function NovoCardDialogo({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="nc-prazo">Prazo</Label>
-            <Input id="nc-prazo" type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} />
+            <InputData id="nc-prazo"  value={prazo} onChange={(e) => setPrazo(e.target.value)} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="nc-prio">Prioridade (1 a 5)</Label>

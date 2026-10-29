@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { InputData } from "@/components/ui/input-data";
 
 export interface PessoaOpcao {
   id: string;
@@ -290,7 +291,7 @@ export function EditorReuniao({
           <CardContent className="flex flex-wrap items-end gap-3 p-4">
             <div className="space-y-1">
               <Label htmlFor="data-reuniao">Data da reunião</Label>
-              <Input id="data-reuniao" type="date" value={dataEdit} onChange={(e) => setDataEdit(e.target.value)} className="h-9 w-44" />
+              <InputData id="data-reuniao"  value={dataEdit} onChange={(e) => setDataEdit(e.target.value)} className="h-9 w-44" />
             </div>
             <Button type="button" size="sm" variant="outline" onClick={salvarData} disabled={pendente || dataEdit === data || !dataEdit}>
               Salvar data

@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { InputData } from "@/components/ui/input-data";
 
 export interface Dia {
   data: string;
@@ -222,7 +223,7 @@ function OfertaForm({ oferta, dataPadrao, aoFechar }: { oferta?: Oferta; dataPad
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="space-y-1.5">
             <Label htmlFor="of-data">Data da divulgação *</Label>
-            <Input id="of-data" type="date" value={d.data} onChange={(e) => set("data", e.target.value)} required />
+            <InputData id="of-data"  value={d.data} onChange={(e) => set("data", e.target.value)} required />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="of-tipo">Tipo *</Label>

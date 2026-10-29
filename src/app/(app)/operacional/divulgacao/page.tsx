@@ -14,6 +14,7 @@ import { criarClienteServidor } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { InputData } from "@/components/ui/input-data";
 
 export const dynamic = "force-dynamic";
 
@@ -140,10 +141,10 @@ async function Historico(sp: Sp, podeExcluir: boolean) {
           <option value="internacional">Só internacional</option>
         </Select>
         <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          De <Input type="date" name="de" defaultValue={f.de} className="h-9 w-36" />
+          De <InputData  name="de" defaultValue={f.de} className="h-9 w-36" />
         </label>
         <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          Até <Input type="date" name="ate" defaultValue={f.ate} className="h-9 w-36" />
+          Até <InputData  name="ate" defaultValue={f.ate} className="h-9 w-36" />
         </label>
         <Button type="submit" size="sm" className="h-9">
           Filtrar

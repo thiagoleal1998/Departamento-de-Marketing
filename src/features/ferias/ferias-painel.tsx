@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { InputData } from "@/components/ui/input-data";
 
 const hojeIso = () => {
   const d = new Date();
@@ -165,11 +166,11 @@ export function FeriasPainel({
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="fe-inicio">Primeiro dia *</Label>
-                  <Input id="fe-inicio" type="date" value={inicio} onChange={(e) => setInicio(e.target.value)} required />
+                  <InputData id="fe-inicio"  value={inicio} onChange={(e) => setInicio(e.target.value)} required />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="fe-fim">Último dia *</Label>
-                  <Input id="fe-fim" type="date" value={fim} min={inicio || undefined} onChange={(e) => setFim(e.target.value)} required />
+                  <InputData id="fe-fim"  value={fim} min={inicio || undefined} onChange={(e) => setFim(e.target.value)} required />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Duração</Label>

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { InputData } from "@/components/ui/input-data";
 
 interface Opcao {
   id: string;
@@ -46,7 +47,7 @@ export function UmAUmBuilder({ colaboradores }: { colaboradores: Opcao[] }) {
           </div>
           <div className="space-y-2">
             <Label htmlFor="data">Data</Label>
-            <Input id="data" name="data" type="date" defaultValue={hoje} />
+            <InputData id="data" name="data"  defaultValue={hoje} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="tema">Tema (combinado antes)</Label>

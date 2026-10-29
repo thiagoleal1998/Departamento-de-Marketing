@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { InputData } from "@/components/ui/input-data";
 
 const hoje = () => {
   const d = new Date();
@@ -240,7 +241,7 @@ export function CotacoesItem({ itemId }: { itemId: string }) {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="co-data">Data da cotação *</Label>
-              <Input id="co-data" type="date" value={f.data_cotacao} onChange={(e) => set("data_cotacao", e.target.value)} required />
+              <InputData id="co-data"  value={f.data_cotacao} onChange={(e) => set("data_cotacao", e.target.value)} required />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="co-qtd">Quantidade cotada</Label>
@@ -268,7 +269,7 @@ export function CotacoesItem({ itemId }: { itemId: string }) {
               <>
                 <div className="space-y-1.5">
                   <Label htmlFor="co-dc">Data da compra</Label>
-                  <Input id="co-dc" type="date" value={f.data_compra} onChange={(e) => set("data_compra", e.target.value)} />
+                  <InputData id="co-dc"  value={f.data_compra} onChange={(e) => set("data_compra", e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="co-total">Valor total pago (R$)</Label>

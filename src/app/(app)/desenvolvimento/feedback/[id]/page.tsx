@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { FeedbackStatusBadge } from "@/components/shared/status-badge";
 import { formatarData } from "@/lib/utils";
 import type { RoteiroFeedback } from "@/types/database";
+import { InputData } from "@/components/ui/input-data";
 
 export const dynamic = "force-dynamic";
 
@@ -183,19 +184,19 @@ export default async function FeedbackDetalhePage({
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="prazo">Prazo</Label>
-                  <Input
+                  <InputData
                     id="prazo"
                     name="prazo"
-                    type="date"
+                    
                     defaultValue={roteiro.data_acao || ""}
                   />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="proxima_conversa">Próxima conversa</Label>
-                  <Input
+                  <InputData
                     id="proxima_conversa"
                     name="proxima_conversa"
-                    type="date"
+                    
                     defaultValue={roteiro.proxima_conversa || ""}
                   />
                 </div>

@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { InputData } from "@/components/ui/input-data";
 
 const inicial: EstadoSolicitacao = {};
 
@@ -60,12 +61,12 @@ export function SolicitacaoForm() {
               <Label htmlFor="sol-ini">
                 {comPeriodo ? "De *" : "Data *"}
               </Label>
-              <Input id="sol-ini" name="data_inicio" type="date" required />
+              <InputData id="sol-ini" name="data_inicio"  required />
             </div>
             {comPeriodo ? (
               <div className="space-y-1.5">
                 <Label htmlFor="sol-fim">Até</Label>
-                <Input id="sol-fim" name="data_fim" type="date" />
+                <InputData id="sol-fim" name="data_fim"  />
               </div>
             ) : null}
             {comHora ? (

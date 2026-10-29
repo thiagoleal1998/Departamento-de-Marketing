@@ -5,6 +5,7 @@ import { rotuloTela } from "./rotulo-tela";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { InputData } from "@/components/ui/input-data";
 
 const FUSO = "America/Sao_Paulo";
 const ehData = (v: string | undefined) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : "");
@@ -101,10 +102,10 @@ export async function RelatorioAtividade({ sp }: { sp: { de?: string; ate?: stri
       <form method="get" className="flex flex-wrap items-end gap-3">
         <input type="hidden" name="aba" value="atividade" />
         <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          De <Input type="date" name="de" defaultValue={de} className="h-9 w-36" />
+          De <InputData  name="de" defaultValue={de} className="h-9 w-36" />
         </label>
         <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          Até <Input type="date" name="ate" defaultValue={ate} className="h-9 w-36" />
+          Até <InputData  name="ate" defaultValue={ate} className="h-9 w-36" />
         </label>
         <Select name="usuario" defaultValue={usuarioSel} aria-label="Pessoa" className="h-9 rounded-md border bg-background px-2 text-sm">
           <option value="">Todas as pessoas</option>

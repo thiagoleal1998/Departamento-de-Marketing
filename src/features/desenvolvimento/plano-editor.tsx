@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { InputData } from "@/components/ui/input-data";
 
 const novoId = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 const hoje = () => new Date().toISOString().slice(0, 10);
@@ -317,11 +318,11 @@ export function PlanoEditor({
           </label>
           <label className="space-y-1">
             <span className="text-xs font-medium text-muted-foreground">Prazo final</span>
-            <Input type="date" value={d.prazo ?? ""} disabled={ro} onChange={(e) => mudar({ prazo: e.target.value || null })} />
+            <InputData  value={d.prazo ?? ""} disabled={ro} onChange={(e) => mudar({ prazo: e.target.value || null })} />
           </label>
           <label className="space-y-1">
             <span className="text-xs font-medium text-muted-foreground">Próxima conversa</span>
-            <Input type="date" value={d.proxima_conversa ?? ""} disabled={ro} onChange={(e) => mudar({ proxima_conversa: e.target.value || null })} />
+            <InputData  value={d.proxima_conversa ?? ""} disabled={ro} onChange={(e) => mudar({ proxima_conversa: e.target.value || null })} />
           </label>
           <label className="space-y-1">
             <span className="text-xs font-medium text-muted-foreground">Situação</span>
@@ -369,7 +370,7 @@ export function PlanoEditor({
                         </button>
                       ) : null}
                     </div>
-                    <Input type="date" value={o.prazo ?? ""} disabled={ro} onChange={(e) => setObj(o.id, { prazo: e.target.value || null })} className="h-8 text-xs" aria-label="Prazo do objetivo" />
+                    <InputData  value={o.prazo ?? ""} disabled={ro} onChange={(e) => setObj(o.id, { prazo: e.target.value || null })} className="h-8 text-xs" aria-label="Prazo do objetivo" />
                     <NotaEtapa nota={o.nota} justificativa={o.justificativa} podeEditar={podeEditar} aoMudar={(p) => setObj(o.id, p)} />
                   </div>
                 ))}
@@ -428,7 +429,7 @@ export function PlanoEditor({
               <div className="grid gap-2 sm:grid-cols-[1fr_110px_150px_auto]">
                 <Input value={p.competencia} disabled={ro} onChange={(e) => setProf(p.id, { competencia: e.target.value })} placeholder="Competência (ex.: Comunicação)" aria-label="Competência" />
                 <Input type="number" min={0} max={10} step={0.5} value={p.nota} disabled={ro} onChange={(e) => setProf(p.id, { nota: Math.min(10, Math.max(0, Number(e.target.value))) })} aria-label="Nota de 0 a 10" />
-                <Input type="date" value={p.data} disabled={ro} onChange={(e) => setProf(p.id, { data: e.target.value || hoje() })} aria-label="Data da avaliação" />
+                <InputData  value={p.data} disabled={ro} onChange={(e) => setProf(p.id, { data: e.target.value || hoje() })} aria-label="Data da avaliação" />
                 {podeEditar ? (
                   <button type="button" aria-label="Remover avaliação" onClick={() => mudar({ proficiencia: d.proficiencia.filter((x) => x.id !== p.id) })} className="text-muted-foreground hover:text-destructive">
                     <Trash2 className="size-4" />

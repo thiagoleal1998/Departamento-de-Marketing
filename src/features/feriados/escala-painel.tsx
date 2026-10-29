@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { InputData } from "@/components/ui/input-data";
 
 export interface Escalado {
   id: string;
@@ -257,7 +258,7 @@ export function EscalaPainel({
               <label htmlFor="fe-extra-data" className="text-xs font-medium text-muted-foreground">
                 Data
               </label>
-              <Input id="fe-extra-data" type="date" value={novaData} onChange={(e) => setNovaData(e.target.value)} className="h-9 w-40" />
+              <InputData id="fe-extra-data"  value={novaData} onChange={(e) => setNovaData(e.target.value)} className="h-9 w-40" />
             </div>
             <Button type="submit" size="sm" className="h-9" disabled={pendente || !novoNome.trim() || !novaData || indisponivel}>
               {pendente ? <Loader2 className="size-4 animate-spin" /> : <CalendarPlus className="size-4" />} Adicionar

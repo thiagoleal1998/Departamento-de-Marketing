@@ -18,6 +18,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { InputData } from "@/components/ui/input-data";
 
 export const dynamic = "force-dynamic";
 
@@ -77,10 +78,10 @@ function FormFiltro({ f, aba }: { f: ReturnType<typeof lerFiltro>; aba: "divulga
     <>
       {aba === "rd" ? <input type="hidden" name="aba" value="rd" /> : null}
       <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        De <Input type="date" name="de" defaultValue={f.de} className="h-9 w-36" />
+        De <InputData  name="de" defaultValue={f.de} className="h-9 w-36" />
       </label>
       <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        Até <Input type="date" name="ate" defaultValue={f.ate} className="h-9 w-36" />
+        Até <InputData  name="ate" defaultValue={f.ate} className="h-9 w-36" />
       </label>
       <Select name="tipo" defaultValue={f.tipo} aria-label="Tipo" className={sel}>
         <option value="">Nacional e internacional</option>

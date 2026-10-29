@@ -20,6 +20,9 @@ export function SeletorData({
   placeholder = "dd/mm/aaaa",
   className,
   limpavel = true,
+  min,
+  disabled = false,
+  ariaLabel,
 }: {
   id?: string;
   value: string;
@@ -27,6 +30,10 @@ export function SeletorData({
   placeholder?: string;
   className?: string;
   limpavel?: boolean;
+  /** Primeira data permitida (AAAA-MM-DD): as anteriores ficam desativadas. */
+  min?: string;
+  disabled?: boolean;
+  ariaLabel?: string;
 }) {
   const hoje = hojeSP();
   const base = /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : hoje;
@@ -89,11 +96,13 @@ export function SeletorData({
         ref={botao}
         id={id}
         type="button"
+        disabled={disabled}
+        aria-label={ariaLabel}
         onClick={() => (aberto ? setAberto(false) : abrir())}
         aria-haspopup="dialog"
         aria-expanded={aberto}
         className={cn(
-          "flex h-10 w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-3 text-left text-sm ring-offset-background transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          "flex h-10 w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-3 text-left text-sm ring-offset-background transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
           className
         )}
       >
@@ -133,17 +142,20 @@ export function SeletorData({
               {celulas.slice(0, semanas * 7).map((c) => {
                 const selecionado = c.data === value;
                 const ehHoje = c.data === hoje;
+                const bloqueado = !!min && c.data < min;
                 return (
                   <button
                     key={c.data}
                     type="button"
+                    disabled={bloqueado}
                     onClick={() => escolher(c.data)}
                     aria-label={mostrar(c.data)}
                     aria-pressed={selecionado}
                     className={cn(
                       "mx-auto grid size-9 place-items-center rounded-full text-sm transition-colors",
                       c.doMes ? "text-foreground" : "text-muted-foreground/50",
-                      !selecionado && "hover:bg-accent",
+                      !selecionado && !bloqueado && "hover:bg-accent",
+                      bloqueado && "cursor-not-allowed opacity-30",
                       ehHoje && !selecionado && "font-semibold text-primary ring-1 ring-inset ring-primary/60",
                       selecionado && "bg-primary font-semibold text-primary-foreground shadow-sm"
                     )}

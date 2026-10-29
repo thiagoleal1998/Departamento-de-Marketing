@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { diaBrasilia } from "@/lib/utils";
+import { InputData } from "@/components/ui/input-data";
 
 const ORDEM_STATUS: TarefaStatus[] = [
   "a_fazer",
@@ -256,9 +257,9 @@ export function TarefaDetalhe({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="td-prazo">Prazo</Label>
-              <Input
+              <InputData
                 id="td-prazo"
-                type="date"
+                
                 value={prazo}
                 onChange={(e) => setPrazo(e.target.value)}
               />

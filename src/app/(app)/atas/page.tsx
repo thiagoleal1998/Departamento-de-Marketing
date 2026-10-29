@@ -27,6 +27,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { InputData } from "@/components/ui/input-data";
 
 export const dynamic = "force-dynamic";
 
@@ -181,8 +182,8 @@ export default async function AtasPage({
         acoes={
           lideranca ? (
             <form action={criarReuniao} className="flex items-center gap-2">
-              <Input
-                type="date"
+              <InputData
+                
                 name="data"
                 required
                 defaultValue={hojeBR}
