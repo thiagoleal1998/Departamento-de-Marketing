@@ -14,6 +14,7 @@ import type { Chamado } from "@/types/database";
 import { inserirChamado } from "./inserir";
 import { uploadReferencia } from "./upload";
 import { criarTarefaDoChamado } from "./tarefa";
+import { prazoParaGravar } from "@/lib/utils";
 
 async function usuarioId() {
   const supabase = await criarClienteServidor();
@@ -112,7 +113,7 @@ export async function abrirChamado(formData: FormData) {
     formData.get("prioridade") ?? "media"
   ) as ChamadoPrioridade;
   const prazoRaw = String(formData.get("prazo_sla") ?? "").trim();
-  const prazo_sla = prazoRaw ? new Date(prazoRaw).toISOString() : null;
+  const prazo_sla = prazoRaw ? new Date(prazoParaGravar(prazoRaw) as string).toISOString() : null;
 
   if (!titulo) return;
 

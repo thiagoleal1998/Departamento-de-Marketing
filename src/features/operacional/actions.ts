@@ -10,6 +10,7 @@ import { registrarAcao } from "@/features/atividade/registro";
 import { TAREFA_STATUS_META } from "@/types";
 import { normalizarLembretes } from "@/lib/lembretes";
 import type { TarefaStatus } from "@/types";
+import { prazoParaGravar } from "@/lib/utils";
 
 /** Move uma tarefa para outra coluna do kanban (novo status). */
 export async function moverTarefa(tarefaId: string, novoStatus: TarefaStatus) {
@@ -158,7 +159,7 @@ export async function salvarTarefa(
       descricao: d.descricao.trim() || null,
       status: d.status,
       responsavel_id: d.responsavel_id || null,
-      prazo: d.prazo || null,
+      prazo: prazoParaGravar(d.prazo),
       prioridade: d.prioridade,
       tag: d.tag.trim() || null,
       link: d.link.trim() || null,

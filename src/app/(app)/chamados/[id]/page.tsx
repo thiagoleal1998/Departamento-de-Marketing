@@ -52,7 +52,7 @@ import {
   ChamadoPrioridadeBadge,
   AprovacaoBadge,
 } from "@/components/shared/status-badge";
-import { formatarDataHora, formatarData } from "@/lib/utils";
+import { formatarDataHora, formatarData, diaBrasilia } from "@/lib/utils";
 import { CHAMADO_TIPO_LABEL } from "@/types";
 import type { Profile } from "@/types/database";
 
@@ -555,7 +555,7 @@ export default async function ChamadoDetalhePage({
                       type="date"
                       defaultValue={
                         chamado.prazo_sla
-                          ? chamado.prazo_sla.slice(0, 10)
+                          ? diaBrasilia(chamado.prazo_sla)
                           : ""
                       }
                     />

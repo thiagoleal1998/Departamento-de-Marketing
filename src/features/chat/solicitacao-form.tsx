@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { diaBrasilia } from "@/lib/utils";
 
 /** Formulário de solicitação de criação (separado das mensagens comuns do chat). */
 export function SolicitacaoForm({
@@ -40,7 +41,7 @@ export function SolicitacaoForm({
   const [produto, setProduto] = useState(edicao?.produto ?? "");
   const [link, setLink] = useState(edicao?.linkReferencia ?? "");
   const [solicitante, setSolicitante] = useState(edicao?.solicitante ?? meuNome);
-  const [prazo, setPrazo] = useState(edicao?.prazo ? edicao.prazo.slice(0, 10) : "");
+  const [prazo, setPrazo] = useState(diaBrasilia(edicao?.prazo));
   const [detalhes, setDetalhes] = useState(edicao?.detalhes ?? "");
   const [executor, setExecutor] = useState(outroId ?? "");
   const [prova, setProva] = useState<{ caminho: string; nome: string; previa: string | null } | null>(

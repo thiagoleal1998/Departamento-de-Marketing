@@ -1,4 +1,5 @@
 import { criarClienteAdmin } from "@/lib/supabase/admin";
+import { diaBrasilia } from "@/lib/utils";
 
 const FUSO = "America/Sao_Paulo";
 
@@ -92,7 +93,7 @@ export async function obterResumoExecutivo(): Promise<ResumoExecutivo> {
     .map((t) => ({ id: t.id, titulo: t.titulo, descricao: t.descricao, responsavel: quem(t), prazo: t.prazo, link: t.link }));
 
   const atrasadas = tarefas
-    .filter((t) => t.prazo && t.prazo.slice(0, 10) < hoje)
+    .filter((t) => t.prazo && diaBrasilia(t.prazo) < hoje)
     .sort((a, b) => (a.prazo ?? "").localeCompare(b.prazo ?? ""))
     .map((t) => ({ id: t.id, titulo: t.titulo, responsavel: quem(t), prazo: t.prazo as string }));
 
