@@ -19,6 +19,8 @@ export interface ProdutoView extends Pick<ProdutoComercial, "chave" | "nome" | "
   conferencia: ConferenciaProduto;
   /** Complexo: hotéis exibidos juntos no mesmo card, cada um com suas condições. */
   partes?: { nome: string; campos: CampoProduto[] }[];
+  /** Só existe no cadastro de LPs: a planilha do Comercial não tem este produto (ou a linha está oculta). */
+  soLp?: boolean;
   /** Condições dos períodos sazonais (ex.: Black November) para este produto. */
   sazonais?: SazonalNoCard[];
   /** Alteração recente (se houver): quando e o que mudou. */
@@ -150,6 +152,12 @@ function CardResumo({ p, aoAbrir }: { p: ProdutoView; aoAbrir: () => void }) {
         {p.conferencia.divergencia ? (
           <span className="block rounded bg-red-50 px-2 py-1 text-[11px] font-medium text-red-700 dark:bg-red-950/40 dark:text-red-300">
             ⚠ {ROTULO_DIVERGENCIA[p.conferencia.divergencia]}
+          </span>
+        ) : null}
+
+        {p.soLp ? (
+          <span className="block rounded bg-sky-50 px-2 py-1 text-[11px] font-medium text-sky-800 dark:bg-sky-950/40 dark:text-sky-300">
+            Só no cadastro de LPs · sem condições na planilha do Comercial
           </span>
         ) : null}
 
@@ -349,7 +357,9 @@ function Detalhes({ p, aoFechar }: { p: ProdutoView; aoFechar: () => void }) {
 
         <div className={cn("grid gap-3 p-5 md:grid-cols-2", p.partes && "hidden")}>
           {detalhes.length === 0 && sumidos.length === 0 ? (
-            <p className="text-sm text-muted-foreground md:col-span-2">Sem condições cadastradas.</p>
+            <p className="text-sm text-muted-foreground md:col-span-2">
+              {p.soLp ? "Este produto só existe no cadastro de LPs: a planilha do Comercial não tem condições para ele (ou a linha está oculta lá)." : "Sem condições cadastradas."}
+            </p>
           ) : null}
           {detalhes.map((c) => (
             <Campo key={c.rotulo} campo={c} mudanca={mudancas.get(c.rotulo)} />

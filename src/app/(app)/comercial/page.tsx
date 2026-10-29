@@ -8,7 +8,7 @@ import { ListaProdutos, type ProdutoView } from "@/features/comercial/cards";
 import { BotaoSincronizar } from "@/features/comercial/botao-sincronizar";
 import { BotaoMarcarVisto } from "@/features/comercial/botao-visto";
 import { ConferenciaPainel } from "@/features/comercial/conferencia-painel";
-import { conferir, type LpSistema } from "@/features/comercial/conferencia";
+import { conferir, type LpCompleta, type LpSistema } from "@/features/comercial/conferencia";
 import { achaComplexos, mesclarDuplicados, nomeCorreto } from "@/features/comercial/ajustes";
 import { MarcarVisto } from "@/features/notificacoes/marcar-visto";
 import { PeriodosSazonais } from "@/features/comercial/sazonal-painel";
@@ -105,7 +105,7 @@ export default async function ComercialPage({
     supabase.from("comercial_produtos").select("chave, secao, nome, ordem, tag, tag_cor, campos").order("ordem", { ascending: true }).limit(2000),
     supabase.from("comercial_alteracoes").select("*").gte("detectado_em", desde).order("detectado_em", { ascending: false }).limit(500),
     supabase.from("comercial_sync").select("*").eq("id", 1).maybeSingle(),
-    supabase.from("landing_pages").select("id, nome, grupo, status_patrocinio, url").limit(3000),
+    supabase.from("landing_pages").select("id, nome, grupo, status_patrocinio, url, destino, cidade, estado, pais, dominio, observacoes").limit(3000),
   ]);
   // A conferência ignora as LPs do grupo "antigas" (aba LP's antigas da planilha de LPs).
   const lps = ((lpData as LpSistema[] | null) ?? []).filter((l) => (l.grupo ?? "").trim().toLowerCase() !== "antigas");
@@ -198,17 +198,52 @@ export default async function ComercialPage({
         : undefined,
     });
   }
+  // LPs do cadastro que não têm produto na planilha do Comercial ganham card na aba do seu destino e situação
+  // (ex.: LP nacional inativa → NACIONAL INATIVAS). Epic Pages (descontinuadas) e a escala de feriados ficam de fora.
+  const lpsUsadas = new Set(todos.flatMap((p) => p.conferencia.lps.map((l) => l.id)));
+  const todosReais = [...todos];
+  const nomeLp = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+  const PRIORIDADE_GRUPO = ["novas", "b2c", "v4"];
+  const jaTemCard = new Set<string>();
+  for (const l of ((lpData as LpCompleta[] | null) ?? [])
+    .filter((x) => PRIORIDADE_GRUPO.includes((x.grupo ?? "").trim().toLowerCase()))
+    .sort((a, b) => PRIORIDADE_GRUPO.indexOf((a.grupo ?? "").toLowerCase()) - PRIORIDADE_GRUPO.indexOf((b.grupo ?? "").toLowerCase()))) {
+    const k = nomeLp(l.nome);
+    if (lpsUsadas.has(l.id) || jaTemCard.has(k)) continue;
+    jaTemCard.add(k);
+    const nacional = (l.destino ?? "").toLowerCase() !== "internacional";
+    const secao = `${nacional ? "NACIONAL" : "INTERNACIONAL"} ${l.status_patrocinio === "ativo" ? "ATIVAS" : "INATIVAS"}`;
+    const nome = nomeCorreto(l.nome);
+    const local = [l.cidade, l.estado, l.pais].filter((x) => x && x !== "-").join(", ");
+    const campos: ProdutoComercial["campos"] = [
+      ...(local ? [{ rotulo: "Local", linhas: [{ t: local }] }] : []),
+      ...(l.dominio ? [{ rotulo: "Domínio da URL", linhas: [{ t: l.dominio }] }] : []),
+      ...(l.observacoes ? [{ rotulo: "Observações da LP", linhas: [{ t: l.observacoes }] }] : []),
+      ...(l.url ? [{ rotulo: "Link da LP", linhas: [{ t: l.url }] }] : []),
+    ];
+    todos.push({
+      chave: `lp|${l.id}`,
+      secao,
+      nome,
+      tag: null,
+      tagCor: null,
+      campos,
+      soLp: true,
+      sazonais: sazonaisDe([nome, l.nome]),
+      conferencia: conferir(secao, nome, campos, lps),
+    });
+  }
+
   // "Produtos ativos": um card por produto (o mesmo hotel pode repetir ou estar em mais de uma aba).
   const ativosUnicos = mesclarDuplicados(todos.filter((p) => p.conferencia.situacao === "ativa"));
   const produtos = ativa === ATIVOS ? ativosUnicos : todos.filter((p) => p.secao === ativa);
 
   // LPs ativas que nenhum produto do Comercial referencia.
-  const lpsUsadas = new Set(todos.flatMap((p) => p.conferencia.lps.map((l) => l.id)));
   const lpsAtivas = lps.filter((l) => l.status_patrocinio === "ativo");
   const lpsAtivasSemProduto = lpsAtivas
     .filter((l) => !lpsUsadas.has(l.id))
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
-  const divergentes = todos.filter((p) => p.conferencia.divergencia).length;
+  const divergentes = todosReais.filter((p) => p.conferencia.divergencia).length;
 
   // Alterações recentes por aba (para o aviso das abas).
   const alteradosPorSecao = new Map<string, number>();
@@ -355,7 +390,7 @@ export default async function ComercialPage({
             )
           ) : ativa === CONFERENCIA ? (
             <ConferenciaPainel
-              produtos={todos}
+              produtos={todosReais}
               lpsAtivasSemProduto={lpsAtivasSemProduto}
               totalLpsAtivas={lpsAtivas.length}
               lpsIgnoradas={((lpData as LpSistema[] | null) ?? []).length - lps.length}

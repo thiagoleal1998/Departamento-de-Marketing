@@ -9,6 +9,16 @@ export interface LpSistema {
   url: string | null;
 }
 
+/** LP com os dados de cadastro que o card do Comercial mostra quando não há produto na planilha. */
+export interface LpCompleta extends LpSistema {
+  destino: string | null;
+  cidade: string | null;
+  estado: string | null;
+  pais: string | null;
+  dominio: string | null;
+  observacoes: string | null;
+}
+
 export type SituacaoLp = "ativa" | "inativa" | "sem_status" | "sem_lp";
 
 export interface ConferenciaProduto {
