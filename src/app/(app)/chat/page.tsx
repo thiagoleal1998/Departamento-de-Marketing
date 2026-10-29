@@ -1,5 +1,7 @@
 import Link from "@/components/shared/link";
-import { Users, User } from "lucide-react";
+import { Users } from "lucide-react";
+import { Avatar } from "@/components/ui/avatar";
+import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { exigirUsuario } from "@/lib/auth";
 import { ehLideranca } from "@/lib/permissions";
 import { ehResponsavel } from "@/lib/responsaveis";
@@ -19,6 +21,7 @@ export const dynamic = "force-dynamic";
 interface PessoaLite {
   id: string;
   nome: string;
+  foto: string | null;
 }
 
 export default async function ChatPage({
@@ -40,9 +43,16 @@ export default async function ChatPage({
       supabase.rpc("chat_nao_lidas"),
     ]);
 
+  // Fotos de perfil: o colaborador não lê o perfil dos colegas pela RLS, então vêm pelo servidor.
+  const fotos = new Map<string, string | null>();
+  if (servicoDisponivel()) {
+    const { data: fs } = await criarClienteAdmin().from("profiles").select("id, avatar_url").eq("ativo", true);
+    for (const p of (fs as { id: string; avatar_url: string | null }[] | null) ?? []) fotos.set(p.id, p.avatar_url);
+  }
   const pessoas: PessoaLite[] = Array.from(diretorio.values()).map((p) => ({
     id: p.id,
     nome: p.nome,
+    foto: fotos.get(p.id) ?? null,
   }));
   const nomes: Record<string, string> = Object.fromEntries(
     pessoas.map((p) => [p.id, p.nome])
@@ -164,7 +174,7 @@ export default async function ChatPage({
             const n = conv ? naoLidas.get(conv) ?? 0 : 0;
             const conteudo = (
               <>
-                <User className="size-4" />
+                <Avatar nome={p.nome} src={p.foto} className="size-7 text-[10px]" />
                 <span className="flex-1 truncate">{p.nome}</span>
                 {n > 0 ? <Selo valor={n} /> : null}
               </>
@@ -196,7 +206,12 @@ export default async function ChatPage({
 
         {/* Conversa */}
         <section className="flex min-h-0 flex-col">
-          <header className="border-b px-4 py-3 text-sm font-semibold">
+          <header className="flex items-center gap-2.5 border-b px-4 py-2.5 text-sm font-semibold">
+            {ehGeral ? (
+              <Users className="size-5 text-muted-foreground" />
+            ) : (
+              <Avatar nome={tituloConversa} src={pessoas.find((p) => p.id === diretas.get(conversaId))?.foto} className="size-8 text-[11px]" />
+            )}
             {tituloConversa}
           </header>
           <div className="min-h-0 flex-1">
