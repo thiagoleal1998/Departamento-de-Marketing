@@ -15,6 +15,7 @@ import {
   listarColaboradores,
 } from "@/features/desenvolvimento/data";
 import { PlanoStatusControl } from "@/features/desenvolvimento/plano-status-control";
+import { BotaoExcluirPlano } from "@/features/desenvolvimento/botao-excluir-plano";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Card, CardContent } from "@/components/ui/card";
@@ -188,6 +189,7 @@ export default async function DesenvolvimentoPage() {
                         status={p.status}
                         podeEditar
                       />
+                      {usuario.role === "gerente" || p.autor_id === usuario.id ? <BotaoExcluirPlano planoId={p.id} titulo={p.titulo?.trim() || p.descricao.slice(0, 80)} /> : null}
                     </div>
                   </CardContent>
                 </Card>

@@ -171,3 +171,30 @@ export async function criarPlanoDireto(formData: FormData) {
   revalidatePath(`/desenvolvimento/colaborador/${colaborador_id}`);
   redirect(`/desenvolvimento/plano/${data.id}`);
 }
+
+/**
+ * Exclui um plano de ação: o gerente exclui qualquer um; um líder, os que ele mesmo criou. Os anexos do plano saem
+ * do armazenamento junto. Não há como desfazer. (O banco não tem regra de exclusão para planos: a permissão é
+ * conferida aqui e a gravação usa a chave de serviço.)
+ */
+export async function excluirPlano(planoId: string): Promise<{ ok?: true; erro?: string }> {
+  const usuario = await exigirUsuario();
+  if (!ehLideranca(usuario.role)) return { erro: "Só a liderança exclui planos de ação." };
+  if (!servicoDisponivel()) return { erro: "Serviço indisponível no servidor." };
+
+  const supabase = await criarClienteServidor();
+  const { data: plano } = await supabase.from("planos_acao").select("id, autor_id, colaborador_id, anexos").eq("id", planoId).maybeSingle();
+  if (!plano) return { erro: "Plano não encontrado ou sem permissão." };
+  const p = plano as { id: string; autor_id: string | null; colaborador_id: string; anexos: { caminho?: string }[] | null };
+  if (usuario.role !== "gerente" && p.autor_id !== usuario.id) return { erro: "Só o gerente ou quem criou o plano pode excluí-lo." };
+
+  const admin = criarClienteAdmin();
+  const caminhos = (p.anexos ?? []).map((a) => a.caminho).filter((c): c is string => !!c);
+  if (caminhos.length > 0) await admin.storage.from(BUCKET_PLANOS).remove(caminhos).catch(() => undefined);
+  const { error } = await admin.from("planos_acao").delete().eq("id", planoId);
+  if (error) return { erro: `Não foi possível excluir: ${error.message}` };
+
+  revalidatePath("/desenvolvimento");
+  revalidatePath(`/desenvolvimento/colaborador/${p.colaborador_id}`);
+  return { ok: true };
+}

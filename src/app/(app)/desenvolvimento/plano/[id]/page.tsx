@@ -8,6 +8,7 @@ import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { obterPerfil } from "@/features/desenvolvimento/data";
 import { PerfilNoPlano } from "@/features/desenvolvimento/perfil-no-plano";
 import { PlanoEditor } from "@/features/desenvolvimento/plano-editor";
+import { BotaoExcluirPlano } from "@/features/desenvolvimento/botao-excluir-plano";
 import {
   BUCKET_PLANOS,
   type AnexoPlano,
@@ -100,6 +101,12 @@ export default async function PlanoPage({ params }: { params: Promise<{ id: stri
       {lideranca ? <PerfilNoPlano colaboradorId={plano.colaborador_id} email={colaborador?.email ?? null} /> : null}
 
       <PlanoEditor planoId={plano.id} inicial={inicial} anexosVisiveis={visiveis} podeEditar={lideranca} />
+
+      {lideranca && (usuario.role === "gerente" || plano.autor_id === usuario.id) ? (
+        <div className="flex justify-end border-t pt-4">
+          <BotaoExcluirPlano planoId={plano.id} titulo={plano.titulo?.trim() || plano.descricao.slice(0, 80)} voltarPara="/desenvolvimento" comRotulo />
+        </div>
+      ) : null}
     </div>
   );
 }
