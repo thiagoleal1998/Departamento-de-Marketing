@@ -3,6 +3,7 @@ import Link from "@/components/shared/link";
 import { redirect } from "next/navigation";
 import { Activity, BarChart3, Download, FileBarChart, Mail, Plug, TrendingUp } from "lucide-react";
 import { RelatorioOperacional } from "@/features/relatorios/relatorio-operacional";
+import { ComoApuramos } from "@/features/relatorios/como-apuramos";
 import { RelatorioAtividade } from "@/features/atividade/relatorio-atividade";
 import { exigirUsuario } from "@/lib/auth";
 import { pode } from "@/lib/permissions";
@@ -63,6 +64,7 @@ export default async function RelatoriosPage({ searchParams }: { searchParams: P
           );
         })}
       </nav>
+      <ComoApuramos aba={aba} />
       {aba === "divulgacao" ? await RelatorioDivulgacao(sp) : aba === "rd" ? await RelatorioEmails(sp) : aba === "operacional" ? <RelatorioOperacional /> : <RelatorioAtividade sp={sp} />}
     </div>
   );
