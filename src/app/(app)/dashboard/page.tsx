@@ -90,7 +90,7 @@ export default async function DashboardPage() {
           <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(0,1fr)_440px]">
             <div className="min-w-0 [&>*]:h-full">
               <Suspense fallback={<EsqueletoAlertas />}>
-                <ComLimite de={AlertasDestinos} titulo="Os alertas dos destinos" ms={40_000} />
+                <ComLimite de={AlertasDestinos} titulo="Os alertas dos destinos" ms={45_000} />
               </Suspense>
             </div>
             <div className="[&>*]:h-full">

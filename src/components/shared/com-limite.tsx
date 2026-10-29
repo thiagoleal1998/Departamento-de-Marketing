@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { AvisoDemora } from "./aviso-demora";
 
 /**
  * Bloco da tela com tempo máximo. Se a parte lenta (IA, notícias, planilhas) passar do limite, mostra um aviso no
@@ -27,9 +28,5 @@ export async function ComLimite({
   } catch {
     esgotou = true;
   }
-  return esgotou ? (
-    <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
-      <strong className="text-foreground">{titulo}</strong> demorou demais para carregar agora. Atualize a página para tentar de novo.
-    </div>
-  ) : null;
+  return esgotou ? <AvisoDemora titulo={titulo} /> : null;
 }

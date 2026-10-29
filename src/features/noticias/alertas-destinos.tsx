@@ -145,20 +145,23 @@ export async function AlertasDestinos() {
 
   // Destinos de cada dia: a IA lê as ofertas do dia e diz o lugar real (mesma regra para hoje e para a semana toda).
   // Uma chamada por dia, guardada por 7 dias; começa por hoje, para o slide principal ficar pronto primeiro.
-  const prazoFinal = Date.now() + 40_000;
+  // Os dias são lidos ao mesmo tempo (antes um depois do outro, o que somava o tempo de cada um).
+  const prazoFinal = Date.now() + 30_000;
   const ordem = Array.from({ length: 7 }, (_, i) => somarDias(inicio, i));
   const porData = new Map<string, DiaSemana>();
   let pendente = false;
-  for (const dia of ordem) {
-    const doDia = itens.filter((o) => o.data === dia);
-    if (doDia.length === 0) {
-      porData.set(dia, { data: dia, destinos: [] });
-      continue;
-    }
-    const r = await destinosDoDia(doDia, lps, prazoFinal);
-    pendente = pendente || r.pendente;
-    porData.set(dia, { data: dia, destinos: r.destinos });
-  }
+  await Promise.all(
+    ordem.map(async (dia) => {
+      const doDia = itens.filter((o) => o.data === dia);
+      if (doDia.length === 0) {
+        porData.set(dia, { data: dia, destinos: [] });
+        return;
+      }
+      const r = await destinosDoDia(doDia, lps, prazoFinal);
+      pendente = pendente || r.pendente;
+      porData.set(dia, { data: dia, destinos: r.destinos });
+    })
+  );
   const dias: DiaSemana[] = Array.from({ length: 7 }, (_, i) => porData.get(somarDias(inicio, i))!);
 
   // Cada lugar é pesquisado uma vez só, mesmo que apareça em vários dias.
