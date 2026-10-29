@@ -56,13 +56,14 @@ export default async function GestaoPage() {
   const supabase = await criarClienteServidor();
   const hoje = hojeSP();
   const ano = Number(hoje.slice(0, 4));
-  const [{ data }, perfis, escalaR, extrasR, avisosR, pessoasR] = await Promise.all([
+  const [{ data }, perfis, escalaR, extrasR, avisosR, pessoasR, histR] = await Promise.all([
     supabase.from("chamados").select("*"),
     mapaDePerfis(),
     supabase.from("escala_feriados").select("data, profile_id").gte("data", `${ano}-01-01`).lte("data", `${ano}-12-31`),
     supabase.from("feriados_extras").select("data").gte("data", `${ano}-01-01`).lte("data", `${ano}-12-31`),
     supabase.from("escala_avisos").select("data").gte("data", `${ano}-01-01`).lte("data", `${ano}-12-31`),
     supabase.from("profiles").select("id, nome").eq("ativo", true).order("nome", { ascending: true }),
+    supabase.from("chamado_historico").select("chamado_id, para, created_at").eq("campo", "status").order("created_at", { ascending: true }),
   ]);
   const chamados = (data as Chamado[] | null) ?? [];
 
@@ -93,13 +94,15 @@ export default async function GestaoPage() {
     (c) => (c.aprovacao ?? "pendente") === "pendente"
   );
 
-  // Tempo médio de resolução (dias) usando updated_at como proxy de conclusão.
+  // Tempo médio de resolução (dias) = média de (data da conclusão − data da abertura) dos chamados Resolvidos/Fechados.
+  // A data da conclusão é a da ÚLTIMA mudança de status para Resolvido/Fechado no histórico do chamado; se o chamado
+  // não tiver esse registro, usa a última atualização (updated_at), que é só uma aproximação.
+  const concluidoEm = new Map<string, string>();
+  for (const h of (histR.data as { chamado_id: string; para: string | null; created_at: string }[] | null) ?? []) {
+    if (/^(resolvido|fechado)$/i.test((h.para ?? "").trim())) concluidoEm.set(h.chamado_id, h.created_at);
+  }
   const tempos = finalizados
-    .map(
-      (c) =>
-        (new Date(c.updated_at).getTime() - new Date(c.created_at).getTime()) /
-        86_400_000
-    )
+    .map((c) => (new Date(concluidoEm.get(c.id) ?? c.updated_at).getTime() - new Date(c.created_at).getTime()) / 86_400_000)
     .filter((d) => d >= 0);
   const tempoMedio =
     tempos.length > 0
@@ -174,7 +177,7 @@ export default async function GestaoPage() {
           titulo="Tempo médio de resolução"
           valor={tempoMedio === "—" ? "—" : `${tempoMedio} dias`}
           icone={Timer}
-          descricao="Da abertura à conclusão"
+          descricao={`Da abertura à conclusão · média de ${tempos.length} chamado(s) concluído(s)`}
         />
       </div>
 
