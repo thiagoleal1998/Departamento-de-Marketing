@@ -30,6 +30,14 @@ A cada conjunto de mudanças, **incrementar a versão** em `package.json` (campo
 
 A versão é fonte única em `package.json`, exposta via `NEXT_PUBLIC_APP_VERSION` (definido em `next.config.mjs`) e exibida no **rodapé da barra lateral**. Sempre incluir o bump de versão no mesmo commit da alteração.
 
+#### Documentação junto com a versão (obrigatório, em TODA versão)
+Toda vez que a versão sobe, **atualize `README.md` e `CLAUDE.md` no mesmo commit**. Os dois não podem ficar para trás:
+
+1. **README.md**: acrescente a linha da versão em "Histórico de versões" (agrupe patches da mesma série); se mudou módulo, tela, migration, variável de ambiente, rotina automática ou forma de publicar, atualize as tabelas correspondentes (Módulos, Migrations mais recentes, Variáveis, Rotinas).
+2. **CLAUDE.md**: registre regras novas, decisões, módulos novos ou alterados (seção "Módulos com regras próprias"), armadilhas encontradas e a migration nova (número e o que cria).
+3. Antes do `git commit`, confira com `git status` que `README.md` e `CLAUDE.md` estão entre os arquivos alterados. Se uma versão for só um ajuste mínimo, ao menos a linha no Histórico de versões do README entra.
+4. Ao terminar, diga ao usuário que a documentação foi atualizada.
+
 ### 3. Publicar (deploy) na Vercel
 O painel roda na conta **`marketing-2073`** (Hobby, pessoal) → https://departamento-de-marketing-lv.vercel.app. O push no GitHub **não** publica (deploy automático desligado em `vercel.json`): é preciso publicar pela CLI, depois de commitar e dar push:
 
@@ -70,7 +78,18 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 
 > No Windows, se o `.next` corromper (erro `routes-manifest.json`), pare o node, apague `.next` e rode `npm run dev` de novo.
 > Não há Python no computador: scripts de apoio em Node (`.mjs`/`tsx`) no scratchpad.
-> Ao editar código por script Node, **nunca** coloque expressões regulares dentro de template literal sem `String.raw` (as barras `d`, `s` somem em silêncio e o código compila do mesmo jeito). Prefira a ferramenta de edição de arquivo e, depois, teste a função com `npx tsx`.
+> Ao editar código por script Node, **nunca** coloque expressões regulares dentro de template literal sem `String.raw` (as barras de `\d` e `\s` somem em silêncio e o código compila do mesmo jeito). Prefira a ferramenta de edição de arquivo e, depois, teste a função com `npx tsx`.
+
+## Migrations recentes (o usuário roda no SQL Editor)
+| Nº | O que cria |
+|---|---|
+| 0080 | Senhas: edição/exclusão pelo criador |
+| 0081 · 0082 | Chat: leitura e revisão de peças; imagens e áudios (bucket `chat-anexos`) |
+| 0083 | `comercial_sazonal`, `comercial_sazonal_sync` |
+| 0084 | `profiles.nome_exibicao` |
+| 0085 | `proc_macroprocessos`, `proc_processos`, `proc_fluxos`, `proc_historico` + 7 macroprocessos e o processo de exemplo |
+| 0086 | `tarefas.solicitante` |
+| 0087 | `tarefa_historico` |
 
 ## Banco de dados (Supabase)
 
@@ -95,11 +114,16 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 - **Períodos sazonais** (aba "Períodos sazonais"): uma planilha por campanha, listada em `PERIODOS_SAZONAIS` (`sazonal-tipos.ts`). Hoje: **Black November 2026**. Lida junto com a sincronização do Comercial e também ao abrir a tela (se a última leitura tem mais de 10 min). Tabelas `comercial_sazonal` e `comercial_sazonal_sync` (migration 0083). Hotel que muda ganha destaque e aviso no sino. As condições da campanha também aparecem nos **cards normais** dos produtos (ligação pelo nome do hotel, `hotelCombina`).
 - **LPs sem produto na planilha** (cadastro em Operacional > Landing Pages, grupos novas/b2c/v4) ganham card próprio na aba do seu destino/situação (ex.: LP nacional inativa → NACIONAL INATIVAS), com a faixa "Só no cadastro de LPs". Epic Pages, antigas e a aba "Controle Feriados" da planilha de LPs **não** entram.
 - Conferência com as LPs compara a planilha com `landing_pages.status_patrocinio`.
+- **Busca geral** (`busca-geral.tsx`): caixa acima das abas que procura em **todas** as abas (produtos, cadastro de LPs e hotéis dos períodos sazonais), por nome e pelo conteúdo das condições; ao escolher, abre a aba e o card (`?aba=…&abrir=<chave>`).
 
 ### Chat (`src/features/chat/`)
 - Mensagens em tempo real (Supabase Realtime), reações, confirmação de leitura (`chat_leituras`), envio de imagem/áudio, caixa estilo WhatsApp.
 - **Revisão de peças**: menu "Revisão" → Solicitar revisão / Revisar peça (marcações sobre a imagem, com zoom/mover).
 - **Falar sobre algo**: menu do clipe → "Tarefa ou tópico da ata"; Ata e item do Calendário têm o botão "Falar no chat" (abre conversa com o responsável, sem redirecionar). Vínculo com estoque/tarefa/projeto continua em "Estoque ou tarefa".
+- **Troca instantânea de conversa** (`chat-agora.tsx`): a página do Chat carrega uma vez e cada clique só busca as mensagens da conversa (ação `mensagensDaConversa`), com cache e pré-busca ao passar o mouse; o endereço muda por `history.replaceState`. Não use redirecionamento de servidor para abrir conversa (causou erro de tela). `marcarConversaLida` **não** faz `revalidatePath`.
+- **Não lidas ao vivo** (`contagem-chat.ts`, `ouvinte-chat.tsx`): um "quadro" no navegador mantém o total e o número por conversa; o menu, o ícone do topo e a lista do chat leem dele e se atualizam quando chega mensagem.
+- **Busca na conversa** (`busca-actions.ts`) por trecho e/ou dia, "Ver mensagens anteriores", abre direto na última mensagem. **Links** nas mensagens ficam clicáveis (`texto-com-links.tsx`).
+- **Nome de exibição**: cada pessoa define "como quer ser chamado(a)" no perfil (`profiles.nome_exibicao`, migration 0084); o chat usa esse nome (`features/equipe/exibicao.ts`). Foto de perfil na lista e no cabeçalho.
 - **Som de notificação** (`som.ts`): toca **uma vez por mensagem recebida** (nunca ao enviar), deduplicado por id da mensagem; sem intervalo mínimo que descarte mensagens. O aviso do navegador sai em silêncio quando o painel está aberto (o próprio painel toca `public/sons/notificacao.mp3`).
 
 ### Fluxos e processos (Gestão > aba "Fluxos e processos", `src/features/processos/`)
@@ -109,9 +133,28 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 - Regras de qualidade (`validacao.ts`): para **publicar**, o processo tem objetivo, entrega final e dono; toda atividade tem responsável; toda aprovação tem critério; toda decisão tem ≥2 caminhos com nome; o fluxo tem Início e Fim. **Rascunhos incompletos podem ser salvos.** Editar um processo publicado o põe "em revisão" e a versão publicada continua a vigente. Revisão periódica a cada 6 meses.
 - Escrita só da liderança (RLS `eh_lideranca()`); leitura para todo usuário logado (quem só lê vê a versão publicada). Fases futuras: biblioteca de procedimentos e anexos (2), permissões Administrador/Gestor/Editor/Leitor e aprovação de mudanças (3), exportação PNG/PDF, modelos e relatórios (4).
 
+### Relatórios (`src/features/relatorios/`)
+- Abas: Divulgação, E-mails (RD Station), **Evolução do operacional** e Acessos e atividade. Em **toda aba** há o bloco "Como apuramos estes dados" (`como-apuramos.tsx`): **ao criar ou mudar um número de relatório, atualize o texto de fontes e fórmulas dessa aba**.
+- Evolução do operacional (`operacional.ts`, `relatorio-operacional.tsx`): tarefas do quadro + atas. Gráficos próprios em SVG (`graficos.tsx`, sem biblioteca; paleta de dados validada). Seções: leitura rápida, indicadores, evolução, **quem solicita** (filtro de mês, `quem-solicita.tsx`), pontos de correção (aprovação de quem, motivos de adiamento das atas e das tarefas, atrasadas por pessoa).
+- Limite conhecido: as tarefas guardam a data de criação, **não** a de conclusão; o tempo real de entrega por tarefa ainda não é medido.
+
+### Gestão (`src/app/(app)/gestao/`)
+- Abas (`gestao-abas.tsx`): Indicadores, Fluxos e processos, Perfis comportamentais, Férias, Escala de feriados.
+- **Indicadores** são dos **chamados** (Central de Solicitações) e a tela diz isso; o tempo médio de resolução usa a data real da conclusão (histórico) e informa quantos chamados entram.
+- **Escala de feriados**: diretoria e gerência (cargo com "Diretor" ou "Gerente") ficam fora da estatística (`features/feriados/participantes.ts`).
+
+### Dashboard
+- Blocos lentos (agenda, alertas de destinos, divulgação, painel da liderança, calendário, notícias) usam `ComLimite` (limite de tempo) e, ao estourar, tentam de novo sozinhos até 3 vezes (`AvisoDemora`). Os dias dos alertas de destinos são lidos em paralelo.
+
+### Desenvolvimento e Contatos
+- Planos de ação podem ser **excluídos** pelo gerente ou por quem os criou (`excluirPlano`; sem regra de exclusão no banco, a permissão é conferida no servidor).
+- Contatos públicos: ordem pela hierarquia do cargo (Diretor → Gerente → Coordenador → Supervisor → Líder → Analista → Assistente → Auxiliar → Estagiário).
+- Marca (`nome-marca.tsx`): "DEPARTAMENTO DE MARKETING" em destaque e "Litoral Verde Operadora" abaixo, sem corte.
+
 ### Tarefas (Operacional)
 - **Solicitante**: campo de lista (nomes do organograma da Litoral Verde, em `src/features/operacional/solicitantes.ts`) no card e no novo card. Para atualizar o organograma (entradas, saídas, cargos), edite essa lista. Coluna `tarefas.solicitante` (migration 0086).
 - **Linha do tempo do card** (`tarefa_historico`, migration 0087): status, prazo, responsável, colaborador, solicitante, prioridade e título geram registros (`src/features/operacional/historico.ts`). **Adiar o prazo** de uma tarefa que já tinha prazo exige **motivo** da lista (`MOTIVOS_PRAZO`, os mesmos das atas) e uma observação opcional; a validação é no servidor (`salvarTarefa`). Os adiamentos e motivos alimentam Relatórios → Evolução do operacional. Mudanças de prazo feitas por outros caminhos (ex.: sincronização com a ata) ainda não são registradas.
+- **Solicitante** inclui as reuniões (de vendas, de Marketing, V4, MKT <> Grupos/Inter/COM) no topo da lista; elas formam a área "Reuniões" nos relatórios.
 - Campos de data usam sempre `InputData` / `SeletorData` (calendário do painel), nunca `<input type="date">`.
 
 ### Atas (`src/features/atas/`)
