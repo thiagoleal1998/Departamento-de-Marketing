@@ -425,23 +425,23 @@ export function TarefaDetalhe({
 
         {/* Rodapé */}
         <div className="flex flex-wrap items-center justify-end gap-3 border-t p-4">
-          <div className="mr-auto space-y-1">
-            <Button type="button" variant="outline" onClick={duplicar} disabled={pendente || alterado} title="Copia os dados salvos para uma nova tarefa em Não iniciado">
-              <Copy className="size-4" /> Duplicar tarefa
-            </Button>
-            {alterado ? <p className="text-xs text-muted-foreground">Salve as alterações antes de duplicar.</p> : null}
-          </div>
           {podeExcluir ? (
             <Button
               type="button"
               variant="ghost"
-              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+              className="mr-auto text-destructive hover:bg-destructive/10 hover:text-destructive"
               onClick={excluir}
               disabled={pendente}
             >
               <Trash2 className="size-4" /> Excluir tarefa
             </Button>
           ) : null}
+          <div className="space-y-1">
+            <Button type="button" variant="outline" onClick={duplicar} disabled={pendente || alterado} title="Copia os dados salvos para uma nova tarefa em Não iniciado">
+              <Copy className="size-4" /> Duplicar tarefa
+            </Button>
+            {alterado ? <p className="text-xs text-muted-foreground">Salve as alterações antes de duplicar.</p> : null}
+          </div>
           {erro ? <span className="text-sm text-destructive">{erro}</span> : null}
           {salvo ? (
             <span className="flex items-center gap-1 text-sm text-emerald-600">

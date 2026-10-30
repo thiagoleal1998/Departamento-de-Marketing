@@ -442,7 +442,7 @@ export function KanbanTarefas({
             setFiltroResp("");
             setAberta(id);
           }}
-          podeExcluir={aberto.podeExcluir ?? false}
+          podeExcluir={lideranca || aberto.responsavel_id === usuarioId}
           onExcluida={(id) => setLista((l) => l.filter((x) => x.id !== id))}
           onSalvo={(t) =>
             setLista((l) => l.map((x) => (x.id === t.id ? t : x)))

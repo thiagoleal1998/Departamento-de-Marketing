@@ -32,10 +32,13 @@ export function BotaoSincronizar() {
       </Button>
       {res?.ok ? (
         <span className="text-xs text-emerald-600">
-          {res.alteradas ? `${res.alteradas} aba(s) atualizada(s)` : "Já estava atualizado"}
+          {res.alteradas || res.lpsAtualizadas
+            ? `${res.alteradas ?? 0} produto(s) e ${res.lpsAtualizadas ?? 0} status de LP atualizados`
+            : res.aviso ? "Produtos comerciais atualizados" : "Já estava atualizado"}
         </span>
       ) : null}
       {res?.erro ? <span className="text-xs text-destructive">{res.erro}</span> : null}
+      {res?.aviso ? <span className="text-xs text-amber-600">{res.aviso}</span> : null}
     </div>
   );
 }

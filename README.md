@@ -48,6 +48,7 @@ Construído com **Next.js 15 (App Router) + TypeScript + Tailwind CSS + Supabase
 | Serviço | Para quê |
 |---|---|
 | **Google Sheets** (leitura por exportação) | Planilha do Comercial, Divulgação diária e planilha da Black November |
+| **Planilha de LPs** (leitura por exportação) | Status de patrocínio das LPs atuais, sincronizados junto com o Comercial; valores anteriores preservados no histórico |
 | **RD Station Marketing** | Estatísticas de e-mails (relatório de e-mails) |
 | **Canva Connect** | Peças da Área de Criação |
 | **Google Gemini** (plano gratuito) | Assistente de feedback e leitura dos destinos das ofertas |
@@ -61,7 +62,7 @@ Construído com **Next.js 15 (App Router) + TypeScript + Tailwind CSS + Supabase
 |---|---|
 | Resumo semanal da diretoria | segunda, 08h |
 | Cobrança diária das atas | dias úteis, 08h |
-| Sincronização do Comercial (e Períodos sazonais) | dias úteis, 10h30, 14h, 16h e 19h |
+| Sincronização do Comercial, status das LPs e Períodos sazonais | dias úteis, 10h30, 14h, 16h e 19h |
 | Divulgação diária | todo dia, 10h30 |
 | E-mails do RD Station | todo dia, 08h |
 | Lembretes de tarefas e do calendário | todo dia, 08h |
@@ -177,6 +178,7 @@ Detalhes e regras de cada módulo ficam no [`CLAUDE.md`](CLAUDE.md).
 
 | Versão | O que mudou |
 |---|---|
+| **1.63.0** | Status das LPs passam a espelhar a planilha de origem na sincronização do Comercial, com backup no histórico e aviso de falha; Excluir tarefa volta à posição anterior, com permissão calculada pelo responsável atual |
 | **1.62.0** | Tarefas: botão Duplicar tarefa cria uma cópia dos dados salvos em Não iniciado, com novo código e histórico independente |
 | **1.61.0** | Chat: colar prints com Ctrl+V abre a prévia de envio com legenda opcional, no chat completo e flutuante, usando o fluxo existente de anexos |
 | **1.60.3** | Notícias do turismo: busca alternativa da foto de capa na página da matéria quando o RSS não contém imagem, com timeout de 5 s e cache de 15 min |

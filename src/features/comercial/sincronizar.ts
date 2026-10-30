@@ -4,6 +4,7 @@ import { criarClienteAdmin } from "@/lib/supabase/admin";
 import { enviarPush } from "@/lib/push";
 import { lerProdutos } from "./parser";
 import { sincronizarSazonais } from "./sazonal";
+import { sincronizarStatusLps } from "./lps-sync";
 import {
   PLANILHA_ID,
   type CampoProduto,
@@ -69,6 +70,8 @@ interface Existente {
 export interface ResultadoSync {
   produtos: number;
   alteradas: number;
+  lpsAtualizadas: number;
+  avisoLps?: string;
 }
 
 /** Avisa todos os usuários ativos (sino, contador do menu e notificação do navegador). */
@@ -183,17 +186,24 @@ export async function sincronizarComercial(origem: string): Promise<ResultadoSyn
       await avisarEquipe(admin, eventos);
     }
 
+    let lpsAtualizadas = 0;
+    let avisoLps: string | undefined;
+    try {
+      lpsAtualizadas = await sincronizarStatusLps(origem);
+    } catch (e) {
+      avisoLps = "LPs: " + (e instanceof Error ? e.message : "Falha ao sincronizar os status.");
+    }
     await admin.from("comercial_sync").upsert({
       id: 1,
       sincronizado_em: new Date().toISOString(),
       origem,
       abas: produtos.length,
       alteradas: eventos.length,
-      erro: null,
+      erro: avisoLps ?? null,
     });
     // Períodos sazonais (ex.: Black November) vão junto; se falharem, não derrubam a sincronização principal.
     await sincronizarSazonais(origem).catch(() => undefined);
-    return { produtos: produtos.length, alteradas: eventos.length };
+    return { produtos: produtos.length, alteradas: eventos.length, lpsAtualizadas, avisoLps };
   } catch (e) {
     const erro = e instanceof Error ? e.message : "Falha na sincronização.";
     // Mantém o horário da última sincronização bem-sucedida.

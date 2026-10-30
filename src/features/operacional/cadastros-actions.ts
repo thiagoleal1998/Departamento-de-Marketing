@@ -80,6 +80,10 @@ export async function salvarRegistro(
   }
 
   revalidatePath(def.rota);
+  if (chave === "landing_pages") {
+    revalidatePath("/comercial");
+    revalidatePath("/consulta");
+  }
   return { ok: true };
 }
 
