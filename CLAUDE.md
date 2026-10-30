@@ -144,6 +144,7 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 - **Escala de feriados**: diretoria e gerência (cargo com "Diretor" ou "Gerente") ficam fora da estatística (`features/feriados/participantes.ts`).
 
 ### Dashboard
+- Notícias (`noticias/rss.ts`): procurar fotos no resumo e em `content:encoded` do RSS; ignorar banners publicitários (`al-banner`) e scripts antes de extrair imagens. A Revista Hotéis envia fotos editoriais no conteúdo completo. Correção v1.60.2, sem migration.
 - Blocos lentos (agenda, alertas de destinos, divulgação, painel da liderança, calendário, notícias) usam `ComLimite` (limite de tempo) e, ao estourar, tentam de novo sozinhos até 3 vezes (`AvisoDemora`). Os dias dos alertas de destinos são lidos em paralelo.
 
 ### Desenvolvimento e Contatos

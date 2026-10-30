@@ -22,6 +22,6 @@ export const noticiasDoTurismo = unstable_cache(
     const listas = await Promise.all(FONTES.map((f) => lerFeed(f.url, f.rotulo, f.max * 3))); // o feed da Panrotas traz centenas: só o começo interessa
     return juntar(listas, FONTES.map((f) => f.max), 12);
   },
-  ["noticias-turismo-v2"],
+  ["noticias-turismo-v3"],
   { revalidate: 900 }
 );

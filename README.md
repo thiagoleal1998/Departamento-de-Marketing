@@ -177,6 +177,7 @@ Detalhes e regras de cada módulo ficam no [`CLAUDE.md`](CLAUDE.md).
 
 | Versão | O que mudou |
 |---|---|
+| **1.60.2** | Notícias: fotos editoriais também são extraídas do conteúdo completo do RSS, ignorando banners de publicidade; cache do turismo renovado |
 | **1.60.1** | Documentação: README reescrito (módulos, integrações, rotinas, variáveis, migrations, publicação) e CLAUDE.md atualizado; passa a ser regra atualizar os dois a cada versão |
 | **1.60** | Tarefas: motivo obrigatório ao adiar o prazo (lista), linha do tempo no card, adiamentos nos relatórios (migration 0087) |
 | **1.59** | Solicitante: reuniões na lista; relatório "Quem solicita" com filtro e gráfico por mês |

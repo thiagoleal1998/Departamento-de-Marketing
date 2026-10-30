@@ -22,6 +22,25 @@ export const decodificar = (s: string) =>
 
 const semTags = (s: string) => decodificar(s).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 
+/** Fotos editoriais do HTML do feed; ignora banners que alguns portais inserem entre os parágrafos. */
+function imagemDoConteudo(html: string, base: string): string | null {
+  const conteudo = decodificar(html)
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<div\b[^>]*class=["'][^"']*\bal-banner\b[^"']*["'][^>]*>[\s\S]*?<\/div>/gi, "");
+  for (const m of conteudo.matchAll(/<img\b[^>]*>/gi)) {
+    if (/\b(?:al-banner|banner|advertisement|tracking|pixel)\b/i.test(m[0])) continue;
+    const src = /\s(?:data-src|src)\s*=\s*["']([^"']+)["']/i.exec(m[0])?.[1];
+    if (!src) continue;
+    try {
+      const url = new URL(src, base);
+      if (url.protocol === "https:" || url.protocol === "http:") return url.href;
+    } catch {
+      // Uma imagem inválida não impede a leitura das demais.
+    }
+  }
+  return null;
+}
+
 function resumir(desc: string): string {
   let t = semTags(desc);
   const i = t.search(/\bO post\b/); // texto padrão do WordPress: "O post X apareceu primeiro em Y"
@@ -61,7 +80,8 @@ export async function lerFeed(url: string, fonte: string, lote: number): Promise
         decodificar(
           /<enclosure[^>]*url="([^"]+)"/.exec(bloco)?.[1] ??
             /<media:(?:content|thumbnail)[^>]*url="([^"]+)"/.exec(bloco)?.[1] ??
-            /<img[^>]*src="([^"]+)"/.exec(decodificar(descricao))?.[1] ??
+            imagemDoConteudo(descricao, link) ??
+            imagemDoConteudo(pega("content:encoded"), link) ??
             ""
         ) || null;
       const categoria = /<category[^>]*>([\s\S]*?)<\/category>/.exec(bloco)?.[1];
