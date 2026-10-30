@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { juntar, lerFeed, type NoticiaFeed } from "./rss";
+import { completarImagens, juntar, lerFeed, type NoticiaFeed } from "./rss";
 
 export type NoticiaTurismo = NoticiaFeed;
 
@@ -20,8 +20,8 @@ const FONTES: Fonte[] = [
 export const noticiasDoTurismo = unstable_cache(
   async (): Promise<NoticiaTurismo[]> => {
     const listas = await Promise.all(FONTES.map((f) => lerFeed(f.url, f.rotulo, f.max * 3))); // o feed da Panrotas traz centenas: só o começo interessa
-    return juntar(listas, FONTES.map((f) => f.max), 12);
+    return completarImagens(juntar(listas, FONTES.map((f) => f.max), 12));
   },
-  ["noticias-turismo-v3"],
+  ["noticias-turismo-v4"],
   { revalidate: 900 }
 );

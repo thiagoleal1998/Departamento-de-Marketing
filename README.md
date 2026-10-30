@@ -24,7 +24,7 @@ Construído com **Next.js 15 (App Router) + TypeScript + Tailwind CSS + Supabase
 ### Área autenticada (menu lateral)
 | Módulo | O que faz |
 |---|---|
-| **Dashboard** | Resumo do dia: agenda, alertas de destinos (notícias de risco), divulgação do dia, painel da liderança, calendário do mês e notícias do turismo/economia. Cada bloco lento tem limite de tempo próprio |
+| **Dashboard** | Resumo do dia: agenda, alertas de destinos (notícias de risco), divulgação do dia, painel da liderança, calendário do mês e notícias do turismo/economia. Fotos do turismo ausentes no RSS são buscadas nos metadados da matéria. Cada bloco lento tem limite de tempo próprio |
 | **Visão geral** | Resumo para o celular e aprovações da diretoria |
 | **Chamados** | Abrir, triar, atribuir, comentar e acompanhar solicitações (SLA, histórico de status, conversão em tarefa) |
 | **Feedbacks e Desenvolvimento** | Construtor de feedback guiado com IA, conversas 1:1, planos de ação (com objetivos, checklist, anexos e exclusão), histórico por colaborador |
@@ -177,6 +177,7 @@ Detalhes e regras de cada módulo ficam no [`CLAUDE.md`](CLAUDE.md).
 
 | Versão | O que mudou |
 |---|---|
+| **1.60.3** | Notícias do turismo: busca alternativa da foto de capa na página da matéria quando o RSS não contém imagem, com timeout de 5 s e cache de 15 min |
 | **1.60.2** | Notícias: fotos editoriais também são extraídas do conteúdo completo do RSS, ignorando banners de publicidade; cache do turismo renovado |
 | **1.60.1** | Documentação: README reescrito (módulos, integrações, rotinas, variáveis, migrations, publicação) e CLAUDE.md atualizado; passa a ser regra atualizar os dois a cada versão |
 | **1.60** | Tarefas: motivo obrigatório ao adiar o prazo (lista), linha do tempo no card, adiamentos nos relatórios (migration 0087) |

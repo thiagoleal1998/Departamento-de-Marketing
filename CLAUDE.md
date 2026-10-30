@@ -145,6 +145,7 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 
 ### Dashboard
 - Notícias (`noticias/rss.ts`): procurar fotos no resumo e em `content:encoded` do RSS; ignorar banners publicitários (`al-banner`) e scripts antes de extrair imagens. A Revista Hotéis envia fotos editoriais no conteúdo completo. Correção v1.60.2, sem migration.
+- Turismo (v1.60.3): algumas matérias, como a de Pomerode/Família Lima, não trazem foto nem em `content:encoded`. Após selecionar as notícias, `completarImagens` busca as capas ausentes na página (`og:image`, Twitter ou `wp-post-image`), em paralelo, com timeout de 5 s por página, dentro do cache de 15 min. Não buscar páginas de todos os itens do feed nem usar a primeira imagem arbitrária do HTML (pode ser publicidade). Sem migration.
 - Blocos lentos (agenda, alertas de destinos, divulgação, painel da liderança, calendário, notícias) usam `ComLimite` (limite de tempo) e, ao estourar, tentam de novo sozinhos até 3 vezes (`AvisoDemora`). Os dias dos alertas de destinos são lidos em paralelo.
 
 ### Desenvolvimento e Contatos

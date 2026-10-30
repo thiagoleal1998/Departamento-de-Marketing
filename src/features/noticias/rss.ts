@@ -61,6 +61,47 @@ async function lerTexto(r: Response): Promise<string> {
   }
 }
 
+/** Alguns portais deixam a foto de capa só na página da matéria, fora do RSS. */
+async function imagemDaPagina(link: string): Promise<string | null> {
+  try {
+    const r = await fetch(link, {
+      headers: { "User-Agent": "Mozilla/5.0 (PainelMarketing)" },
+      signal: AbortSignal.timeout(5000),
+      cache: "no-store",
+    });
+    if (!r.ok) return null;
+    const html = await lerTexto(r);
+    const atributos = (tag: string) => new Map(
+      Array.from(tag.matchAll(/\s([\w:-]+)\s*=\s*(["'])([\s\S]*?)\2/g), (m) => [m[1].toLowerCase(), decodificar(m[3]).trim()])
+    );
+    const metas = Array.from(html.matchAll(/<meta\b[^>]*>/gi), (m) => atributos(m[0]));
+    const candidatos = ["og:image", "og:image:url", "twitter:image", "twitter:image:src"]
+      .flatMap((nome) => metas.filter((a) => (a.get("property") ?? a.get("name"))?.toLowerCase() === nome).map((a) => a.get("content")));
+    // WordPress também identifica explicitamente a foto de capa, sem recorrer a anúncios do corpo.
+    for (const m of html.matchAll(/<img\b[^>]*>/gi)) {
+      const a = atributos(m[0]);
+      if (a.get("class")?.split(/\s+/).includes("wp-post-image")) candidatos.push(a.get("src"));
+    }
+    for (const candidato of candidatos) {
+      if (!candidato) continue;
+      try {
+        const url = new URL(candidato, r.url || link);
+        if (url.protocol === "https:" || url.protocol === "http:") return url.href;
+      } catch {
+        // Tenta o próximo metadado se o endereço estiver inválido.
+      }
+    }
+  } catch {
+    // A notícia continua disponível mesmo se a página não responder a tempo.
+  }
+  return null;
+}
+
+/** Completa só as notícias selecionadas, em paralelo; as fotos já presentes no RSS são preservadas. */
+export async function completarImagens(noticias: NoticiaFeed[]): Promise<NoticiaFeed[]> {
+  return Promise.all(noticias.map(async (n) => n.imagem ? n : { ...n, imagem: await imagemDaPagina(n.link) }));
+}
+
 /** Lê um feed e devolve as notícias mais novas (no máximo `lote`). Falha em silêncio: devolve lista vazia. */
 export async function lerFeed(url: string, fonte: string, lote: number): Promise<NoticiaFeed[]> {
   try {
