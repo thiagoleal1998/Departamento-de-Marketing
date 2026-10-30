@@ -180,6 +180,7 @@ Detalhes e regras de cada módulo ficam no [`CLAUDE.md`](CLAUDE.md).
 
 | Versão | O que mudou |
 |---|---|
+| **1.64.1** | Seletores: correção da lista que fechava ao abrir em formulários e modais; rolagem da opção ativa fica restrita à lista e foco não desloca a página |
 | **1.64.0** | Novo card: responsável, solicitante, prazo válido e prioridade de 1 a 5 obrigatórios no formulário e no servidor; duplicação exige os mesmos dados preenchidos na origem |
 | **1.63.0** | Status das LPs passam a espelhar a planilha de origem na sincronização do Comercial, com backup no histórico e aviso de falha; Excluir tarefa volta à posição anterior, com permissão calculada pelo responsável atual |
 | **1.62.0** | Tarefas: botão Duplicar tarefa cria uma cópia dos dados salvos em Não iniciado, com novo código e histórico independente |

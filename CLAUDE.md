@@ -53,6 +53,7 @@ npx vercel deploy --prod --yes --scope marketing-2073 --token "$VERCEL_TOKEN"
 - Se aparecer erro estranho de tela logo após publicar (ex.: `e[o] is not a function`), pode ser cache de build: publicar de novo com `--force`.
 
 ### 4. Interface sempre moderna e consistente
+- `Select` (v1.64.1): não usar `scrollIntoView` para mostrar a opção ativa de listas em portal: ele pode rolar os ancestrais e acionar o fechamento por scroll externo. Usar `rolarOpcaoNaLista` (altera apenas `scrollTop` do listbox) e `focus({ preventScroll: true })` na busca e ao devolver foco ao botão.
 - **Nunca** usar `<select>` nativo: usar sempre o componente `Select` (`src/components/ui/select.tsx`).
 - Datas de formulário com o seletor de data do projeto quando já existir (`SeletorData`); botões, cards e modais seguem o visual dos módulos existentes (nada "feito nas coxas").
 

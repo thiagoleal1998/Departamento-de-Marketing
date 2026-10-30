@@ -4,6 +4,7 @@ import * as React from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronDown, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { rolarOpcaoNaLista } from "./select-rolagem";
 
 type Opcao = { tipo: "opcao"; valor: string; rotulo: React.ReactNode; texto: string; desabilitada: boolean } | { tipo: "grupo"; rotulo: string };
 
@@ -48,6 +49,7 @@ const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HT
   const nativo = React.useRef<HTMLSelectElement | null>(null);
   const botao = React.useRef<HTMLButtonElement>(null);
   const lista = React.useRef<HTMLDivElement>(null);
+  const buscaInput = React.useRef<HTMLInputElement>(null);
   const opcoes = coletar(children);
   const reais = opcoes.filter((o): o is Extract<Opcao, { tipo: "opcao" }> => o.tipo === "opcao");
 
@@ -93,7 +95,7 @@ const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HT
 
   function escolher(v: string) {
     setAberto(false);
-    botao.current?.focus();
+    botao.current?.focus({ preventScroll: true });
     const el = nativo.current;
     if (!el || el.value === v) return;
     // Mesmo caminho de uma escolha nativa: dispara "change" para onChange / react-hook-form.
@@ -123,8 +125,15 @@ const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HT
   }, [aberto]);
 
   React.useEffect(() => {
-    if (aberto) lista.current?.querySelector<HTMLElement>("[data-ativo=true]")?.scrollIntoView({ block: "nearest" });
+    if (!aberto) return;
+    const area = lista.current?.querySelector<HTMLElement>('[role="listbox"]');
+    const opcao = area?.querySelector<HTMLElement>("[data-ativo=true]");
+    if (area && opcao) rolarOpcaoNaLista(area, opcao);
   }, [aberto, ativo]);
+
+  React.useEffect(() => {
+    if (aberto) buscaInput.current?.focus({ preventScroll: true });
+  }, [aberto]);
 
   function teclas(e: React.KeyboardEvent) {
     if (!aberto) {
@@ -209,7 +218,7 @@ const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HT
                 <div className="relative border-b p-2">
                   <Search className="pointer-events-none absolute left-4 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
                   <input
-                    autoFocus
+                    ref={buscaInput}
                     value={busca}
                     onChange={(e) => {
                       setBusca(e.target.value);
