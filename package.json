@@ -1,6 +1,6 @@
 {
   "name": "painel-marketing",
-  "version": "1.64.2",
+  "version": "1.65.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -23,7 +23,11 @@
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-hook-form": "^7.54.2",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "tailwind-merge": "^2.6.0",
+    "turndown": "^7.2.4",
+    "turndown-plugin-gfm": "^1.0.2",
     "web-push": "^3.6.7",
     "xlsx": "^0.18.5",
     "zod": "^3.24.1"
@@ -32,6 +36,7 @@
     "@types/node": "^22.10.7",
     "@types/react": "^19.0.7",
     "@types/react-dom": "^19.0.3",
+    "@types/turndown": "^5.0.6",
     "@types/web-push": "^3.6.4",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.18.0",

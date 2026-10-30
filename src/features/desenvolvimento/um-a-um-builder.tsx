@@ -6,7 +6,7 @@ import { BLOCOS_1A1 } from "./roteiro-config";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { TextareaFormatada as Textarea } from "@/components/shared/textarea-formatada";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { InputData } from "@/components/ui/input-data";
@@ -73,7 +73,6 @@ export function UmAUmBuilder({ colaboradores }: { colaboradores: Opcao[] }) {
               <div key={String(campo.chave)} className="space-y-1.5">
                 <Label htmlFor={String(campo.chave)}>{campo.label}</Label>
                 <Textarea
-                  autoAjustar
                   id={String(campo.chave)}
                   name={String(campo.chave)}
                   placeholder={campo.placeholder}

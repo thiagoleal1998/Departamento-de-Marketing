@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { formatarData } from "@/lib/utils";
 import type { AnotacoesUmAUm } from "@/types/database";
+import { TextoFormatado } from "@/components/shared/texto-formatado";
 
 export const dynamic = "force-dynamic";
 
@@ -72,9 +73,7 @@ export default async function UmAUmDetalhePage({
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     {c.label}
                   </p>
-                  <p className="whitespace-pre-wrap text-sm text-foreground/90">
-                    {String(anotacoes[c.chave] ?? "")}
-                  </p>
+                  <TextoFormatado texto={String(anotacoes[c.chave] ?? "")} />
                 </div>
               ))}
             </CardContent>

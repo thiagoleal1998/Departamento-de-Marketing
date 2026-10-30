@@ -25,6 +25,7 @@ import { FeedbackStatusBadge } from "@/components/shared/status-badge";
 import { formatarData } from "@/lib/utils";
 import type { RoteiroFeedback } from "@/types/database";
 import { InputData } from "@/components/ui/input-data";
+import { TextoFormatado } from "@/components/shared/texto-formatado";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +36,7 @@ function Campo({ label, valor }: { label: string; valor: string }) {
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
         {label}
       </p>
-      <p className="whitespace-pre-wrap text-sm text-foreground/90">{valor}</p>
+      <TextoFormatado texto={valor} />
     </div>
   );
 }
@@ -97,9 +98,7 @@ export default async function FeedbackDetalhePage({
             <CardTitle className="text-base">Resumo da conversa</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="whitespace-pre-wrap text-sm text-foreground/90">
-              {feedback.resumo}
-            </p>
+            <TextoFormatado texto={feedback.resumo} />
           </CardContent>
         </Card>
       ) : null}

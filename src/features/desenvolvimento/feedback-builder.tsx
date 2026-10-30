@@ -14,7 +14,7 @@ import type { MomentoFeedback } from "@/types/database";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { TextareaFormatada as Textarea } from "@/components/shared/textarea-formatada";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -195,7 +195,6 @@ export function FeedbackBuilder({
                       />
                     ) : (
                       <Textarea
-                        autoAjustar
                         id={String(campo.chave)}
                         name={String(campo.chave)}
                         placeholder={campo.placeholder}
@@ -223,7 +222,6 @@ export function FeedbackBuilder({
             <div className="space-y-1.5">
               <Label htmlFor="resumo">Resumo da conversa</Label>
               <Textarea
-                autoAjustar
                 id="resumo"
                 name="resumo"
                 value={resumo}
