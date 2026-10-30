@@ -13,6 +13,7 @@ import type { TarefaStatus } from "@/types";
 import { diaBrasilia, prazoParaGravar } from "@/lib/utils";
 import { registrarEventosTarefa, type NovoEvento } from "./historico";
 import { MOTIVOS_PRAZO } from "./historico-tipos";
+import { validarCriacaoTarefa } from "./validacao-criacao";
 
 /** Move uma tarefa para outra coluna do kanban (novo status). */
 export async function moverTarefa(tarefaId: string, novoStatus: TarefaStatus) {
@@ -112,6 +113,12 @@ export async function duplicarTarefa(tarefaId: string): Promise<{ id?: string; e
   if (!perfil) return { erro: "Não foi possível conferir sua permissão." };
   const lideranca = perfil.role === "gerente" || perfil.role === "lider";
   const responsavel = lideranca ? origem.responsavel_id ?? null : user.id;
+
+  const erroCampos = validarCriacaoTarefa({
+    responsavel_id: responsavel, solicitante: origem.solicitante,
+    prazo: diaBrasilia(origem.prazo), prioridade: origem.prioridade,
+  });
+  if (erroCampos) return { erro: "Complete os dados da tarefa original antes de duplicar. " + erroCampos };
 
   const dados: Record<string, unknown> = {
     titulo: String(origem.titulo).slice(0, 192) + " (cópia)",
@@ -384,7 +391,7 @@ export interface NovoCard {
   colaborador_id?: string | null;
   link_site?: string;
   lembretes?: number[];
-  solicitante?: string;
+  solicitante: string;
 }
 
 /**
@@ -398,10 +405,12 @@ export async function criarTarefaCard(d: NovoCard): Promise<{ ok?: boolean; erro
   } = await supabase.auth.getUser();
   if (!user) return { erro: "Sessão expirada. Entre novamente." };
 
+  const erroCampos = validarCriacaoTarefa(d);
+  if (erroCampos) return { erro: erroCampos };
+
   const titulo = d.titulo.trim().slice(0, 200);
   if (!titulo) return { erro: "Dê um título ao card." };
   if (!STATUS_VALIDOS.includes(d.status)) return { erro: "Coluna inválida." };
-  if (d.prioridade !== null && (d.prioridade < 1 || d.prioridade > 5)) return { erro: "Prioridade deve ser de 1 a 5." };
   const link = d.link.trim();
   if (link && !/^https?:\/\//i.test(link)) return { erro: "O link deve começar com http:// ou https://." };
   const linkSite = (d.link_site ?? "").trim();
@@ -410,10 +419,13 @@ export async function criarTarefaCard(d: NovoCard): Promise<{ ok?: boolean; erro
 
   const { data: eu } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
   const papel = (eu as { role: string } | null)?.role;
+  if (!papel) return { erro: "Não foi possível conferir sua permissão." };
   const lideranca = papel === "gerente" || papel === "lider";
   const responsavel = lideranca ? d.responsavel_id || null : user.id;
 
   const admin = criarClienteAdmin();
+  const { data: pessoa } = await admin.from("profiles").select("id").eq("id", responsavel).eq("ativo", true).maybeSingle();
+  if (!pessoa) return { erro: "Selecione um responsável ativo para a tarefa." };
   const { data, error } = await admin
     .from("tarefas")
     .insert({
@@ -423,20 +435,21 @@ export async function criarTarefaCard(d: NovoCard): Promise<{ ok?: boolean; erro
       responsavel_id: responsavel,
       prazo: prazoParaGravar(d.prazo),
       prioridade: d.prioridade,
+      solicitante: d.solicitante.trim().slice(0, 120),
       tag: d.tag.trim() || null,
       link: link || null,
     })
     .select("id")
     .single();
-  if (error || !data) return { erro: "Não foi possível criar o card. Tente novamente." };
+  if (error || !data) return { erro: error && /solicitante/i.test(error.message) && ["42703", "PGRST204"].includes(error.code)
+    ? "O campo Solicitante precisa ser ativado no banco (migration 0086) antes de criar tarefas."
+    : "Não foi possível criar o card. Tente novamente." };
   const id = (data as { id: string }).id;
   if (d.pasta_caminho?.trim()) {
     // Sem a migration 0069 o card é criado do mesmo jeito; o caminho pode ser informado depois de rodá-la.
     await admin.from("tarefas").update(limparPasta(d.pasta_raiz, d.pasta_caminho)).eq("id", id);
   }
 
-  // Sem a migration 0086 o card é criado do mesmo jeito, só sem o solicitante.
-  if (d.solicitante?.trim()) await admin.from("tarefas").update({ solicitante: d.solicitante.trim().slice(0, 120) }).eq("id", id);
   // Sem a migration 0071 o card é criado do mesmo jeito, só sem o link do site.
   if (linkSite) await admin.from("tarefas").update({ link_site: linkSite }).eq("id", id);
   // Sem a migration 0073 o card é criado do mesmo jeito, só sem os lembretes.

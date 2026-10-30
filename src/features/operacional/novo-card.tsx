@@ -14,6 +14,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { InputData } from "@/components/ui/input-data";
 import { SelectSolicitante } from "./select-solicitante";
+import { validarCriacaoTarefa } from "./validacao-criacao";
 
 /** Janela para criar um card no quadro de tarefas. */
 export function NovoCardDialogo({
@@ -65,6 +66,8 @@ export function NovoCardDialogo({
   function criar(e: React.FormEvent) {
     e.preventDefault();
     setErro(null);
+    const erroCampos = validarCriacaoTarefa({ responsavel_id: responsavel, solicitante, prazo, prioridade: prioridade ? Number(prioridade) : null });
+    if (erroCampos) return setErro(erroCampos);
     start(async () => {
       const r = await criarTarefaCard({
         titulo,
@@ -120,9 +123,9 @@ export function NovoCardDialogo({
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="nc-resp">Responsável</Label>
-            <Select id="nc-resp" value={responsavel} onChange={(e) => setResponsavel(e.target.value)} disabled={!lideranca}>
-              <option value="">Sem responsável</option>
+            <Label htmlFor="nc-resp">Responsável *</Label>
+            <Select id="nc-resp" value={responsavel} onChange={(e) => setResponsavel(e.target.value)} disabled={!lideranca} required>
+              <option value="" disabled>Selecione o responsável</option>
               {pessoas.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.nome}
@@ -144,17 +147,17 @@ export function NovoCardDialogo({
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="nc-solic">Solicitante</Label>
-            <SelectSolicitante id="nc-solic" value={solicitante} onChange={setSolicitante} />
+            <Label htmlFor="nc-solic">Solicitante *</Label>
+            <SelectSolicitante id="nc-solic" value={solicitante} onChange={setSolicitante} required />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="nc-prazo">Prazo</Label>
-            <InputData id="nc-prazo"  value={prazo} onChange={(e) => setPrazo(e.target.value)} />
+            <Label htmlFor="nc-prazo">Prazo *</Label>
+            <InputData id="nc-prazo" value={prazo} onChange={(e) => setPrazo(e.target.value)} required />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="nc-prio">Prioridade (1 a 5)</Label>
-            <Select id="nc-prio" value={prioridade} onChange={(e) => setPrioridade(e.target.value)}>
-              <option value="">—</option>
+            <Label htmlFor="nc-prio">Prioridade (1 a 5) *</Label>
+            <Select id="nc-prio" value={prioridade} onChange={(e) => setPrioridade(e.target.value)} required>
+              <option value="" disabled>Selecione a prioridade</option>
               {[1, 2, 3, 4, 5].map((n) => (
                 <option key={n} value={n}>
                   {n}

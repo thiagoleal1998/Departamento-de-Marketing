@@ -41,6 +41,8 @@ Construído com **Next.js 15 (App Router) + TypeScript + Tailwind CSS + Supabase
 
 **Papéis:** Gerente, Líder e Colaborador (RBAC na interface + RLS no banco).
 
+**Novos cards de tarefa:** responsável, solicitante, prazo e prioridade (1 a 5) são obrigatórios no formulário e no servidor. Para duplicar um card, preencha e salve esses dados na origem.
+
 ---
 
 ## Integrações
@@ -178,6 +180,7 @@ Detalhes e regras de cada módulo ficam no [`CLAUDE.md`](CLAUDE.md).
 
 | Versão | O que mudou |
 |---|---|
+| **1.64.0** | Novo card: responsável, solicitante, prazo válido e prioridade de 1 a 5 obrigatórios no formulário e no servidor; duplicação exige os mesmos dados preenchidos na origem |
 | **1.63.0** | Status das LPs passam a espelhar a planilha de origem na sincronização do Comercial, com backup no histórico e aviso de falha; Excluir tarefa volta à posição anterior, com permissão calculada pelo responsável atual |
 | **1.62.0** | Tarefas: botão Duplicar tarefa cria uma cópia dos dados salvos em Não iniciado, com novo código e histórico independente |
 | **1.61.0** | Chat: colar prints com Ctrl+V abre a prévia de envio com legenda opcional, no chat completo e flutuante, usando o fluxo existente de anexos |
