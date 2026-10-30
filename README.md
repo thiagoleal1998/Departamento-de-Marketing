@@ -31,7 +31,7 @@ Construído com **Next.js 15 (App Router) + TypeScript + Tailwind CSS + Supabase
 | **Criação** | Gerador de peças (integração Canva) e catálogo de modelos |
 | **Gestão** | Abas: **Indicadores** (chamados e escala de feriados), **Fluxos e processos**, **Perfis comportamentais**, **Férias** e **Escala de feriados** |
 | **Relatórios** | Abas: **Divulgação**, **E-mails (RD Station)**, **Evolução do operacional** (gráficos, leitura rápida, pontos de correção, quem solicita, motivos de adiamento) e **Acessos e atividade**. Cada aba tem o bloco "Como apuramos estes dados" |
-| **Operacional** | **Tarefas** (kanban, solicitante, motivo ao adiar prazo, linha do tempo do card), Landing Pages, Conteúdos do site, Controle de conteúdo das LPs, **Calendário geral**, Divulgação diária e Senhas (cofre criptografado) |
+| **Operacional** | **Tarefas** (kanban, duplicação de cards, solicitante, motivo ao adiar prazo, linha do tempo do card), Landing Pages, Conteúdos do site, Controle de conteúdo das LPs, **Calendário geral**, Divulgação diária e Senhas (cofre criptografado) |
 | **Projetos** | Eventos, feiras, famtours, projetos de Marketing e VTs, com etapas, documentos, comparativos, capa e logo do parceiro; cada projeto também vira card em Tarefas |
 | **Atas** | Reuniões de planejamento: pendências por responsável, prazos, adiamentos e frequência; botão **Falar no chat** em cada item |
 | **Comercial** | Condições e disponibilidades dos produtos (lidas da planilha oficial), **Períodos sazonais** (Black November 2026), conferência com as LPs, LPs sem produto na planilha e **busca geral** em todas as abas |
@@ -177,6 +177,7 @@ Detalhes e regras de cada módulo ficam no [`CLAUDE.md`](CLAUDE.md).
 
 | Versão | O que mudou |
 |---|---|
+| **1.62.0** | Tarefas: botão Duplicar tarefa cria uma cópia dos dados salvos em Não iniciado, com novo código e histórico independente |
 | **1.61.0** | Chat: colar prints com Ctrl+V abre a prévia de envio com legenda opcional, no chat completo e flutuante, usando o fluxo existente de anexos |
 | **1.60.3** | Notícias do turismo: busca alternativa da foto de capa na página da matéria quando o RSS não contém imagem, com timeout de 5 s e cache de 15 min |
 | **1.60.2** | Notícias: fotos editoriais também são extraídas do conteúdo completo do RSS, ignorando banners de publicidade; cache do turismo renovado |

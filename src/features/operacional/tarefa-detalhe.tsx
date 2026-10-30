@@ -4,8 +4,8 @@ import { useDialogo } from "@/components/shared/dialogo-provider";
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "@/components/shared/link";
-import { X, Loader2, Save, ExternalLink, Check, Trash2 } from "lucide-react";
-import { excluirTarefa, salvarTarefa } from "./actions";
+import { X, Loader2, Save, ExternalLink, Check, Trash2, Copy } from "lucide-react";
+import { duplicarTarefa, excluirTarefa, salvarTarefa } from "./actions";
 import { ConteudoCard } from "./conteudo-card";
 import { CampoPasta } from "./campo-pasta";
 import { criadaEm } from "@/lib/codigo-tarefa";
@@ -44,6 +44,7 @@ export function TarefaDetalhe({
   pessoas,
   onFechar,
   onSalvo,
+  onDuplicada,
   onExcluida,
   podeExcluir = false,
   usuarioId,
@@ -55,6 +56,7 @@ export function TarefaDetalhe({
   pessoas: PessoaOpcao[];
   onFechar: () => void;
   onSalvo: (t: TarefaView) => void;
+  onDuplicada: (id: string) => void;
   /** Chamado depois que a tarefa é excluída (o quadro a retira da tela). */
   onExcluida?: (id: string) => void;
   /** Liderança ou responsável pela tarefa. */
@@ -92,6 +94,24 @@ export function TarefaDetalhe({
   const [salvo, setSalvo] = useState(false);
   const [pendente, startTransition] = useTransition();
   const { confirmar } = useDialogo();
+  const alterado = JSON.stringify([
+    titulo, descricao, status, responsavelId, colaboradorId, prazo, prioridade, tag, link, linkSite,
+    solicitante, lembretes, conteudo, pasta.raiz, pasta.caminho,
+  ]) !== JSON.stringify([
+    tarefa.titulo, tarefa.descricao ?? "", tarefa.status, tarefa.responsavel_id ?? "", tarefa.colaborador_id ?? "",
+    diaBrasilia(tarefa.prazo), tarefa.prioridade ? String(tarefa.prioridade) : "", tarefa.tag ?? "", tarefa.link ?? "",
+    tarefa.link_site ?? "", tarefa.solicitante ?? "", tarefa.lembretes, tarefa.conteudo ?? "",
+    ehRaiz(tarefa.pasta_raiz) ? tarefa.pasta_raiz : "corporativo", tarefa.pasta_caminho ?? "",
+  ]);
+
+  function duplicar() {
+    setErro(null);
+    startTransition(async () => {
+      const res = await duplicarTarefa(tarefa.id);
+      if (res.erro || !res.id) setErro(res.erro ?? "Não foi possível duplicar a tarefa.");
+      else onDuplicada(res.id);
+    });
+  }
 
   useEffect(() => {
     function aoTecla(e: KeyboardEvent) {
@@ -405,11 +425,17 @@ export function TarefaDetalhe({
 
         {/* Rodapé */}
         <div className="flex flex-wrap items-center justify-end gap-3 border-t p-4">
+          <div className="mr-auto space-y-1">
+            <Button type="button" variant="outline" onClick={duplicar} disabled={pendente || alterado} title="Copia os dados salvos para uma nova tarefa em Não iniciado">
+              <Copy className="size-4" /> Duplicar tarefa
+            </Button>
+            {alterado ? <p className="text-xs text-muted-foreground">Salve as alterações antes de duplicar.</p> : null}
+          </div>
           {podeExcluir ? (
             <Button
               type="button"
               variant="ghost"
-              className="mr-auto text-destructive hover:bg-destructive/10 hover:text-destructive"
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
               onClick={excluir}
               disabled={pendente}
             >

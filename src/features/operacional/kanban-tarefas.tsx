@@ -437,6 +437,11 @@ export function KanbanTarefas({
           unidades={unidades}
           pessoas={pessoas}
           onFechar={() => setAberta(null)}
+          onDuplicada={(id) => {
+            setBusca("");
+            setFiltroResp("");
+            setAberta(id);
+          }}
           podeExcluir={aberto.podeExcluir ?? false}
           onExcluida={(id) => setLista((l) => l.filter((x) => x.id !== id))}
           onSalvo={(t) =>

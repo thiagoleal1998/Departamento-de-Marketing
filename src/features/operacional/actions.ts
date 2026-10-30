@@ -98,6 +98,55 @@ const STATUS_VALIDOS: TarefaStatus[] = [
   "concluida",
 ];
 
+/** Duplica os dados salvos em um card independente, sem reutilizar identidade ou vínculos de execução. */
+export async function duplicarTarefa(tarefaId: string): Promise<{ id?: string; erro?: string }> {
+  const supabase = await criarClienteServidor();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { erro: "Sessão expirada. Entre novamente." };
+  if (!servicoDisponivel()) return { erro: "Duplicação indisponível no momento." };
+
+  // A origem precisa ser visível pela RLS, inclusive para o colaborador do card.
+  const { data: origem } = await supabase.from("tarefas").select("*").eq("id", tarefaId).maybeSingle();
+  if (!origem) return { erro: "Tarefa não encontrada ou sem permissão." };
+  const { data: perfil } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  if (!perfil) return { erro: "Não foi possível conferir sua permissão." };
+  const lideranca = perfil.role === "gerente" || perfil.role === "lider";
+  const responsavel = lideranca ? origem.responsavel_id ?? null : user.id;
+
+  const dados: Record<string, unknown> = {
+    titulo: String(origem.titulo).slice(0, 192) + " (cópia)",
+    descricao: origem.descricao,
+    status: "a_fazer",
+    responsavel_id: responsavel,
+    prazo: origem.prazo, // Já é um timestamp: preserva exatamente o prazo salvo.
+    ordem: 0,
+  };
+  // Só copia colunas presentes na origem: continua funcionando com migrations opcionais pendentes.
+  for (const campo of ["prioridade", "tag", "link", "conteudo", "pasta_raiz", "pasta_caminho", "link_site", "solicitante", "lembretes", "colaborador_id"]) {
+    if (Object.prototype.hasOwnProperty.call(origem, campo)) dados[campo] = origem[campo];
+  }
+  if (dados.colaborador_id === responsavel) dados.colaborador_id = null;
+  if (lideranca && Object.prototype.hasOwnProperty.call(origem, "responsaveis_notion")) dados.responsaveis_notion = origem.responsaveis_notion;
+
+  const admin = criarClienteAdmin();
+  const { data: copia, error } = await admin.from("tarefas").insert(dados).select("id").single();
+  if (error || !copia) return { erro: "Não foi possível duplicar a tarefa. Tente novamente." };
+
+  await registrarEventosTarefa(copia.id, user.id, [{ campo: "criada", para: String(dados.titulo), detalhe: "Duplicada de: " + origem.titulo }]);
+  await registrarAcao(user.id, "Duplicou a tarefa", origem.titulo, "/operacional");
+  const destinatarios = Array.from(new Set([responsavel, dados.colaborador_id].filter((id): id is string => typeof id === "string" && id !== user.id)));
+  if (destinatarios.length) {
+    await admin.from("notificacoes").insert(destinatarios.map((destinatario_id) => ({
+      destinatario_id,
+      tipo: "tarefa",
+      titulo: "Nova tarefa duplicada: " + dados.titulo,
+      link: "/operacional?tarefa=" + copia.id,
+    })));
+  }
+  revalidatePath("/operacional");
+  return { id: copia.id };
+}
+
 export interface DadosTarefa {
   titulo: string;
   descricao: string;
