@@ -73,6 +73,7 @@ export function UmAUmBuilder({ colaboradores }: { colaboradores: Opcao[] }) {
               <div key={String(campo.chave)} className="space-y-1.5">
                 <Label htmlFor={String(campo.chave)}>{campo.label}</Label>
                 <Textarea
+                  autoAjustar
                   id={String(campo.chave)}
                   name={String(campo.chave)}
                   placeholder={campo.placeholder}

@@ -152,6 +152,7 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 - Blocos lentos (agenda, alertas de destinos, divulgação, painel da liderança, calendário, notícias) usam `ComLimite` (limite de tempo) e, ao estourar, tentam de novo sozinhos até 3 vezes (`AvisoDemora`). Os dias dos alertas de destinos são lidos em paralelo.
 
 ### Desenvolvimento e Contatos
+- v1.64.2: textareas dos roteiros de feedback, resumo e conversas 1:1 usam `autoAjustar` do componente `Textarea`. A altura acompanha input e valores controlados; `ResizeObserver` recalcula ao revelar etapas ocultas ou mudar a largura. Respeita `rows`/altura mínima e preserva refs/eventos. Uso opcional para manter os limites próprios das caixas do chat.
 - Planos de ação podem ser **excluídos** pelo gerente ou por quem os criou (`excluirPlano`; sem regra de exclusão no banco, a permissão é conferida no servidor).
 - Contatos públicos: ordem pela hierarquia do cargo (Diretor → Gerente → Coordenador → Supervisor → Líder → Analista → Assistente → Auxiliar → Estagiário).
 - Marca (`nome-marca.tsx`): "DEPARTAMENTO DE MARKETING" em destaque e "Litoral Verde Operadora" abaixo, sem corte.

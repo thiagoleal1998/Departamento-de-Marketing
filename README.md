@@ -27,7 +27,7 @@ Construído com **Next.js 15 (App Router) + TypeScript + Tailwind CSS + Supabase
 | **Dashboard** | Resumo do dia: agenda, alertas de destinos (notícias de risco), divulgação do dia, painel da liderança, calendário do mês e notícias do turismo/economia. Fotos do turismo ausentes no RSS são buscadas nos metadados da matéria. Cada bloco lento tem limite de tempo próprio |
 | **Visão geral** | Resumo para o celular e aprovações da diretoria |
 | **Chamados** | Abrir, triar, atribuir, comentar e acompanhar solicitações (SLA, histórico de status, conversão em tarefa) |
-| **Feedbacks e Desenvolvimento** | Construtor de feedback guiado com IA, conversas 1:1, planos de ação (com objetivos, checklist, anexos e exclusão), histórico por colaborador |
+| **Feedbacks e Desenvolvimento** | Construtor de feedback guiado com IA e conversas 1:1 com campos de texto que crescem automaticamente; planos de ação (com objetivos, checklist, anexos e exclusão), histórico por colaborador |
 | **Criação** | Gerador de peças (integração Canva) e catálogo de modelos |
 | **Gestão** | Abas: **Indicadores** (chamados e escala de feriados), **Fluxos e processos**, **Perfis comportamentais**, **Férias** e **Escala de feriados** |
 | **Relatórios** | Abas: **Divulgação**, **E-mails (RD Station)**, **Evolução do operacional** (gráficos, leitura rápida, pontos de correção, quem solicita, motivos de adiamento) e **Acessos e atividade**. Cada aba tem o bloco "Como apuramos estes dados" |
@@ -180,6 +180,7 @@ Detalhes e regras de cada módulo ficam no [`CLAUDE.md`](CLAUDE.md).
 
 | Versão | O que mudou |
 |---|---|
+| **1.64.2** | Feedbacks e conversas 1:1: campos de texto crescem automaticamente ao digitar, colar, receber resumo da IA ou trocar de etapa, sem barra de rolagem interna |
 | **1.64.1** | Seletores: correção da lista que fechava ao abrir em formulários e modais; rolagem da opção ativa fica restrita à lista e foco não desloca a página |
 | **1.64.0** | Novo card: responsável, solicitante, prazo válido e prioridade de 1 a 5 obrigatórios no formulário e no servidor; duplicação exige os mesmos dados preenchidos na origem |
 | **1.63.0** | Status das LPs passam a espelhar a planilha de origem na sincronização do Comercial, com backup no histórico e aviso de falha; Excluir tarefa volta à posição anterior, com permissão calculada pelo responsável atual |
