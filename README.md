@@ -35,7 +35,7 @@ Construído com **Next.js 15 (App Router) + TypeScript + Tailwind CSS + Supabase
 | **Projetos** | Eventos, feiras, famtours, projetos de Marketing e VTs, com etapas, documentos, comparativos, capa e logo do parceiro; cada projeto também vira card em Tarefas |
 | **Atas** | Reuniões de planejamento: pendências por responsável, prazos, adiamentos e frequência; botão **Falar no chat** em cada item |
 | **Comercial** | Condições e disponibilidades dos produtos (lidas da planilha oficial), **Períodos sazonais** (Black November 2026), conferência com as LPs, LPs sem produto na planilha e **busca geral** em todas as abas |
-| **Chat** | Salas e conversas diretas em tempo real: não lidas ao vivo, confirmação de leitura, reações, imagem e áudio, revisão de peças com marcações, falar sobre tarefa/tópico da ata, busca por termo ou data, links clicáveis, som de notificação |
+| **Chat** | Salas e conversas diretas em tempo real: não lidas ao vivo, confirmação de leitura, reações, imagem e áudio, **prints colados com Ctrl+V** (prévia e legenda antes de enviar, no chat completo e flutuante), revisão de peças com marcações, falar sobre tarefa/tópico da ata, busca por termo ou data, links clicáveis, som de notificação |
 | **Documentos · Estoque · Comunicados · Solicitações · Sugestões** | Planilhas e modelos; brindes, flyers e banners; avisos para o time; folga, férias e ajustes de horário; relatos, ideias e elogios |
 | **Configurações · Perfil** | Usuários, papéis e áreas (gerente); perfil pessoal com foto e "como quero ser chamado(a)" |
 
@@ -177,6 +177,7 @@ Detalhes e regras de cada módulo ficam no [`CLAUDE.md`](CLAUDE.md).
 
 | Versão | O que mudou |
 |---|---|
+| **1.61.0** | Chat: colar prints com Ctrl+V abre a prévia de envio com legenda opcional, no chat completo e flutuante, usando o fluxo existente de anexos |
 | **1.60.3** | Notícias do turismo: busca alternativa da foto de capa na página da matéria quando o RSS não contém imagem, com timeout de 5 s e cache de 15 min |
 | **1.60.2** | Notícias: fotos editoriais também são extraídas do conteúdo completo do RSS, ignorando banners de publicidade; cache do turismo renovado |
 | **1.60.1** | Documentação: README reescrito (módulos, integrações, rotinas, variáveis, migrations, publicação) e CLAUDE.md atualizado; passa a ser regra atualizar os dois a cada versão |

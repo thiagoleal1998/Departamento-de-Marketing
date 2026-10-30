@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { enviarAnexo } from "./anexo-actions";
+import { imagemDaColagem } from "./colagem";
 import { duracaoTexto, MAX_BYTES_ANEXO, MAX_SEGUNDOS_GRAVACAO, TIPOS_AUDIO, TIPOS_IMAGEM } from "./anexo-tipos";
 
 type Rascunho = { blob: Blob; nome: string; url: string; tipo: "imagem" | "audio"; duracao?: number };
@@ -47,6 +48,7 @@ const FORMATOS_GRAVACAO = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", 
 export interface ComandosAnexo {
   escolherArquivo: () => void;
   gravar: () => void;
+  colarImagem: (dados: DataTransfer) => boolean;
 }
 
 /**
@@ -92,7 +94,19 @@ export const AnexoEnvio = forwardRef<ComandosAnexo, { conversaId: string; respos
     setSegundos(0);
   }, [soltarMicrofone]);
 
-  useImperativeHandle(refExterno, () => ({ escolherArquivo: () => input.current?.click(), gravar: () => void comecarGravacao() }));
+  useImperativeHandle(refExterno, () => ({
+    escolherArquivo: () => input.current?.click(),
+    gravar: () => void comecarGravacao(),
+    colarImagem: (dados) => {
+      const arquivo = imagemDaColagem(dados);
+      if (!arquivo) return false; // Colagem de texto continua funcionando normalmente.
+      if (!pendente && aberto !== "gravando") {
+        setAberto("escolha");
+        void receberArquivo(arquivo);
+      }
+      return true;
+    },
+  }));
 
   // Ao sair da tela com o microfone aberto, solta o microfone.
   useEffect(() => () => soltarMicrofone(), [soltarMicrofone]);

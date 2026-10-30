@@ -973,6 +973,10 @@ export function ChatJanela({
           <Textarea
             ref={caixaRef}
             value={texto}
+            onPaste={(e) => {
+              if (anexo.current?.colarImagem(e.clipboardData)) e.preventDefault();
+            }}
+            title="Cole um print com Ctrl+V para enviar uma imagem"
             onChange={(e) => {
               setTexto(e.target.value);
               if (e.target.value.trim()) avisarDigitando();

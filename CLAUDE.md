@@ -117,6 +117,7 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 - **Busca geral** (`busca-geral.tsx`): caixa acima das abas que procura em **todas** as abas (produtos, cadastro de LPs e hotéis dos períodos sazonais), por nome e pelo conteúdo das condições; ao escolher, abre a aba e o card (`?aba=…&abrir=<chave>`).
 
 ### Chat (`src/features/chat/`)
+- **Prints por Ctrl+V** (v1.61.0): `colagem.ts` extrai imagens reais da área de transferência; os campos de mensagem dos chats completo e flutuante chamam `AnexoEnvio.colarImagem`, que abre a prévia existente (legenda e envio manual). Colagem de texto segue normal; não baixar imagens de HTML copiado. Mesmos formatos, redução e limite de 15 MB do envio por arquivo. Não substitui anexo enquanto envia ou grava áudio. Chat flutuante reinicia o anexo ao mudar de conversa. Sem migration nova (usa 0082).
 - Mensagens em tempo real (Supabase Realtime), reações, confirmação de leitura (`chat_leituras`), envio de imagem/áudio, caixa estilo WhatsApp.
 - **Revisão de peças**: menu "Revisão" → Solicitar revisão / Revisar peça (marcações sobre a imagem, com zoom/mover).
 - **Falar sobre algo**: menu do clipe → "Tarefa ou tópico da ata"; Ata e item do Calendário têm o botão "Falar no chat" (abre conversa com o responsável, sem redirecionar). Vínculo com estoque/tarefa/projeto continua em "Estoque ou tarefa".

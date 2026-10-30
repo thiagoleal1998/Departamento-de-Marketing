@@ -378,6 +378,10 @@ export function ChatFlutuante({
             <textarea
               ref={caixa}
               value={texto}
+              onPaste={(e) => {
+                if (anexo.current?.colarImagem(e.clipboardData)) e.preventDefault();
+              }}
+              title="Cole um print com Ctrl+V para enviar uma imagem"
               onChange={(e) => {
                 setTexto(e.target.value);
                 if (e.target.value.trim()) avisarDigitando();
@@ -418,7 +422,7 @@ export function ChatFlutuante({
                 </button>
               )}
             </div>
-            {conversaId ? <AnexoEnvio ref={anexo} conversaId={conversaId} respostaA={respondendoA?.id ?? null} aoEnviado={() => setRespondendoA(null)} /> : null}
+            {conversaId ? <AnexoEnvio key={conversaId} ref={anexo} conversaId={conversaId} respostaA={respondendoA?.id ?? null} aoEnviado={() => setRespondendoA(null)} /> : null}
           </form>
         </div>
       ) : null}
