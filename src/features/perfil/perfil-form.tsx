@@ -24,6 +24,7 @@ export function PerfilForm({
   nomeExibicao,
   cargo,
   email,
+  whatsapp,
   papel,
   avatarUrl,
   unidades,
@@ -33,6 +34,7 @@ export function PerfilForm({
   nomeExibicao: string | null;
   cargo: string | null;
   email: string;
+  whatsapp: string | null;
   papel: Papel;
   avatarUrl: string | null;
 }) {
@@ -170,6 +172,12 @@ export function PerfilForm({
               <Label htmlFor="email">E-mail</Label>
               <Input id="email" value={email} disabled />
             </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="whatsapp">WhatsApp</Label>
+            <Input id="whatsapp" name="whatsapp" type="tel" autoComplete="tel" maxLength={30}
+              defaultValue={whatsapp ?? ""} placeholder="Ex.: +55 (11) 99999-9999" />
+            <p className="text-xs text-muted-foreground">Opcional. Informe o número com DDD e, se necessário, DDI.</p>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Perfil de acesso:</span>

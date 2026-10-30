@@ -91,6 +91,7 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 | 0085 | `proc_macroprocessos`, `proc_processos`, `proc_fluxos`, `proc_historico` + 7 macroprocessos e o processo de exemplo |
 | 0086 | `tarefas.solicitante` |
 | 0087 | `tarefa_historico` |
+| 0088 | `profiles.whatsapp`, opcional, somente dígitos (10 a 15) |
 
 ## Banco de dados (Supabase)
 
@@ -152,6 +153,7 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 - Blocos lentos (agenda, alertas de destinos, divulgação, painel da liderança, calendário, notícias) usam `ComLimite` (limite de tempo) e, ao estourar, tentam de novo sozinhos até 3 vezes (`AvisoDemora`). Os dias dos alertas de destinos são lidos em paralelo.
 
 ### Desenvolvimento e Contatos
+- v1.66.0: WhatsApp opcional em Meu perfil e Configurações/usuários. `normalizarWhatsapp` aceita máscara, DDD e DDI e salva só dígitos; vazio remove o contato. Migration 0088 aplicada manualmente pelo usuário, sem alterar RLS nem publicar o número nos contatos públicos. Gravação separada para não bloquear outros dados sem a coluna: informa a migration pendente se houver número preenchido; não acusa sucesso do WhatsApp não salvo.
 - v1.65.0: `TextareaFormatada` nos roteiros de feedback/resumo/1:1 converte a estrutura HTML colada em Markdown (Turndown + GFM), sem inserir HTML; texto comum mantém a colagem nativa. Tabelas sem cabeçalho mantêm todos os dados, com cabeçalho vazio. Tabulações reais podem virar tabela; nunca inferir colunas por espaços ou reescrever conteúdo antigo. `TextoFormatado` (react-markdown + remark-gfm, sem HTML bruto/imagens) exibe os roteiros salvos/resumos e a impressão, inclusive Markdown já existente. Conteúdo continua string no schema atual. Tabelas antigas já gravadas sem delimitadores precisam ser coladas novamente da fonte. Sem migration.
 - v1.64.2: textareas dos roteiros de feedback, resumo e conversas 1:1 usam `autoAjustar` do componente `Textarea`. A altura acompanha input e valores controlados; `ResizeObserver` recalcula ao revelar etapas ocultas ou mudar a largura. Respeita `rows`/altura mínima e preserva refs/eventos. Uso opcional para manter os limites próprios das caixas do chat.
 - Planos de ação podem ser **excluídos** pelo gerente ou por quem os criou (`excluirPlano`; sem regra de exclusão no banco, a permissão é conferida no servidor).

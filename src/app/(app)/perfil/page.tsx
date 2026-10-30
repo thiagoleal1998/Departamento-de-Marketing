@@ -20,6 +20,7 @@ export default async function PerfilPage() {
         nomeExibicao={usuario.nome_exibicao ?? null}
         cargo={usuario.cargo}
         email={usuario.email}
+        whatsapp={usuario.whatsapp ?? null}
         papel={usuario.role}
         avatarUrl={usuario.avatar_url}
         unidades={unidadesDe(usuario.pasta_unidades)}

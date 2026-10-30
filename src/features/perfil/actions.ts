@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/supabase/env";
+import { normalizarWhatsapp } from "@/lib/whatsapp";
 
 export type EstadoPerfil = { ok?: boolean; erro?: string };
 
@@ -27,6 +28,8 @@ export async function atualizarMeuPerfil(
   const avatarRaw = String(formData.get("avatar_url") ?? "");
 
   if (!nome) return { erro: "Informe seu nome." };
+  const whatsapp = normalizarWhatsapp(String(formData.get("whatsapp") ?? ""));
+  if (whatsapp === undefined) return { erro: "Informe um WhatsApp válido com DDD (10 a 15 dígitos)." };
 
   let avatar_url: string | null = null;
   if (avatarRaw === "__remover__") {
@@ -77,6 +80,15 @@ export async function atualizarMeuPerfil(
 
   revalidatePath("/perfil");
   revalidatePath("/", "layout");
+  if (formData.has("whatsapp")) {
+    const { error: erroWhatsapp } = await supabase.from("profiles").update({ whatsapp }).eq("id", user.id);
+    if (erroWhatsapp) {
+      const faltaColuna = ["42703", "PGRST204"].includes(erroWhatsapp.code);
+      if (!faltaColuna || whatsapp !== null) return { erro: faltaColuna
+        ? "Demais dados salvos. Para salvar o WhatsApp, aplique a migration 0088 no Supabase."
+        : "Demais dados salvos, mas não foi possível salvar o WhatsApp. Tente novamente." };
+    }
+  }
   return { ok: true };
 }
 

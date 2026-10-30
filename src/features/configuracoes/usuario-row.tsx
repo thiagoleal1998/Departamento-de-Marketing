@@ -39,6 +39,7 @@ export function UsuarioRow({
   // garantindo que a seleção do usuário seja submetida e permaneça visível.
   const [nome, setNome] = useState(p.nome);
   const [email, setEmail] = useState(p.email);
+  const [whatsapp, setWhatsapp] = useState(p.whatsapp ?? "");
   const [role, setRole] = useState(p.role);
   const [cargo, setCargo] = useState(p.cargo ?? "");
   const [areaId, setAreaId] = useState(p.area_id ?? "");
@@ -146,6 +147,13 @@ export function UsuarioRow({
                 />
               </div>
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor={`whatsapp-${p.id}`}>WhatsApp</Label>
+            <Input id={`whatsapp-${p.id}`} name="whatsapp" type="tel" autoComplete="tel" maxLength={30}
+              value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="Ex.: +55 (11) 99999-9999" />
+            <p className="text-xs text-muted-foreground">Opcional. Informe o número com DDD e, se necessário, DDI.</p>
           </div>
 
           <FotoDrive id={`drive-${p.id}`} onFoto={setEditorSrc} />

@@ -25,6 +25,8 @@ export interface Profile {
   lider_id: string | null;
   cargo: string | null;
   avatar_url: string | null;
+  /** Contato opcional com DDD/DDI (migration 0088). */
+  whatsapp?: string | null;
   ativo: boolean;
   /** Acessa a visão geral da diretoria (/executivo) e aprova as tarefas dela. */
   visao_executiva?: boolean;

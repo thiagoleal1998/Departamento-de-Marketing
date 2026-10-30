@@ -37,7 +37,7 @@ Construído com **Next.js 15 (App Router) + TypeScript + Tailwind CSS + Supabase
 | **Comercial** | Condições e disponibilidades dos produtos (lidas da planilha oficial), **Períodos sazonais** (Black November 2026), conferência com as LPs, LPs sem produto na planilha e **busca geral** em todas as abas |
 | **Chat** | Salas e conversas diretas em tempo real: não lidas ao vivo, confirmação de leitura, reações, imagem e áudio, **prints colados com Ctrl+V** (prévia e legenda antes de enviar, no chat completo e flutuante), revisão de peças com marcações, falar sobre tarefa/tópico da ata, busca por termo ou data, links clicáveis, som de notificação |
 | **Documentos · Estoque · Comunicados · Solicitações · Sugestões** | Planilhas e modelos; brindes, flyers e banners; avisos para o time; folga, férias e ajustes de horário; relatos, ideias e elogios |
-| **Configurações · Perfil** | Usuários, papéis e áreas (gerente); perfil pessoal com foto e "como quero ser chamado(a)" |
+| **Configurações · Perfil** | Usuários, papéis e áreas (gerente); perfil pessoal com foto, "como quero ser chamado(a)" e WhatsApp opcional com DDD/DDI, editável também pelo gerente |
 
 **Papéis:** Gerente, Líder e Colaborador (RBAC na interface + RLS no banco).
 
@@ -108,6 +108,8 @@ As migrations podem ser repetidas sem problema. O código foi feito para **conti
 
 Migrations mais recentes:
 
+WhatsApp nos perfis: aplique manualmente `supabase/migrations/0088_profile_whatsapp.sql` no SQL Editor do Supabase. Antes disso, os demais dados continuam salvando; ao preencher WhatsApp, a tela informa a pendência. O número não é publicado na página de contatos.
+
 | Nº | O que cria |
 |---|---|
 | 0080 | Senhas: cada pessoa edita/exclui as que cadastrou |
@@ -117,6 +119,7 @@ Migrations mais recentes:
 | 0085 | Gestão: Fluxos e processos (`proc_*`) com os 7 macroprocessos e um processo de exemplo |
 | 0086 | Tarefas: coluna `solicitante` |
 | 0087 | Tarefas: histórico (`tarefa_historico`), base da linha do tempo e dos motivos de adiamento |
+| 0088 | WhatsApp opcional no perfil, com validação de 10 a 15 dígitos |
 
 ### 4. Rodar em desenvolvimento
 
@@ -180,6 +183,7 @@ Detalhes e regras de cada módulo ficam no [`CLAUDE.md`](CLAUDE.md).
 
 | Versão | O que mudou |
 |---|---|
+| **1.66.0** | Campo WhatsApp opcional em Meu perfil e na edição de usuários pelo gerente (migration 0088) |
 | **1.65.0** | Feedbacks e 1:1: colagem preserva estrutura de negrito, listas e tabelas; roteiro salvo, resumo e impressão passam a exibir a formatação em vez dos marcadores literais |
 | **1.64.2** | Feedbacks e conversas 1:1: campos de texto crescem automaticamente ao digitar, colar, receber resumo da IA ou trocar de etapa, sem barra de rolagem interna |
 | **1.64.1** | Seletores: correção da lista que fechava ao abrir em formulários e modais; rolagem da opção ativa fica restrita à lista e foco não desloca a página |
