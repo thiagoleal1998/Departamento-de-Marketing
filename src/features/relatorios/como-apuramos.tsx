@@ -36,8 +36,8 @@ const TEXTOS: Record<Aba, Texto> = {
       "API do RD Station Marketing (relatório de e-mails). Os números são buscados pelo botão de atualizar desta aba e guardados no painel, um registro por e-mail enviado. O RD informa dados até ontem e limita cerca de 60 consultas por hora.",
     ],
     calculos: [
-      "Enviados, entregues, aberturas únicas, cliques únicos e descadastros: valores como o RD informa, somados sobre os e-mails do período.",
-      "Taxa de abertura = aberturas únicas ÷ entregues. Taxa de clique = cliques únicos ÷ entregues (somando todos os e-mails do grupo, e não a média das taxas de cada e-mail).",
+      "Nos cartões, entregues é a média de mensagens entregues por e-mail com esse dado disponível. Abertura e clique são as médias simples das taxas individuais: aberturas únicas ou cliques únicos divididos pelos entregues de cada e-mail com dados e entregas acima de zero.",
+      "Nas tabelas por público, período, regime e produto, a taxa de abertura é a soma das aberturas únicas dividida pela soma dos entregues; a de clique segue o mesmo cálculo com os cliques únicos.",
       "Cruzamento com a divulgação: o e-mail é ligado ao produto, ao período e ao regime divulgados no mesmo dia (usando a tabela de Divulgação).",
     ],
     limites: ["Se a conta do RD Station não estiver conectada, esta aba fica vazia."],

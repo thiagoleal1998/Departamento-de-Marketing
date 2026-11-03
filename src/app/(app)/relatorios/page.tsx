@@ -347,9 +347,13 @@ async function RelatorioEmails(sp: Sp) {
   for (const l of linhas) for (const i of itensDaLinha(l)) itensPorDia.set(i.data, [...(itensPorDia.get(i.data) ?? []), i]);
 
   const soma = (k: "entregues" | "abertos" | "cliques" | "descadastros") => emails.reduce((t, e) => t + (e[k] ?? 0), 0);
-  const entregues = soma("entregues");
-  const abertos = soma("abertos");
-  const cliques = soma("cliques");
+  const mediaEntregues = emails.filter((e) => e.entregues !== null);
+  const mediaTaxa = (campo: "abertos" | "cliques") => {
+    const validos = emails.filter((e) => (e.entregues ?? 0) > 0 && e[campo] !== null);
+    return validos.length ? validos.reduce((total, e) => total + e[campo]! / e.entregues!, 0) / validos.length : null;
+  };
+  const aberturaMedia = mediaTaxa("abertos");
+  const cliqueMedio = mediaTaxa("cliques");
 
   interface Grupo {
     emails: number;
@@ -444,9 +448,9 @@ async function RelatorioEmails(sp: Sp) {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[
           { rotulo: "E-mails enviados", valor: emails.length.toLocaleString("pt-BR") },
-          { rotulo: "Entregues", valor: entregues.toLocaleString("pt-BR") },
-          { rotulo: "Abertura (únicas / entregues)", valor: entregues ? pct(abertos / entregues) : "—" },
-          { rotulo: "Clique (únicos / entregues)", valor: entregues ? pct(cliques / entregues) : "—" },
+          { rotulo: "Média de entregues por e-mail", valor: mediaEntregues.length ? (soma("entregues") / mediaEntregues.length).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) : "—" },
+          { rotulo: "Abertura média por e-mail", valor: aberturaMedia === null ? "—" : pct(aberturaMedia) },
+          { rotulo: "Clique médio por e-mail", valor: cliqueMedio === null ? "—" : pct(cliqueMedio) },
         ].map((k) => (
           <Card key={k.rotulo}>
             <CardContent className="p-4">
