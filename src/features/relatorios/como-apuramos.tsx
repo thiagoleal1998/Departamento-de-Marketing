@@ -4,7 +4,7 @@ import { useId, useState } from "react";
 import { ChevronDown, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Aba = "divulgacao" | "rd" | "operacional" | "atividade";
+type Aba = "divulgacao" | "rd" | "surfer" | "operacional" | "atividade";
 
 interface Texto {
   titulo: string;
@@ -41,6 +41,12 @@ const TEXTOS: Record<Aba, Texto> = {
       "Cruzamento com a divulgação: o e-mail é ligado ao produto, ao período e ao regime divulgados no mesmo dia (usando a tabela de Divulgação).",
     ],
     limites: ["Se a conta do RD Station não estiver conectada, esta aba fica vazia."],
+  },
+  surfer: {
+    titulo: "SEO (Surfer)",
+    fontes: ["API v2 do Surfer, consultada no workspace configurado ao abrir esta aba ou clicar em Atualizar dados."],
+    calculos: ["Content Editors e seus scores de SEO, busca com IA e total vêm diretamente do Surfer. O score SEO médio considera apenas os conteúdos concluídos com score disponível."],
+    limites: ["A API lista Content Editors dos últimos 90 dias; editores mais antigos não aparecem nesta consulta. O painel mostra até 1.000 itens. A API requer chave e plano com acesso habilitado."],
   },
   operacional: {
     titulo: "Evolução do operacional",

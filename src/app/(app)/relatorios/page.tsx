@@ -1,8 +1,9 @@
 import { Select } from "@/components/ui/select";
 import Link from "@/components/shared/link";
 import { redirect } from "next/navigation";
-import { Activity, BarChart3, Download, FileBarChart, Mail, Plug, TrendingUp } from "lucide-react";
+import { Activity, BarChart3, Download, FileBarChart, Mail, Plug, SearchCheck, TrendingUp } from "lucide-react";
 import { RelatorioOperacional } from "@/features/relatorios/relatorio-operacional";
+import { RelatorioSurfer } from "@/features/relatorios/relatorio-surfer";
 import { ComoApuramos } from "@/features/relatorios/como-apuramos";
 import { RelatorioAtividade } from "@/features/atividade/relatorio-atividade";
 import { exigirUsuario } from "@/lib/auth";
@@ -35,18 +36,19 @@ export default async function RelatoriosPage({ searchParams }: { searchParams: P
   const usuario = await exigirUsuario();
   if (!pode(usuario.role, "ver_relatorios_gerais")) redirect("/dashboard");
   const sp = await searchParams;
-  const aba = sp.aba === "rd" ? "rd" : sp.aba === "atividade" ? "atividade" : sp.aba === "operacional" ? "operacional" : "divulgacao";
+  const aba = sp.aba === "surfer" ? "surfer" : sp.aba === "rd" ? "rd" : sp.aba === "atividade" ? "atividade" : sp.aba === "operacional" ? "operacional" : "divulgacao";
 
   const abas = [
     { chave: "divulgacao", href: "/relatorios", label: "Divulgação", icone: FileBarChart },
     { chave: "rd", href: "/relatorios?aba=rd", label: "E-mails (RD Station)", icone: Mail },
+    { chave: "surfer", href: "/relatorios?aba=surfer", label: "SEO (Surfer)", icone: SearchCheck },
     { chave: "operacional", href: "/relatorios?aba=operacional", label: "Evolução do operacional", icone: TrendingUp },
     { chave: "atividade", href: "/relatorios?aba=atividade", label: "Acessos e atividade", icone: Activity },
   ] as const;
 
   return (
     <div className="space-y-6">
-      <PageHeader titulo="Relatórios" descricao="O que foi divulgado, como os e-mails performaram, como o operacional está evoluindo e quem acessou o sistema." />
+      <PageHeader titulo="Relatórios" descricao="Divulgação, e-mails, SEO, evolução operacional e acessos ao sistema." />
       <nav aria-label="Seções dos relatórios" className="flex flex-wrap gap-1 border-b">
         {abas.map((a) => {
           const Icone = a.icone;
@@ -66,7 +68,7 @@ export default async function RelatoriosPage({ searchParams }: { searchParams: P
         })}
       </nav>
       <ComoApuramos aba={aba} />
-      {aba === "divulgacao" ? await RelatorioDivulgacao(sp) : aba === "rd" ? await RelatorioEmails(sp) : aba === "operacional" ? <RelatorioOperacional /> : <RelatorioAtividade sp={sp} />}
+      {aba === "divulgacao" ? await RelatorioDivulgacao(sp) : aba === "rd" ? await RelatorioEmails(sp) : aba === "surfer" ? <RelatorioSurfer /> : aba === "operacional" ? <RelatorioOperacional /> : <RelatorioAtividade sp={sp} />}
     </div>
   );
 }
