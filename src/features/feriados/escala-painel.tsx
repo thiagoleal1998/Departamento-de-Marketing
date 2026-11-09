@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { AlertTriangle, BellRing, CalendarPlus, Check, ChevronDown, Loader2, Palmtree, Trash2, UserPlus, Users } from "lucide-react";
+import { AlertTriangle, BellRing, Building2, CalendarPlus, Check, ChevronDown, Home, Loader2, Palmtree, Trash2, UserPlus, Users } from "lucide-react";
 import { useDialogo } from "@/components/shared/dialogo-provider";
 import { adicionarFeriadoExtra, avisarFolga, definirEscala, removerFeriadoExtra } from "./actions";
 import { caiNoFimDeSemana, dataBr, diaDaSemana, type Feriado } from "./calendario";
+import { MODALIDADES, ROTULO_MODALIDADE, modalidadeOuPadrao, type ItemEscala, type Modalidade } from "./modalidade";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,8 @@ export interface Escalado {
   id: string;
   data: string;
   profile_id: string;
+  /** Presencial ou home office (ausente antes da migration 0089: vale presencial). */
+  modalidade?: Modalidade;
 }
 export interface PeriodoFerias {
   profile_id: string;
@@ -37,7 +40,47 @@ const iniciais = (n: string) =>
     .map((x) => x[0]?.toUpperCase())
     .join("");
 
-/** Menu para escolher quem fica de plantão: "Todo o time" + uma linha por pessoa; só grava ao salvar. */
+/** Escolha da modalidade de uma pessoa escalada: dois botões lado a lado (presencial ou home office). */
+function SeletorModalidade({ valor, onChange, rotulo }: { valor: Modalidade; onChange: (m: Modalidade) => void; rotulo: string }) {
+  return (
+    <div className="flex shrink-0 rounded-lg border bg-background p-0.5" role="group" aria-label={rotulo}>
+      {MODALIDADES.map((m) => {
+        const Icone = m === "home_office" ? Home : Building2;
+        const ativo = valor === m;
+        return (
+          <button
+            key={m}
+            type="button"
+            aria-pressed={ativo}
+            title={ROTULO_MODALIDADE[m]}
+            onClick={() => onChange(m)}
+            className={cn(
+              "flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
+              ativo ? (m === "home_office" ? "bg-sky-500 text-white" : "bg-primary text-primary-foreground") : "text-muted-foreground hover:bg-muted"
+            )}
+          >
+            <Icone className="size-3" aria-hidden />
+            {m === "home_office" ? "Home" : "Presencial"}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Etiqueta da modalidade ao lado do nome de quem está escalado. */
+function EtiquetaModalidade({ modalidade }: { modalidade: Modalidade }) {
+  const home = modalidade === "home_office";
+  const Icone = home ? Home : Building2;
+  return (
+    <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold", home ? "bg-sky-500/15 text-sky-700 dark:text-sky-300" : "bg-muted text-muted-foreground")}>
+      <Icone className="size-3" aria-hidden />
+      {ROTULO_MODALIDADE[modalidade]}
+    </span>
+  );
+}
+
+/** Menu para escolher quem fica de plantão e COMO (presencial ou home office); só grava ao salvar. */
 function MenuEscala({
   pessoas,
   atuais,
@@ -47,14 +90,15 @@ function MenuEscala({
   rotulo,
 }: {
   pessoas: { id: string; nome: string }[];
-  atuais: string[];
+  atuais: ItemEscala[];
   deFerias: (id: string) => boolean;
   pendente: boolean;
-  onSalvar: (ids: string[]) => void;
+  onSalvar: (itens: ItemEscala[]) => void;
   rotulo: string;
 }) {
   const [aberto, setAberto] = useState(false);
-  const [sel, setSel] = useState<string[]>(atuais);
+  const daEscala = () => Object.fromEntries(atuais.map((a) => [a.id, a.modalidade])) as Record<string, Modalidade>;
+  const [sel, setSel] = useState<Record<string, Modalidade>>(daEscala);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -73,9 +117,26 @@ function MenuEscala({
     };
   }, [aberto]);
 
-  const todos = pessoas.length > 0 && sel.length === pessoas.length;
-  const alternar = (id: string) => setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
-  const mudou = sel.length !== atuais.length || sel.some((id) => !atuais.includes(id));
+  const ids = Object.keys(sel);
+  const todos = pessoas.length > 0 && ids.length === pessoas.length;
+  const alternar = (id: string) =>
+    setSel((s) => {
+      if (id in s) {
+        const { [id]: _removido, ...resto } = s;
+        void _removido;
+        return resto;
+      }
+      return { ...s, [id]: "presencial" };
+    });
+  const definir = (id: string, m: Modalidade) => setSel((s) => ({ ...s, [id]: m }));
+  const todosComo = (m: Modalidade) => setSel((s) => Object.fromEntries(Object.keys(s).map((id) => [id, m])) as Record<string, Modalidade>);
+  const mudou =
+    ids.length !== atuais.length ||
+    ids.some((id) => {
+      const a = atuais.find((x) => x.id === id);
+      return !a || a.modalidade !== sel[id];
+    });
+  const emHome = ids.filter((id) => sel[id] === "home_office").length;
 
   return (
     <div className="relative" ref={ref}>
@@ -87,7 +148,7 @@ function MenuEscala({
         aria-label={rotulo}
         aria-expanded={aberto}
         onClick={() => {
-          setSel(atuais);
+          setSel(daEscala());
           setAberto((a) => !a);
         }}
       >
@@ -95,10 +156,10 @@ function MenuEscala({
         <ChevronDown className={cn("size-3.5 transition-transform", aberto && "rotate-180")} />
       </Button>
       {aberto ? (
-        <div className="absolute left-0 z-50 mt-2 w-72 overflow-hidden rounded-xl border bg-popover p-1.5 text-popover-foreground shadow-xl">
+        <div className="absolute left-0 z-50 mt-2 w-[22rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border bg-popover p-1.5 text-popover-foreground shadow-xl">
           <button
             type="button"
-            onClick={() => setSel(todos ? [] : pessoas.map((p) => p.id))}
+            onClick={() => setSel(todos ? {} : Object.fromEntries(pessoas.map((p) => [p.id, sel[p.id] ?? "presencial"])) as Record<string, Modalidade>)}
             className={cn("flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm font-semibold transition-colors hover:bg-muted", todos && "bg-primary/10")}
           >
             <span className="grid size-8 place-items-center rounded-full bg-primary text-primary-foreground">
@@ -109,27 +170,23 @@ function MenuEscala({
           </button>
           <button
             type="button"
-            onClick={() => setSel([])}
-            className={cn("flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm font-semibold transition-colors hover:bg-muted", sel.length === 0 && "bg-primary/10")}
+            onClick={() => setSel({})}
+            className={cn("flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm font-semibold transition-colors hover:bg-muted", ids.length === 0 && "bg-primary/10")}
           >
             <span className="grid size-8 place-items-center rounded-full bg-emerald-100 text-emerald-700">
               <Palmtree className="size-4" />
             </span>
             <span className="flex-1">Todos de folga</span>
-            {sel.length === 0 ? <Check className="size-4 text-primary" /> : null}
+            {ids.length === 0 ? <Check className="size-4 text-primary" /> : null}
           </button>
           <div className="my-1 h-px bg-border" />
           <ul className="max-h-64 overflow-y-auto">
             {pessoas.map((p) => {
-              const on = sel.includes(p.id);
+              const on = p.id in sel;
               return (
-                <li key={p.id}>
-                  <button
-                    type="button"
-                    onClick={() => alternar(p.id)}
-                    className={cn("flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm transition-colors hover:bg-muted", on && "bg-primary/10")}
-                  >
-                    <span className={cn("grid size-8 place-items-center rounded-full text-xs font-semibold", on ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
+                <li key={p.id} className={cn("flex items-center gap-2 rounded-lg pr-1.5 transition-colors", on && "bg-primary/10")}>
+                  <button type="button" onClick={() => alternar(p.id)} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm transition-colors hover:bg-muted">
+                    <span className={cn("grid size-8 shrink-0 place-items-center rounded-full text-xs font-semibold", on ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
                       {iniciais(p.nome)}
                     </span>
                     <span className="min-w-0 flex-1">
@@ -140,21 +197,35 @@ function MenuEscala({
                         </span>
                       ) : null}
                     </span>
-                    {on ? <Check className="size-4 text-primary" /> : null}
+                    {on ? <Check className="size-4 shrink-0 text-primary" /> : null}
                   </button>
+                  {on ? <SeletorModalidade valor={sel[p.id]} onChange={(m) => definir(p.id, m)} rotulo={`Modalidade de ${p.nome}`} /> : null}
                 </li>
               );
             })}
           </ul>
+          {ids.length > 0 ? (
+            <div className="mt-1 flex flex-wrap items-center gap-1.5 border-t px-2 pt-2 text-xs text-muted-foreground">
+              Todos os escalados:
+              <button type="button" onClick={() => todosComo("presencial")} className="rounded-full border px-2.5 py-0.5 font-medium hover:bg-muted">
+                Presencial
+              </button>
+              <button type="button" onClick={() => todosComo("home_office")} className="rounded-full border px-2.5 py-0.5 font-medium hover:bg-muted">
+                Home office
+              </button>
+            </div>
+          ) : null}
           <div className="mt-1 flex items-center justify-between gap-2 border-t p-2">
-            <span className="text-xs text-muted-foreground">{sel.length} escalado(s)</span>
+            <span className="text-xs text-muted-foreground">
+              {ids.length} escalado(s){ids.length > 0 ? ` · ${emHome} em home office` : ""}
+            </span>
             <Button
               type="button"
               size="sm"
               className="h-8"
               disabled={pendente || !mudou}
               onClick={() => {
-                onSalvar(sel);
+                onSalvar(ids.map((id) => ({ id, modalidade: sel[id] })));
                 setAberto(false);
               }}
             >
@@ -196,11 +267,12 @@ export function EscalaPainel({
 
   const anos = Array.from(new Set(feriados.map((f) => f.data.slice(0, 4)))).sort();
 
-  function salvarEscala(f: Feriado, ids: string[]) {
+  function salvarEscala(f: Feriado, itens: ItemEscala[]) {
     start(async () => {
-      const r = await definirEscala(f.data, f.nome, ids);
+      const r = await definirEscala(f.data, f.nome, itens);
       if (r.erro) void avisar(r.erro, "Não foi possível salvar a escala");
-      else if (r.avisados) void avisar(`${r.avisados} pessoa(s) receberam a notificação de que foram escaladas.`, "Escala salva");
+      else if (r.aviso) void avisar(r.aviso, "Escala salva");
+      else if (r.avisados) void avisar(`${r.avisados} pessoa(s) receberam a notificação da escala.`, "Escala salva");
     });
   }
 
@@ -311,6 +383,7 @@ export function EscalaPainel({
                           >
                             {conflito ? <AlertTriangle className="size-3.5 text-amber-600" /> : null}
                             {nome.get(e.profile_id) ?? "—"}
+                            <EtiquetaModalidade modalidade={modalidadeOuPadrao(e.modalidade)} />
                             {conflito ? <span className="text-[11px] text-amber-700">(de férias)</span> : null}
                           </span>
                         );
@@ -319,14 +392,14 @@ export function EscalaPainel({
                         <>
                           <MenuEscala
                             key={escalados
-                              .map((e) => e.profile_id)
+                              .map((e) => e.profile_id + ":" + modalidadeOuPadrao(e.modalidade))
                               .sort()
                               .join(",")}
                             pessoas={pessoas}
-                            atuais={escalados.map((e) => e.profile_id)}
+                            atuais={escalados.map((e) => ({ id: e.profile_id, modalidade: modalidadeOuPadrao(e.modalidade) }))}
                             deFerias={(id) => deFerias(id, f.data)}
                             pendente={pendente}
-                            onSalvar={(ids) => salvarEscala(f, ids)}
+                            onSalvar={(itens) => salvarEscala(f, itens)}
                             rotulo={`Escalar pessoas em ${f.nome}`}
                           />
                           <Button type="button" variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" disabled={pendente} onClick={() => void avisarTime(f)}>

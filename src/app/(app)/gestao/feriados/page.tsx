@@ -19,13 +19,17 @@ export default async function EscalaFeriadosPage() {
   const anoAtual = Number(hoje.slice(0, 4));
   const supabase = await criarClienteServidor();
 
-  const [escalaR, extrasR, feriasR, pessoasR, avisosR] = await Promise.all([
-    supabase.from("escala_feriados").select("id, data, profile_id").gte("data", hoje).lte("data", `${anoAtual + 1}-12-31`),
+  const lerEscala = (colunas: string) => supabase.from("escala_feriados").select(colunas).gte("data", hoje).lte("data", `${anoAtual + 1}-12-31`);
+  const [escalaComModalidade, extrasR, feriasR, pessoasR, avisosR] = await Promise.all([
+    lerEscala("id, data, profile_id, modalidade"),
     supabase.from("feriados_extras").select("id, data, nome").gte("data", hoje).lte("data", `${anoAtual + 1}-12-31`),
     supabase.from("ferias").select("profile_id, inicio, fim").gte("fim", hoje).lte("inicio", `${anoAtual + 1}-12-31`),
     supabase.from("profiles").select("id, nome").eq("ativo", true).order("nome", { ascending: true }),
     supabase.from("escala_avisos").select("data").gte("data", hoje),
   ]);
+
+  // Antes da migration 0089 a coluna "modalidade" não existe: lê sem ela (todos aparecem como presencial).
+  const escalaR = escalaComModalidade.error ? await lerEscala("id, data, profile_id") : escalaComModalidade;
 
   // Feriados que restam do ano em curso e todos os do ano seguinte, mais os extras cadastrados.
   const base: Feriado[] = [...feriadosDoAno(anoAtual), ...feriadosDoAno(anoAtual + 1)].filter((f) => f.data >= hoje);
@@ -43,7 +47,7 @@ export default async function EscalaFeriadosPage() {
       <GestaoAbas ativa="feriados" />
       <EscalaPainel
         feriados={feriados}
-        escala={(escalaR.data as Escalado[] | null) ?? []}
+        escala={(escalaR.data as unknown as Escalado[] | null) ?? []}
         pessoas={(pessoasR.data as { id: string; nome: string }[] | null) ?? []}
         ferias={(feriasR.data as PeriodoFerias[] | null) ?? []}
         hoje={hoje}

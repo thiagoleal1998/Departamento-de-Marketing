@@ -6,10 +6,13 @@ import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { enviarPush } from "@/lib/push";
 import { dataBr } from "./calendario";
 import { registrarAcao } from "@/features/atividade/registro";
+import { ROTULO_MODALIDADE, modalidadeOuPadrao, type ItemEscala } from "./modalidade";
 
-type Resultado = { ok?: boolean; erro?: string; avisados?: number };
+type Resultado = { ok?: boolean; erro?: string; avisados?: number; aviso?: string };
 const MIGRACAO = "A escala de feriados ainda não foi ativada no banco (migration 0067).";
 const semTabela = (c?: string) => c === "42P01" || c === "PGRST205";
+const semColuna = (c?: string) => c === "42703" || c === "PGRST204";
+const AVISO_MODALIDADE = "A escala foi salva, mas a modalidade (presencial ou home office) não: falta rodar a migration 0089 no Supabase.";
 const ehData = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v);
 
 async function lideranca() {
@@ -39,38 +42,72 @@ async function avisar(destinatarios: string[], titulo: string) {
 }
 
 /**
- * Define quem fica de plantão no feriado (substitui a escala daquela data). Quem entra agora é avisado na hora:
- * "Você está escalado(a) no feriado…". Quem sai só é avisado se tiver sido avisado antes.
+ * Define quem fica de plantão no feriado e COMO (presencial ou home office); substitui a escala daquela data.
+ * Quem entra agora é avisado na hora ("Você está escalado(a) no feriado… — home office") e quem continua, mas muda de
+ * modalidade, também. Quem sai só é avisado se tiver sido avisado antes.
  */
-export async function definirEscala(data: string, nomeFeriado: string, profileIds: string[]): Promise<Resultado> {
+export async function definirEscala(data: string, nomeFeriado: string, itens: ItemEscala[]): Promise<Resultado> {
   const l = await lideranca();
   if (l.erro || !l.user) return { erro: l.erro ?? "Sessão expirada." };
   if (!ehData(data)) return { erro: "Data inválida." };
 
-  const { data: atuais, error: errLer } = await l.supabase.from("escala_feriados").select("id, profile_id").eq("data", data);
-  if (errLer) return { erro: semTabela(errLer.code) ? MIGRACAO : "Não foi possível ler a escala." };
-  const existentes = (atuais as { id: string; profile_id: string }[] | null) ?? [];
-  const novos = Array.from(new Set(profileIds));
-  const entrando = novos.filter((id) => !existentes.some((e) => e.profile_id === id));
-  const saindo = existentes.filter((e) => !novos.includes(e.profile_id));
+  // Antes da migration 0089 a coluna "modalidade" não existe: lê sem ela e trata todos como presenciais.
+  let comColuna = true;
+  type Lido = { id: string; profile_id: string; modalidade?: string };
+  type Leitura = { data: Lido[] | null; error: { code?: string } | null };
+  let lidos = (await l.supabase.from("escala_feriados").select("id, profile_id, modalidade").eq("data", data)) as unknown as Leitura;
+  if (lidos.error && semColuna(lidos.error.code)) {
+    comColuna = false;
+    lidos = (await l.supabase.from("escala_feriados").select("id, profile_id").eq("data", data)) as unknown as Leitura;
+  }
+  if (lidos.error) return { erro: semTabela(lidos.error.code) ? MIGRACAO : "Não foi possível ler a escala." };
+  const existentes = (lidos.data ?? []).map((e) => ({ ...e, modalidade: modalidadeOuPadrao(e.modalidade) }));
 
+  // Uma pessoa só aparece uma vez (vale a última escolha).
+  const novos = new Map<string, ItemEscala>();
+  for (const i of itens) novos.set(i.id, { id: i.id, modalidade: modalidadeOuPadrao(i.modalidade) });
+  const lista = Array.from(novos.values());
+  const entrando = lista.filter((i) => !existentes.some((e) => e.profile_id === i.id));
+  const saindo = existentes.filter((e) => !novos.has(e.profile_id));
+  const mudaram = lista.filter((i) => existentes.some((e) => e.profile_id === i.id && e.modalidade !== i.modalidade));
+
+  let aviso: string | undefined;
   if (entrando.length > 0) {
-    const { error } = await l.supabase.from("escala_feriados").insert(entrando.map((profile_id) => ({ data, profile_id, criado_por: l.user!.id })));
+    const linhas = entrando.map((i) => ({ data, profile_id: i.id, criado_por: l.user!.id, ...(comColuna ? { modalidade: i.modalidade } : {}) }));
+    let { error } = await l.supabase.from("escala_feriados").insert(linhas);
+    if (error && semColuna(error.code)) {
+      comColuna = false;
+      ({ error } = await l.supabase.from("escala_feriados").insert(linhas.map(({ modalidade: _m, ...resto }) => resto)));
+    }
     if (error) return { erro: "Não foi possível escalar." };
   }
   if (saindo.length > 0) {
     const { error } = await l.supabase.from("escala_feriados").delete().in("id", saindo.map((s) => s.id));
     if (error) return { erro: "Não foi possível tirar da escala." };
   }
+  if (mudaram.length > 0 && comColuna) {
+    for (const i of mudaram) {
+      const { error } = await l.supabase.from("escala_feriados").update({ modalidade: i.modalidade }).eq("data", data).eq("profile_id", i.id);
+      if (error) return { erro: "Não foi possível mudar a modalidade." };
+    }
+  }
+  const algumaHomeOffice = lista.some((i) => i.modalidade === "home_office");
+  if (!comColuna && algumaHomeOffice) aviso = AVISO_MODALIDADE;
 
   const nome = nomeFeriado.slice(0, 120);
-  await avisar(
-    entrando.filter((id) => id !== l.user!.id),
-    `Você está escalado(a) no feriado: ${nome} (${dataBr(data)}).`
-  );
-  await registrarAcao(l.user.id, "Alterou a escala de feriado", `${nome} (${dataBr(data)})`, "/gestao/feriados");
+  const quem = (i: ItemEscala) => (comColuna ? ` — ${ROTULO_MODALIDADE[i.modalidade].toLowerCase()}` : "");
+  for (const i of entrando.filter((x) => x.id !== l.user!.id)) {
+    await avisar([i.id], `Você está escalado(a) no feriado: ${nome} (${dataBr(data)})${quem(i)}.`);
+  }
+  if (comColuna) {
+    for (const i of mudaram.filter((x) => x.id !== l.user!.id)) {
+      await avisar([i.id], `Sua escala no feriado ${nome} (${dataBr(data)}) mudou: ${ROTULO_MODALIDADE[i.modalidade].toLowerCase()}.`);
+    }
+  }
+  const resumo = lista.length > 0 ? ` · ${lista.filter((i) => i.modalidade === "home_office").length} em home office` : "";
+  await registrarAcao(l.user.id, "Alterou a escala de feriado", `${nome} (${dataBr(data)})${resumo}`, "/gestao/feriados");
   revalidatePath("/gestao/feriados");
-  return { ok: true, avisados: entrando.length };
+  return { ok: true, avisados: entrando.length + (comColuna ? mudaram.length : 0), ...(aviso ? { aviso } : {}) };
 }
 
 /**

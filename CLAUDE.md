@@ -92,6 +92,7 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 | 0086 | `tarefas.solicitante` |
 | 0087 | `tarefa_historico` |
 | 0088 | `profiles.whatsapp`, opcional, somente dígitos (10 a 15) |
+| 0089 | `escala_feriados.modalidade` (`presencial`/`home_office`, padrão presencial) |
 
 ## Banco de dados (Supabase)
 
@@ -146,6 +147,7 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 - Abas (`gestao-abas.tsx`): Indicadores, Fluxos e processos, Perfis comportamentais, Férias, Escala de feriados.
 - **Indicadores** são dos **chamados** (Central de Solicitações) e a tela diz isso; o tempo médio de resolução usa a data real da conclusão (histórico) e informa quantos chamados entram.
 - **Escala de feriados**: diretoria e gerência (cargo com "Diretor" ou "Gerente") ficam fora da estatística (`features/feriados/participantes.ts`).
+- **Modalidade na escala** (v1.68.0): cada escalado é Presencial ou Home office (`features/feriados/modalidade.ts`, coluna da migration 0089). `definirEscala(data, nome, ItemEscala[])` grava, atualiza modalidade de quem continua e avisa quem entra ou muda. Sem a migration, lê/grava sem a coluna (tudo presencial) e devolve `aviso`; a página `gestao/feriados` tenta o select com `modalidade` e cai para o sem ela.
 
 ### Dashboard
 - Notícias (`noticias/rss.ts`): procurar fotos no resumo e em `content:encoded` do RSS; ignorar banners publicitários (`al-banner`) e scripts antes de extrair imagens. A Revista Hotéis envia fotos editoriais no conteúdo completo. Correção v1.60.2, sem migration.

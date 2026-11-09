@@ -108,6 +108,8 @@ As migrations podem ser repetidas sem problema. O código foi feito para **conti
 
 Migrations mais recentes:
 
+Modalidade na escala de feriados: aplique manualmente `supabase/migrations/0089_escala_modalidade.sql`; antes disso a escala salva normalmente e tudo vale como presencial (a tela avisa se houver home office não gravado).
+
 WhatsApp nos perfis: aplique manualmente `supabase/migrations/0088_profile_whatsapp.sql` no SQL Editor do Supabase. Antes disso, os demais dados continuam salvando; ao preencher WhatsApp, a tela informa a pendência. O número não é publicado na página de contatos.
 
 | Nº | O que cria |
@@ -120,6 +122,7 @@ WhatsApp nos perfis: aplique manualmente `supabase/migrations/0088_profile_whats
 | 0086 | Tarefas: coluna `solicitante` |
 | 0087 | Tarefas: histórico (`tarefa_historico`), base da linha do tempo e dos motivos de adiamento |
 | 0088 | WhatsApp opcional no perfil, com validação de 10 a 15 dígitos |
+| 0089 | `escala_feriados.modalidade` (presencial ou home office), padrão presencial |
 
 ### 4. Rodar em desenvolvimento
 
@@ -183,6 +186,7 @@ Detalhes e regras de cada módulo ficam no [`CLAUDE.md`](CLAUDE.md).
 
 | Versão | O que mudou |
 |---|---|
+| **1.68.0** | Escala de feriados: cada pessoa escalada fica como Presencial ou Home office (etiqueta no chip, seletor no menu Escalar, aviso à pessoa); migration 0089 |
 | **1.66.0** | Campo WhatsApp opcional em Meu perfil e na edição de usuários pelo gerente (migration 0088) |
 | **1.65.0** | Feedbacks e 1:1: colagem preserva estrutura de negrito, listas e tabelas; roteiro salvo, resumo e impressão passam a exibir a formatação em vez dos marcadores literais |
 | **1.64.2** | Feedbacks e conversas 1:1: campos de texto crescem automaticamente ao digitar, colar, receber resumo da IA ou trocar de etapa, sem barra de rolagem interna |
