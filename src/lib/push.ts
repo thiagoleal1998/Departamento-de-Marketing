@@ -11,6 +11,14 @@ export interface PayloadPush {
 
 let configurado = false;
 
+/** Endereço atual do painel. O push leva a URL completa: quem ativou os avisos no domínio antigo (que não existe mais) também abre o painel certo. */
+const SITE_PUBLICO = (process.env.NEXT_PUBLIC_SITE_URL || "https://departamento-de-marketing-lv.vercel.app").replace(/\/+$/, "");
+
+function urlAbsoluta(url: string): string {
+  if (/^https?:\/\//i.test(url)) return url;
+  return `${SITE_PUBLICO}${url.startsWith("/") ? "" : "/"}${url}`;
+}
+
 function configurar(): boolean {
   if (configurado) return true;
   const publica = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
@@ -50,7 +58,7 @@ export async function enviarPush(
     const corpo = JSON.stringify({
       titulo: payload.titulo,
       corpo: payload.corpo ?? "",
-      url: payload.url,
+      url: urlAbsoluta(payload.url),
       tag: payload.tag,
     });
 

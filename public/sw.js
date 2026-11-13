@@ -55,7 +55,15 @@ self.addEventListener("notificationclick", (event) => {
         type: "window",
         includeUncontrolled: true,
       });
+      let origemDestino = self.location.origin;
+      try {
+        origemDestino = new URL(destino, self.location.origin).origin;
+      } catch {
+        // mantém a origem do próprio service worker
+      }
       for (const c of janelas) {
+        // Só reaproveita abas do mesmo endereço do destino (avisos antigos podem apontar para outro domínio).
+        if (!c.url.startsWith(origemDestino)) continue;
         if ("focus" in c) {
           await c.focus();
           if ("navigate" in c) {

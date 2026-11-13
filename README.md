@@ -186,6 +186,7 @@ Detalhes e regras de cada módulo ficam no [`CLAUDE.md`](CLAUDE.md).
 
 | Versão | O que mudou |
 |---|---|
+| **1.68.1** | Notificações push: o clique abre sempre o endereço atual do painel (corrige a página 404 para quem ativou os avisos no domínio antigo) |
 | **1.68.0** | Escala de feriados: cada pessoa escalada fica como Presencial ou Home office (etiqueta no chip, seletor no menu Escalar, aviso à pessoa); migration 0089 |
 | **1.66.0** | Campo WhatsApp opcional em Meu perfil e na edição de usuários pelo gerente (migration 0088) |
 | **1.65.0** | Feedbacks e 1:1: colagem preserva estrutura de negrito, listas e tabelas; roteiro salvo, resumo e impressão passam a exibir a formatação em vez dos marcadores literais |

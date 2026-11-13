@@ -14,6 +14,6 @@ export async function GET(req: NextRequest) {
   if (!servicoDisponivel()) {
     return NextResponse.json({ erro: "serviço indisponível" }, { status: 503 });
   }
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? `https://${req.headers.get("host") ?? "departamento-de-marketing.vercel.app"}`;
+  const base = process.env.NEXT_PUBLIC_SITE_URL ?? `https://${req.headers.get("host") ?? "departamento-de-marketing-lv.vercel.app"}`;
   return NextResponse.json(await executarResumoSemanal(base));
 }

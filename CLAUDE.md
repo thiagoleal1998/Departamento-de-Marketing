@@ -149,6 +149,9 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 - **Escala de feriados**: diretoria e gerência (cargo com "Diretor" ou "Gerente") ficam fora da estatística (`features/feriados/participantes.ts`).
 - **Modalidade na escala** (v1.68.0): cada escalado é Presencial ou Home office (`features/feriados/modalidade.ts`, coluna da migration 0089). `definirEscala(data, nome, ItemEscala[])` grava, atualiza modalidade de quem continua e avisa quem entra ou muda. Sem a migration, lê/grava sem a coluna (tudo presencial) e devolve `aviso`; a página `gestao/feriados` tenta o select com `modalidade` e cai para o sem ela.
 
+### Notificações push (`src/lib/push.ts`, `public/sw.js`)
+- v1.68.1: o payload leva a **URL absoluta** do painel atual (`NEXT_PUBLIC_SITE_URL` ou `https://departamento-de-marketing-lv.vercel.app`). Quem ativou os avisos no domínio antigo `departamento-de-marketing.vercel.app` (conta antiga, hoje 404 `DEPLOYMENT_NOT_FOUND`) ainda tem assinatura no banco; com URL relativa o clique abria o domínio morto. O service worker só reaproveita aba do mesmo endereço do destino. Sem migration.
+
 ### Dashboard
 - Notícias (`noticias/rss.ts`): procurar fotos no resumo e em `content:encoded` do RSS; ignorar banners publicitários (`al-banner`) e scripts antes de extrair imagens. A Revista Hotéis envia fotos editoriais no conteúdo completo. Correção v1.60.2, sem migration.
 - Turismo (v1.60.3): algumas matérias, como a de Pomerode/Família Lima, não trazem foto nem em `content:encoded`. Após selecionar as notícias, `completarImagens` busca as capas ausentes na página (`og:image`, Twitter ou `wp-post-image`), em paralelo, com timeout de 5 s por página, dentro do cache de 15 min. Não buscar páginas de todos os itens do feed nem usar a primeira imagem arbitrária do HTML (pode ser publicidade). Sem migration.
