@@ -186,6 +186,7 @@ Detalhes e regras de cada módulo ficam no [`CLAUDE.md`](CLAUDE.md).
 
 | Versão | O que mudou |
 |---|---|
+| **1.68.2** | Solicitações de tarefa pelo chat: o print de prova passa a ser anexado ao card da tarefa (e acompanha a edição); o solicitante vai para o campo próprio do card |
 | **1.68.1** | Notificações push: o clique abre sempre o endereço atual do painel (corrige a página 404 para quem ativou os avisos no domínio antigo) |
 | **1.68.0** | Escala de feriados: cada pessoa escalada fica como Presencial ou Home office (etiqueta no chip, seletor no menu Escalar, aviso à pessoa); migration 0089 |
 | **1.66.0** | Campo WhatsApp opcional em Meu perfil e na edição de usuários pelo gerente (migration 0088) |

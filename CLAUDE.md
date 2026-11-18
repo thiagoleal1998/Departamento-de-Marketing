@@ -174,6 +174,9 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 - **Solicitante** inclui as reuniões (de vendas, de Marketing, V4, MKT <> Grupos/Inter/COM) no topo da lista; elas formam a área "Reuniões" nos relatórios.
 - Campos de data usam sempre `InputData` / `SeletorData` (calendário do painel), nunca `<input type="date">`.
 
+### Solicitações pelo chat (`src/features/chat/solicitacoes-actions.ts`)
+- v1.68.2: toda informação da solicitação tem de chegar ao card: título, descrição (detalhes, link, solicitante), prazo, link, `tarefas.solicitante` (com fallback se faltar a 0086) e o **print de prova**, copiado do bucket `chat-solicitacoes` para `tarefa-anexos` + linha em `tarefa_anexos` (caminho `<tarefa>/sol-<arquivo>`, ver `copiarProvaParaCard`). Ao editar a solicitação, o anexo do card é trocado/removido junto. Falha ao anexar não impede a criação da tarefa. Tarefas criadas antes da 1.68.2 não receberam o print (sem backfill). Sem migration nova.
+
 ### Atas (`src/features/atas/`)
 - Pendências vêm da última ata, com o andamento real da tarefa ligada (`vivo.ts`). Itens têm "Falar no chat".
 

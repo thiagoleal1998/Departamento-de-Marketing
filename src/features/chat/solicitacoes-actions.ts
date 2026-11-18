@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { avisarNovaMensagem } from "./aviso";
+import { BUCKET_ANEXOS } from "@/features/operacional/anexos-tipos";
 import {
   BUCKET_SOLICITACOES,
   MAX_BYTES_PROVA,
@@ -54,15 +55,68 @@ function validar(d: NovaSolicitacao) {
 }
 
 /** Descrição da tarefa criada a partir da solicitação. */
-function descricaoTarefa(v: { solicitante: string; link: string; detalhes: string; prazo: string | null }): string {
+function descricaoTarefa(v: { solicitante: string; link: string; detalhes: string; prazo: string | null }, temProva: boolean): string {
   return [
     `Solicitado por: ${v.solicitante}`,
     v.link ? `Referência: ${v.link}` : null,
     v.detalhes ? `\n${v.detalhes}` : null,
-    "\n(Pedido feito pelo chat; o print de prova está no cartão da solicitação.)",
+    `\n(Pedido feito pelo chat${temProva ? "; o print de prova está nos anexos do card" : ""}.)`,
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+const TIPO_POR_EXTENSAO: Record<string, string> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  webp: "image/webp",
+  gif: "image/gif",
+  pdf: "application/pdf",
+};
+
+/** Caminho do anexo do card que espelha o print da solicitação (determinístico, para poder trocar/remover na edição). */
+const caminhoEspelho = (tarefaId: string, provaCaminho: string) => `${tarefaId}/sol-${provaCaminho.split("/").pop()}`.slice(0, 300);
+
+/** Copia o print de prova da solicitação para os anexos do card da tarefa (aparece na seção Anexos). */
+async function copiarProvaParaCard(tarefaId: string, provaCaminho: string, provaNome: string | null, userId: string): Promise<boolean> {
+  if (!servicoDisponivel()) return false;
+  try {
+    const admin = criarClienteAdmin();
+    const { data: arquivo, error } = await admin.storage.from(BUCKET_SOLICITACOES).download(provaCaminho);
+    if (error || !arquivo) return false;
+    const ext = (provaNome ?? provaCaminho).split(".").pop()?.toLowerCase() ?? "";
+    const tipo = TIPO_POR_EXTENSAO[ext] ?? (arquivo.type || "application/octet-stream");
+    const destino = caminhoEspelho(tarefaId, provaCaminho);
+    const { error: errUp } = await admin.storage
+      .from(BUCKET_ANEXOS)
+      .upload(destino, Buffer.from(await arquivo.arrayBuffer()), { contentType: tipo, upsert: true });
+    if (errUp) return false;
+    const { error: errReg } = await admin.from("tarefa_anexos").insert({
+      tarefa_id: tarefaId,
+      caminho: destino,
+      nome: (provaNome ?? "print-de-prova").slice(0, 200),
+      tipo,
+      tamanho: arquivo.size,
+      criado_por: userId,
+    });
+    return !errReg;
+  } catch {
+    return false; // anexo é complementar: a tarefa já foi criada
+  }
+}
+
+/** Remove do card o anexo que espelhava o print antigo da solicitação. */
+async function removerProvaDoCard(tarefaId: string, provaCaminho: string) {
+  if (!servicoDisponivel()) return;
+  try {
+    const admin = criarClienteAdmin();
+    const destino = caminhoEspelho(tarefaId, provaCaminho);
+    await admin.from("tarefa_anexos").delete().eq("tarefa_id", tarefaId).eq("caminho", destino);
+    await admin.storage.from(BUCKET_ANEXOS).remove([destino]);
+  } catch {
+    // ignora
+  }
 }
 
 /** Endereço de envio assinado para o print de prova (vai direto do navegador ao armazenamento). */
@@ -117,20 +171,22 @@ export async function criarSolicitacaoChat(conversaId: string, d: NovaSolicitaca
     const admin = criarClienteAdmin();
     const { data: dest } = await admin.from("profiles").select("id").eq("id", d.executorId).eq("ativo", true).maybeSingle();
     if (dest) {
-      const { data: t } = await admin
-        .from("tarefas")
-        .insert({
-          titulo: `${v.meta.rotulo}: ${v.produto}`.slice(0, 200),
-          descricao: descricaoTarefa(v),
-          status: "a_fazer",
-          responsavel_id: d.executorId,
-          prazo: v.prazo ? `${v.prazo}T12:00:00-03:00` : null,
-          tag: "Solicitação",
-          link: v.link || null,
-        })
-        .select("id")
-        .single();
+      const base = {
+        titulo: `${v.meta.rotulo}: ${v.produto}`.slice(0, 200),
+        descricao: descricaoTarefa(v, Boolean(d.prova)),
+        status: "a_fazer",
+        responsavel_id: d.executorId,
+        prazo: v.prazo ? `${v.prazo}T12:00:00-03:00` : null,
+        tag: "Solicitação",
+        link: v.link || null,
+      };
+      // O solicitante vai também para o campo próprio do card (coluna da 0086; sem ela, cria sem o campo).
+      let { data: t, error: errT } = await admin.from("tarefas").insert({ ...base, solicitante: v.solicitante }).select("id").single();
+      if (errT && (errT.code === "42703" || errT.code === "PGRST204")) {
+        ({ data: t, error: errT } = await admin.from("tarefas").insert(base).select("id").single());
+      }
       tarefaId = (t as { id: string } | null)?.id ?? null;
+      if (tarefaId && d.prova?.caminho) await copiarProvaParaCard(tarefaId, d.prova.caminho, d.prova.nome ?? null, user.id);
       if (tarefaId) {
         await supabase.from("chat_solicitacoes").update({ tarefa_id: tarefaId }).eq("id", solId); // coluna da 0056 (ignora se faltar)
         if (d.executorId !== user.id) {
@@ -162,8 +218,8 @@ export async function editarSolicitacaoChat(id: string, d: NovaSolicitacao): Pro
   const { supabase, user } = await usuario();
   if (!user) return { erro: "Sessão expirada. Entre novamente." };
 
-  const { data: atual } = await supabase.from("chat_solicitacoes").select("id, criado_por, tarefa_id").eq("id", id).maybeSingle();
-  const s = atual as { id: string; criado_por: string | null; tarefa_id?: string | null } | null;
+  const { data: atual } = await supabase.from("chat_solicitacoes").select("id, criado_por, tarefa_id, prova_caminho").eq("id", id).maybeSingle();
+  const s = atual as { id: string; criado_por: string | null; tarefa_id?: string | null; prova_caminho?: string | null } | null;
   if (!s) return { erro: "Solicitação não encontrada." };
   if (s.criado_por !== user.id) return { erro: "Só quem fez a solicitação pode editá-la." };
 
@@ -189,15 +245,22 @@ export async function editarSolicitacaoChat(id: string, d: NovaSolicitacao): Pro
   if (error) return { erro: semTabela(error.code) ? MIGRACAO_EDICAO : "Não foi possível salvar a edição." };
 
   if (s.tarefa_id && servicoDisponivel()) {
-    await criarClienteAdmin()
-      .from("tarefas")
-      .update({
-        titulo: `${v.meta.rotulo}: ${v.produto}`.slice(0, 200),
-        descricao: descricaoTarefa(v),
-        prazo: v.prazo ? `${v.prazo}T12:00:00-03:00` : null,
-        link: v.link || null,
-      })
-      .eq("id", s.tarefa_id);
+    const admin = criarClienteAdmin();
+    const camposTarefa = {
+      titulo: `${v.meta.rotulo}: ${v.produto}`.slice(0, 200),
+      descricao: descricaoTarefa(v, Boolean(d.prova)),
+      prazo: v.prazo ? `${v.prazo}T12:00:00-03:00` : null,
+      link: v.link || null,
+    };
+    const { error: errT } = await admin.from("tarefas").update({ ...camposTarefa, solicitante: v.solicitante }).eq("id", s.tarefa_id);
+    if (errT && (errT.code === "42703" || errT.code === "PGRST204")) await admin.from("tarefas").update(camposTarefa).eq("id", s.tarefa_id);
+
+    // O anexo do card acompanha o print da solicitação (trocou ou removeu o print: troca/remove no card).
+    const novo = d.prova?.caminho ?? null;
+    if (s.prova_caminho !== novo) {
+      if (s.prova_caminho) await removerProvaDoCard(s.tarefa_id, s.prova_caminho);
+      if (novo) await copiarProvaParaCard(s.tarefa_id, novo, d.prova?.nome ?? null, user.id);
+    }
   }
 
   revalidatePath("/chat");
