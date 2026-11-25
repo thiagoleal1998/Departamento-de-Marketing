@@ -12,6 +12,18 @@ export const dynamic = "force-dynamic";
 
 const semTabela = (c?: string) => c === "42P01" || c === "PGRST205" || c === "42703" || c === "PGRST204";
 
+/** Ausências avisadas ao time, sem justificativa nem autorizações (com ou sem a coluna "retorno"). */
+function lerAusencias(admin: ReturnType<typeof criarClienteAdmin>, hoje: string, euId: string, comRetorno: boolean) {
+  return admin
+    .from("folgas")
+    .select(comRetorno ? "id, profile_id, tipo, inicio, fim, retorno" : "id, profile_id, tipo, inicio, fim")
+    .not("equipe_avisada_em", "is", null)
+    .neq("profile_id", euId)
+    .gte("fim", hoje)
+    .order("inicio", { ascending: true })
+    .then((r) => (r.error && comRetorno ? { data: null } : { data: r.data }));
+}
+
 export default async function FolgasPage() {
   const usuario = await exigirUsuario();
   const lideranca = ehLideranca(usuario.role);
@@ -19,12 +31,14 @@ export default async function FolgasPage() {
   const supabase = await criarClienteServidor();
 
   // A RLS devolve tudo para a liderança e só as folgas da própria pessoa para o colaborador.
-  const { data, error } = await supabase
-    .from("folgas")
-    .select("id, profile_id, tipo, inicio, fim, justificativa, autorizacoes, equipe_avisada_em")
-    .order("inicio", { ascending: true });
-  const folgas: Folga[] = ((data as (Omit<Folga, "autorizacoes"> & { autorizacoes: unknown })[] | null) ?? []).map((f) => ({
+  // Antes da migration 0091 a coluna "retorno" não existe: lê sem ela.
+  const lerFolgas = (colunas: string) => supabase.from("folgas").select(colunas).order("inicio", { ascending: true });
+  let lidas = await lerFolgas("id, profile_id, tipo, inicio, fim, retorno, justificativa, autorizacoes, equipe_avisada_em");
+  if (lidas.error && semTabela(lidas.error.code)) lidas = await lerFolgas("id, profile_id, tipo, inicio, fim, justificativa, autorizacoes, equipe_avisada_em");
+  const { data, error } = lidas;
+  const folgas: Folga[] = ((data as unknown as (Omit<Folga, "autorizacoes" | "retorno"> & { autorizacoes: unknown; retorno?: string | null })[] | null) ?? []).map((f) => ({
     ...f,
+    retorno: f.retorno ?? null,
     autorizacoes: lerAutorizacoes(f.autorizacoes),
   }));
 
@@ -36,18 +50,12 @@ export default async function FolgasPage() {
     const admin = criarClienteAdmin();
     const [p, a] = await Promise.all([
       admin.from("profiles").select("id, nome").eq("ativo", true).order("nome", { ascending: true }),
-      lideranca
-        ? Promise.resolve({ data: [] as AusenciaTime[] })
-        : admin
-            .from("folgas")
-            .select("id, profile_id, tipo, inicio, fim")
-            .not("equipe_avisada_em", "is", null)
-            .neq("profile_id", usuario.id)
-            .gte("fim", hoje)
-            .order("inicio", { ascending: true }),
+      lideranca ? Promise.resolve({ data: [] as unknown[] }) : lerAusencias(admin, hoje, usuario.id, true),
     ]);
     pessoas = (p.data as { id: string; nome: string }[] | null) ?? [];
-    ausencias = (a.data as AusenciaTime[] | null) ?? [];
+    let linhas = a.data as unknown as (Omit<AusenciaTime, "retorno"> & { retorno?: string | null })[] | null;
+    if (!lideranca && !linhas) linhas = ((await lerAusencias(admin, hoje, usuario.id, false)).data as unknown as typeof linhas) ?? [];
+    ausencias = (linhas ?? []).map((x) => ({ ...x, retorno: x.retorno ?? null }));
   } else {
     const { data: p } = await supabase.from("profiles").select("id, nome").eq("ativo", true).order("nome", { ascending: true });
     pessoas = (p as { id: string; nome: string }[] | null) ?? [];

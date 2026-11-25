@@ -5,12 +5,14 @@ import { criarClienteServidor } from "@/lib/supabase/server";
 import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { enviarPush } from "@/lib/push";
 import { registrarAcao } from "@/features/atividade/registro";
-import { FUNCOES_AUTORIZACAO, ehTipoFolga, rotuloTipo, textoPeriodo, type Autorizacao } from "./tipos";
+import { FUNCOES_AUTORIZACAO, PESSOAS_RH, ehTipoFolga, nomeAutorizador, rotuloTipo, textoPeriodo, textoRetorno, type Autorizacao } from "./tipos";
 
 type Resultado = { ok?: boolean; erro?: string; aviso?: string; avisados?: number };
 const MIGRACAO = "As folgas ainda não foram ativadas no banco (migration 0090).";
 const semTabela = (c?: string) => c === "42P01" || c === "PGRST205" || c === "42703" || c === "PGRST204";
 const ehData = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v);
+const semColuna = (c?: string) => c === "42703" || c === "PGRST204";
+const AVISO_RETORNO = "A folga foi salva, mas a data de retorno não: falta rodar a migration 0091 no Supabase.";
 
 async function lideranca() {
   const supabase = await criarClienteServidor();
@@ -46,12 +48,18 @@ async function nomesDe(ids: string[]): Promise<Map<string, string>> {
   return mapa;
 }
 
-/** Só funções conhecidas, uma pessoa por função. */
+/** Só funções conhecidas, uma pessoa por função (no RH, o nome precisa estar na lista do RH). */
 function limparAutorizacoes(a: Autorizacao[]): Autorizacao[] {
   const saida: Autorizacao[] = [];
   for (const f of FUNCOES_AUTORIZACAO) {
-    const x = a.find((i) => i.funcao === f && i.profile_id);
-    if (x) saida.push({ funcao: f, profile_id: x.profile_id });
+    const x = a.find((i) => i.funcao === f);
+    if (!x) continue;
+    if (f === "RH") {
+      const nome = (PESSOAS_RH as readonly string[]).find((n) => n === x.nome);
+      if (nome) saida.push({ funcao: f, nome });
+    } else if (x.profile_id) {
+      saida.push({ funcao: f, profile_id: x.profile_id });
+    }
   }
   return saida;
 }
@@ -61,6 +69,8 @@ export interface DadosFolga {
   tipo: string;
   inicio: string;
   fim: string;
+  /** Dia em que volta ao trabalho (vazio = não informado). */
+  retorno: string;
   justificativa: string;
   autorizacoes: Autorizacao[];
 }
@@ -78,6 +88,7 @@ export async function salvarFolga(id: string | null, d: DadosFolga): Promise<Res
   if (!ehTipoFolga(d.tipo)) return { erro: "Escolha o tipo da folga." };
   if (!ehData(d.inicio) || !ehData(d.fim)) return { erro: "Informe o primeiro e o último dia." };
   if (d.fim < d.inicio) return { erro: "O último dia não pode ser antes do primeiro." };
+  if (d.retorno && (!ehData(d.retorno) || d.retorno <= d.fim)) return { erro: "O retorno precisa ser depois do último dia da folga." };
 
   const autorizacoes = limparAutorizacoes(d.autorizacoes ?? []);
   const dados = {
@@ -92,34 +103,47 @@ export async function salvarFolga(id: string | null, d: DadosFolga): Promise<Res
   let mudouPeriodo = false;
   let equipeJaAvisada = false;
   if (id) {
-    const { data: antes, error } = await l.supabase.from("folgas").select("profile_id, tipo, inicio, fim, equipe_avisada_em").eq("id", id).maybeSingle();
-    if (error) return { erro: semTabela(error.code) ? MIGRACAO : "Não foi possível ler a folga." };
-    const a = antes as { profile_id: string; tipo: string; inicio: string; fim: string; equipe_avisada_em: string | null } | null;
+    type Antes = { profile_id: string; tipo: string; inicio: string; fim: string; retorno?: string | null; equipe_avisada_em: string | null };
+    let lido = (await l.supabase.from("folgas").select("profile_id, tipo, inicio, fim, retorno, equipe_avisada_em").eq("id", id).maybeSingle()) as unknown as { data: Antes | null; error: { code?: string } | null };
+    if (lido.error && semColuna(lido.error.code)) {
+      lido = (await l.supabase.from("folgas").select("profile_id, tipo, inicio, fim, equipe_avisada_em").eq("id", id).maybeSingle()) as unknown as typeof lido;
+    }
+    if (lido.error) return { erro: semTabela(lido.error.code) ? MIGRACAO : "Não foi possível ler a folga." };
+    const a = lido.data;
     if (!a) return { erro: "Folga não encontrada." };
-    mudouPeriodo = a.inicio !== d.inicio || a.fim !== d.fim || a.tipo !== d.tipo || a.profile_id !== d.profile_id;
+    mudouPeriodo = a.inicio !== d.inicio || a.fim !== d.fim || a.tipo !== d.tipo || a.profile_id !== d.profile_id || (a.retorno ?? "") !== d.retorno;
     equipeJaAvisada = Boolean(a.equipe_avisada_em);
   }
 
-  const { data, error } = id
-    ? await l.supabase
-        .from("folgas")
-        .update({ ...dados, ...(mudouPeriodo ? { equipe_avisada_em: null, equipe_avisada_por: null } : {}) })
-        .eq("id", id)
-        .select("id")
-    : await l.supabase.from("folgas").insert({ ...dados, criado_por: l.user.id }).select("id");
+  const gravar = (campos: Record<string, unknown>) =>
+    id
+      ? l.supabase
+          .from("folgas")
+          .update({ ...campos, ...(mudouPeriodo ? { equipe_avisada_em: null, equipe_avisada_por: null } : {}) })
+          .eq("id", id)
+          .select("id")
+      : l.supabase.from("folgas").insert({ ...campos, criado_por: l.user!.id }).select("id");
+  // Antes da migration 0091 a coluna "retorno" não existe: grava sem ela e avisa.
+  let avisoRetorno: string | undefined;
+  let { data, error } = await gravar({ ...dados, retorno: d.retorno || null });
+  if (error && semColuna(error.code)) {
+    ({ data, error } = await gravar(dados));
+    if (!error && d.retorno) avisoRetorno = AVISO_RETORNO;
+  }
   if (error) return { erro: semTabela(error.code) ? MIGRACAO : "Não foi possível salvar a folga." };
   if (!data || data.length === 0) return { erro: "Só a liderança registra folgas." };
 
   // Aviso à pessoa (a justificativa fica na tela dela, não no aviso).
   const periodo = textoPeriodo(dados);
   const tipo = rotuloTipo(dados.tipo);
+  const voltaEm = d.retorno ? ` Retorno em ${textoRetorno({ fim: d.fim, retorno: d.retorno })}.` : "";
   let avisados = 0;
   if (d.profile_id !== l.user.id && (!id || mudouPeriodo)) {
-    const nomes = await nomesDe(autorizacoes.map((a) => a.profile_id));
-    const quem = autorizacoes.map((a) => `${nomes.get(a.profile_id) ?? "—"} (${a.funcao})`).join(", ");
+    const nomes = await nomesDe(autorizacoes.flatMap((a) => (a.profile_id ? [a.profile_id] : [])));
+    const quem = autorizacoes.map((a) => `${nomeAutorizador(a, nomes)} (${a.funcao})`).join(", ");
     await avisar(
       [d.profile_id],
-      `${id ? "Sua folga mudou" : "Sua folga foi registrada"}: ${tipo}, ${periodo}.${quem ? ` Autorizada por ${quem}.` : ""}`
+      `${id ? "Sua folga mudou" : "Sua folga foi registrada"}: ${tipo}, ${periodo}.${voltaEm}${quem ? ` Autorizada por ${quem}.` : ""}`
     );
     avisados = 1;
   }
@@ -130,7 +154,11 @@ export async function salvarFolga(id: string | null, d: DadosFolga): Promise<Res
   return {
     ok: true,
     avisados,
-    ...(id && mudouPeriodo && equipeJaAvisada ? { aviso: "O período ou o tipo mudou: o time já tinha sido avisado, então o botão \"Avisar equipe\" voltou para você avisar a mudança." } : {}),
+    ...(avisoRetorno
+      ? { aviso: avisoRetorno }
+      : id && mudouPeriodo && equipeJaAvisada
+        ? { aviso: "O período, o tipo ou o retorno mudou: o time já tinha sido avisado, então o botão \"Avisar equipe\" voltou para você avisar a mudança." }
+        : {}),
   };
 }
 
@@ -152,9 +180,13 @@ export async function avisarEquipeFolga(id: string): Promise<Resultado> {
   if (l.erro || !l.user) return { erro: l.erro ?? "Sessão expirada." };
   if (!servicoDisponivel()) return { erro: "Avisos indisponíveis no momento." };
 
-  const { data, error } = await l.supabase.from("folgas").select("id, profile_id, tipo, inicio, fim").eq("id", id).maybeSingle();
-  if (error) return { erro: semTabela(error.code) ? MIGRACAO : "Não foi possível ler a folga." };
-  const f = data as { id: string; profile_id: string; tipo: string; inicio: string; fim: string } | null;
+  type Lida = { id: string; profile_id: string; tipo: string; inicio: string; fim: string; retorno?: string | null };
+  let lida = (await l.supabase.from("folgas").select("id, profile_id, tipo, inicio, fim, retorno").eq("id", id).maybeSingle()) as unknown as { data: Lida | null; error: { code?: string } | null };
+  if (lida.error && semColuna(lida.error.code)) {
+    lida = (await l.supabase.from("folgas").select("id, profile_id, tipo, inicio, fim").eq("id", id).maybeSingle()) as unknown as typeof lida;
+  }
+  if (lida.error) return { erro: semTabela(lida.error.code) ? MIGRACAO : "Não foi possível ler a folga." };
+  const f = lida.data;
   if (!f) return { erro: "Folga não encontrada." };
 
   const admin = criarClienteAdmin();
@@ -171,7 +203,8 @@ export async function avisarEquipeFolga(id: string): Promise<Resultado> {
     .eq("id", id);
   if (errMarca) return { erro: "Não foi possível registrar o aviso." };
 
-  await avisar(destinatarios, `${nome} estará ausente em ${textoPeriodo(f)} (${rotuloTipo(f.tipo)}).`);
+  const volta = f.retorno ? ` Retorna em ${textoRetorno({ fim: f.fim, retorno: f.retorno })}.` : "";
+  await avisar(destinatarios, `${nome} estará ausente em ${textoPeriodo(f)} (${rotuloTipo(f.tipo)}).${volta}`);
   await registrarAcao(l.user.id, "Avisou a equipe de uma folga", `${nome} · ${textoPeriodo(f)}`, "/gestao/folgas");
   revalidatePath("/gestao/folgas");
   return { ok: true, avisados: destinatarios.length };

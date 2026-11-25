@@ -6,10 +6,15 @@ import { avisarEquipeFolga, excluirFolga, salvarFolga } from "./actions";
 import {
   CHAVES_TIPO,
   FUNCOES_AUTORIZACAO,
+  PESSOAS_RH,
   TIPOS_FOLGA,
   diasDeFolga,
+  nomeAutorizador,
+  proximoDiaUtil,
   rotuloTipo,
   textoPeriodo,
+  textoRetorno,
+  valorAutorizacao,
   type AusenciaTime,
   type Folga,
 } from "./tipos";
@@ -51,6 +56,8 @@ export function FolgasPainel({
   const [tipo, setTipo] = useState<string>("tre");
   const [inicio, setInicio] = useState("");
   const [fim, setFim] = useState("");
+  const [retorno, setRetorno] = useState("");
+  const [retornoManual, setRetornoManual] = useState(false);
   const [justificativa, setJustificativa] = useState("");
   const [autoriza, setAutoriza] = useState<Record<string, string>>({});
   const [erro, setErro] = useState<string | null>(null);
@@ -67,6 +74,8 @@ export function FolgasPainel({
     setTipo("tre");
     setInicio("");
     setFim("");
+    setRetorno("");
+    setRetornoManual(false);
     setJustificativa("");
     setAutoriza({});
     setErro(null);
@@ -77,8 +86,10 @@ export function FolgasPainel({
     setTipo(f.tipo);
     setInicio(f.inicio);
     setFim(f.fim);
+    setRetorno(f.retorno ?? "");
+    setRetornoManual(Boolean(f.retorno));
     setJustificativa(f.justificativa ?? "");
-    setAutoriza(Object.fromEntries(f.autorizacoes.map((a) => [a.funcao, a.profile_id])));
+    setAutoriza(Object.fromEntries(f.autorizacoes.map((a) => [a.funcao, valorAutorizacao(a)])));
     setErro(null);
     setEditando(f.id);
   }
@@ -91,8 +102,9 @@ export function FolgasPainel({
         tipo,
         inicio,
         fim,
+        retorno,
         justificativa,
-        autorizacoes: FUNCOES_AUTORIZACAO.filter((fn) => autoriza[fn]).map((fn) => ({ funcao: fn, profile_id: autoriza[fn] })),
+        autorizacoes: FUNCOES_AUTORIZACAO.filter((fn) => autoriza[fn]).map((fn) => (fn === "RH" ? { funcao: fn, nome: autoriza[fn] } : { funcao: fn, profile_id: autoriza[fn] })),
       });
       if (r.erro) {
         setErro(r.erro);
@@ -157,6 +169,7 @@ export function FolgasPainel({
               </div>
               <p className="text-sm text-muted-foreground">
                 {textoPeriodo(f)} · {diasDeFolga(f)} {diasDeFolga(f) === 1 ? "dia" : "dias"}
+                {f.retorno ? <span> · retorna em <strong className="text-foreground">{textoRetorno(f)}</strong></span> : null}
               </p>
             </div>
             {podeEditar ? (
@@ -213,7 +226,7 @@ export function FolgasPainel({
                   <ul className="mt-1 flex flex-wrap gap-1.5">
                     {autoriz.map((a) => (
                       <li key={a.funcao} className="rounded-full border bg-background px-2.5 py-0.5 text-xs">
-                        <strong>{nome.get(a.profile_id) ?? "—"}</strong> · {a.funcao}
+                        <strong>{nomeAutorizador(a, nome)}</strong> · {a.funcao}
                       </li>
                     ))}
                   </ul>
@@ -286,12 +299,38 @@ export function FolgasPainel({
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="fo-fim">Último dia *</Label>
-                  <InputData id="fo-fim" value={fim} min={inicio || undefined} onChange={(e) => setFim(e.target.value)} required />
+                  <InputData
+                    id="fo-fim"
+                    value={fim}
+                    min={inicio || undefined}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setFim(v);
+                      // Sugere o retorno (próximo dia útil) enquanto você não tiver escolhido um.
+                      if (!retornoManual && /^\d{4}-\d{2}-\d{2}$/.test(v)) setRetorno(proximoDiaUtil(v));
+                    }}
+                    required
+                  />
                   {inicio && fim && fim >= inicio ? (
                     <p className="text-xs text-muted-foreground">
                       {diasDeFolga({ inicio, fim })} {diasDeFolga({ inicio, fim }) === 1 ? "dia" : "dias"} corridos: {textoPeriodo({ inicio, fim })}
                     </p>
                   ) : null}
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label htmlFor="fo-retorno">Data de retorno</Label>
+                  <InputData
+                    id="fo-retorno"
+                    value={retorno}
+                    min={fim || undefined}
+                    onChange={(e) => {
+                      setRetorno(e.target.value);
+                      setRetornoManual(Boolean(e.target.value));
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Sugerida: o próximo dia útil depois do último dia. Mude se houver feriado ou outra combinação. Vai no aviso do time.
+                  </p>
                 </div>
               </div>
 
@@ -325,11 +364,17 @@ export function FolgasPainel({
                           className="h-9"
                         >
                           <option value="">—</option>
-                          {pessoas.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.nome}
-                            </option>
-                          ))}
+                          {fn === "RH"
+                            ? PESSOAS_RH.map((n) => (
+                                <option key={n} value={n}>
+                                  {n}
+                                </option>
+                              ))
+                            : pessoas.map((p) => (
+                                <option key={p.id} value={p.id}>
+                                  {p.nome}
+                                </option>
+                              ))}
                         </Select>
                       </div>
                     </div>
@@ -384,7 +429,7 @@ export function FolgasPainel({
                     <div key={a.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
                       <div>
                         <span className="font-medium">{nome.get(a.profile_id) ?? "—"}</span>
-                        <span className="text-muted-foreground"> · {textoPeriodo(a)} · {rotuloTipo(a.tipo)}</span>
+                        <span className="text-muted-foreground"> · {textoPeriodo(a)} · {rotuloTipo(a.tipo)}{a.retorno ? ` · retorna em ${textoRetorno(a)}` : ""}</span>
                       </div>
                       <span className={cn("rounded px-1.5 py-0.5 text-xs font-semibold", s.cor)}>{s.rotulo}</span>
                     </div>
