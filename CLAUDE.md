@@ -94,6 +94,7 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 | 0088 | `profiles.whatsapp`, opcional, somente dígitos (10 a 15) |
 | 0089 | `escala_feriados.modalidade` (`presencial`/`home_office`, padrão presencial) |
 | 0091 | `folgas.retorno` (date): dia em que a pessoa volta |
+| 0092 | `perfis_historico`: histórico das pesquisas DISC por pessoa |
 | 0090 | `folgas` (`tipo`, `inicio`/`fim`, `justificativa`, `autorizacoes` jsonb, `equipe_avisada_em`); RLS: liderança tudo, colaborador lê só as próprias |
 
 ## Banco de dados (Supabase)
@@ -158,6 +159,9 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 - v1.70.1: o service worker antes **engolia todo push se o painel estivesse em foco** (supunha aviso interno, que só existe no chat) — caso real: aviso de folga não chegou ao Jonas. Agora só o chat com o painel em foco é suprimido; os demais sempre mostram o pop-up e mandam `postMessage({tipo:"notificacao"})` às janelas, e `bell.tsx` faz `router.refresh()` para atualizar o sino. Ao criar notificações de outros tipos, não conte com aviso interno. Sem migration.
 - v1.71.2: ícones da notificação: `icone` = `/marca-icone.png` (estrela colorida) e `badge` = `/marca-badge.png` (`src/app/marca-badge.png/route.ts`, `sharp`: silhueta branca/transparente gerada da logo, porque o Android pinta o ícone pequeno só pelo alfa; colorida vira quadrado). O push leva as duas URLs absolutas; o `sw.js` as usa, com título por assunto (`ASSUNTOS` por tag: folga, escala-feriado) e a frase no corpo. **Limite:** quem ainda tem o service worker do domínio antigo (`departamento-de-marketing.vercel.app`) continua com o visual antigo (letra "D" no lugar da estrela) e cliques que falham; a saída é desativar e ativar os avisos no domínio atual. `sharp` é dependência declarada (precisa constar no `package.json` para a Vercel incluí-lo).
 - v1.68.1: o payload leva a **URL absoluta** do painel atual (`NEXT_PUBLIC_SITE_URL` ou `https://departamento-de-marketing-lv.vercel.app`). Quem ativou os avisos no domínio antigo `departamento-de-marketing.vercel.app` (conta antiga, hoje 404 `DEPLOYMENT_NOT_FOUND`) ainda tem assinatura no banco; com URL relativa o clique abria o domínio morto. O service worker só reaproveita aba do mesmo endereço do destino. Sem migration.
+
+### Perfis comportamentais (Gestão, `src/features/perfis/`)
+- v1.72.0: cartões mostram "Posição dominante" e "Secundário" por extenso (nome + letra) e a data da pesquisa, no lugar da etiqueta "S / D". **Histórico** em `perfis_historico` (migration 0092; `unique(perfil_id, participante_id)`): a sincronização com a DISC RH grava **todas** as pesquisas concluídas de cada e-mail (o perfil principal continua sendo a mais recente). O perfil individual tem "Evolução entre pesquisas" (`grafico-evolucao.tsx`: SVG, escala fixa -24..+24, 4 linhas D/I/S/C, tabela e diferenças da anterior para a mais recente). Sem a 0092 ou sem registros, mostra só a pesquisa atual; a sincronização avisa que falta a migration. A nova pesquisa (janeiro) aparece depois de **Sincronizar com a DISC RH**.
 
 ### Menu lateral
 - v1.71.5 (Perfis comportamentais): quem sai da equipe tem o perfil apagado **e** o e-mail incluído em `EMAILS_FORA_DA_EQUIPE` (`src/features/perfis/tipos.ts`), senão a sincronização com a DISC RH recria a linha. Jessica Esteves (social.media@litoralverde.com.br) foi removida; backup da linha no scratchpad. Sem migration.

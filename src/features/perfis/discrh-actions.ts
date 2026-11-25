@@ -16,6 +16,7 @@ export type EstadoSync = {
   novos?: number;
   atualizados?: number;
   pesquisas?: number;
+  aviso?: string;
 };
 
 const FATORES = ["D", "I", "S", "C"] as const;
@@ -64,11 +65,14 @@ export async function sincronizarDiscRh(): Promise<EstadoSync> {
     const pesquisas = await listarPesquisas();
     // Resultado mais recente por e-mail.
     const porEmail = new Map<string, { p: DiscParticipante; pesquisa: string }>();
+    // Todas as pesquisas concluídas de cada pessoa (histórico para comparar a evolução).
+    const todas = new Map<string, { p: DiscParticipante; pesquisa: string }[]>();
     for (const ps of pesquisas) {
       for (const p of await listarConcluidos(ps.id)) {
         if (!p.email || !perfilDe(p)) continue;
         const chave = p.email.trim().toLowerCase();
         if (EMAILS_FORA_DA_EQUIPE.includes(chave)) continue;
+        todas.set(chave, [...(todas.get(chave) ?? []), { p, pesquisa: ps.name }]);
         const atual = porEmail.get(chave);
         if (!atual || (p.completedAt ?? "") > (atual.p.completedAt ?? "")) {
           porEmail.set(chave, { p, pesquisa: ps.name });
@@ -140,8 +144,34 @@ export async function sincronizarDiscRh(): Promise<EstadoSync> {
       }
     }
 
+    // Histórico: uma linha por pesquisa concluída. Sem a migration 0092 a tabela não existe e o resto segue normal.
+    const { data: atuais } = await supabase.from("perfis_comportamentais").select("id, email");
+    const idPorEmail = new Map(((atuais as { id: string; email: string }[] | null) ?? []).map((r) => [r.email.trim().toLowerCase(), r.id]));
+    const linhasHist = [...todas].flatMap(([email, lista]) =>
+      lista.flatMap(({ p, pesquisa }) => {
+        const perfilId = idPorEmail.get(email);
+        const pf = perfilDe(p);
+        const sc = p.discProfile?.scores;
+        if (!perfilId || !pf || !sc) return [];
+        return [{
+          perfil_id: perfilId,
+          participante_id: p.id,
+          pesquisa,
+          concluido_em: p.completedAt ? p.completedAt.slice(0, 10) : null,
+          perfil_primario: pf.primario,
+          perfil_secundario: pf.secundario,
+          pontuacoes: { D: sc.d ?? 0, I: sc.i ?? 0, S: sc.s ?? 0, C: sc.c ?? 0 },
+        }];
+      })
+    );
+    let aviso: string | undefined;
+    if (linhasHist.length > 0) {
+      const { error: erroHist } = await supabase.from("perfis_historico").upsert(linhasHist, { onConflict: "perfil_id,participante_id" });
+      if (erroHist) aviso = ["42P01", "PGRST205"].includes(erroHist.code) ? "Rode a migration 0092 para guardar o histórico das pesquisas." : erroHist.message;
+    }
+
     revalidatePath("/gestao/perfis");
-    return { ok: true, novos, atualizados, pesquisas: pesquisas.length };
+    return { ok: true, novos, atualizados, pesquisas: pesquisas.length, aviso };
   } catch (e) {
     return { erro: e instanceof Error ? e.message : "Falha ao consultar a DISC RH." };
   }

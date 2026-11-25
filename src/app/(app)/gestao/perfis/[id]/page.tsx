@@ -9,6 +9,7 @@ import {
   nivelSubtraco,
   type FatorDisc,
   type PerfilComportamental,
+  type PontoHistorico,
 } from "@/features/perfis/tipos";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { cn, formatarData } from "@/lib/utils";
+import { GraficoEvolucao } from "@/features/perfis/grafico-evolucao";
 
 export const dynamic = "force-dynamic";
 
@@ -94,6 +96,26 @@ export default async function PerfilDetalhePage({
       .maybeSingle();
     foto = (u as { avatar_url: string | null } | null)?.avatar_url ?? null;
   }
+
+  // Histórico das pesquisas (migration 0092). Sem ela, ou sem registros, mostra só a pesquisa atual.
+  const { data: histData, error: histErro } = await supabase
+    .from("perfis_historico")
+    .select("participante_id, pesquisa, concluido_em, perfil_primario, perfil_secundario, pontuacoes")
+    .eq("perfil_id", p.id);
+  const pontos: PontoHistorico[] = histErro ? [] : ((histData as PontoHistorico[] | null) ?? []);
+  if (pontos.length === 0) {
+    pontos.push({
+      participante_id: "atual",
+      pesquisa: p.pesquisa,
+      concluido_em: p.concluido_em,
+      perfil_primario: p.perfil_primario,
+      perfil_secundario: p.perfil_secundario,
+      pontuacoes: p.dados?.pontuacoes ?? { D: 0, I: 0, S: 0, C: 0 },
+    });
+  }
+  pontos.sort((a, b) => (a.concluido_em ?? "").localeCompare(b.concluido_em ?? ""));
+  const anterior = pontos.length > 1 ? pontos[pontos.length - 2] : null;
+  const ultimo = pontos[pontos.length - 1];
 
   const d = p.dados;
   const primario = FATOR_META[p.perfil_primario];
@@ -174,6 +196,72 @@ export default async function PerfilDetalhePage({
           </CardContent>
         </Card>
       </div>
+
+      {/* Evolução entre pesquisas */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Evolução entre pesquisas</CardTitle>
+          <CardDescription>
+            {pontos.length > 1
+              ? `Comparativo de ${pontos.length} pesquisas, da mais antiga à mais recente.`
+              : "Só há uma pesquisa registrada. Quando houver a próxima, o comparativo e o gráfico de evolução aparecem aqui."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <GraficoEvolucao pontos={pontos} />
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[480px] border-collapse text-left text-sm">
+              <thead>
+                <tr className="border-b text-xs text-muted-foreground">
+                  <th className="py-1.5 pr-3 font-medium">Pesquisa</th>
+                  <th className="py-1.5 pr-3 font-medium">Feita em</th>
+                  <th className="py-1.5 pr-3 font-medium">Dominante</th>
+                  <th className="py-1.5 pr-3 font-medium">Secundário</th>
+                  {FATORES.map((f) => (
+                    <th key={f} className={cn("py-1.5 pr-3 font-bold", FATOR_META[f].texto)}>{f}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {pontos.map((pt) => (
+                  <tr key={pt.participante_id} className="border-b last:border-0">
+                    <td className="py-1.5 pr-3">{pt.pesquisa ?? "—"}</td>
+                    <td className="py-1.5 pr-3 tabular-nums">{pt.concluido_em ? formatarData(pt.concluido_em) : "—"}</td>
+                    <td className="py-1.5 pr-3">{FATOR_META[pt.perfil_primario].nome}</td>
+                    <td className="py-1.5 pr-3">{pt.perfil_secundario ? FATOR_META[pt.perfil_secundario].nome : "—"}</td>
+                    {FATORES.map((f) => (
+                      <td key={f} className="py-1.5 pr-3 tabular-nums">{pt.pontuacoes?.[f] ?? 0}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {anterior ? (
+            <div className="space-y-2 rounded-lg border bg-muted/30 p-3 text-sm">
+              <p className="font-medium">O que mudou da pesquisa anterior para a mais recente</p>
+              <p className="text-muted-foreground">
+                Dominante: {FATOR_META[anterior.perfil_primario].nome}
+                {anterior.perfil_primario === ultimo.perfil_primario ? " (manteve)" : ` → ${FATOR_META[ultimo.perfil_primario].nome}`}
+                {" · "}
+                Secundário: {anterior.perfil_secundario ? FATOR_META[anterior.perfil_secundario].nome : "—"}
+                {anterior.perfil_secundario === ultimo.perfil_secundario ? " (manteve)" : ` → ${ultimo.perfil_secundario ? FATOR_META[ultimo.perfil_secundario].nome : "—"}`}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {FATORES.map((f) => {
+                  const dif = (ultimo.pontuacoes?.[f] ?? 0) - (anterior.pontuacoes?.[f] ?? 0);
+                  return (
+                    <span key={f} className="rounded-md border bg-background px-2 py-1 text-xs tabular-nums">
+                      <span className={cn("font-bold", FATOR_META[f].texto)}>{f}</span>{" "}
+                      {dif > 0 ? "+" : ""}{dif}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
 
       {/* Competências */}
       <Card>

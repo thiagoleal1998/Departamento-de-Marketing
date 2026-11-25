@@ -35,6 +35,7 @@ export function SincronizarDisc() {
           pesquisa(s).
         </span>
       ) : null}
+      {res?.ok && res.aviso ? <span className="text-sm text-amber-600">{res.aviso}</span> : null}
       {res?.erro ? (
         <span className="text-sm text-destructive">{res.erro}</span>
       ) : null}

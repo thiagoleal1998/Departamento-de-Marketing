@@ -73,3 +73,13 @@ export function nivelSubtraco(valor: number): {
 
 /** Quem saiu da equipe: a sincronização com a DISC RH não recria o perfil dessas pessoas (e-mails em minúsculas). */
 export const EMAILS_FORA_DA_EQUIPE: string[] = ["social.media@litoralverde.com.br"]; // Jessica Esteves
+
+/** Uma pesquisa DISC concluída (tabela perfis_historico). */
+export interface PontoHistorico {
+  participante_id: string;
+  pesquisa: string | null;
+  concluido_em: string | null;
+  perfil_primario: FatorDisc;
+  perfil_secundario: FatorDisc | null;
+  pontuacoes: Record<FatorDisc, number>;
+}

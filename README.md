@@ -126,6 +126,7 @@ WhatsApp nos perfis: aplique manualmente `supabase/migrations/0088_profile_whats
 | 0088 | WhatsApp opcional no perfil, com validação de 10 a 15 dígitos |
 | 0089 | `escala_feriados.modalidade` (presencial ou home office), padrão presencial |
 | 0091 | `folgas.retorno`: data de retorno ao trabalho |
+| 0092 | `perfis_historico`: uma linha por pesquisa DISC concluída de cada pessoa (comparativo de evolução) |
 | 0090 | `folgas` (tipo, período, justificativa, autorizações, aviso à equipe) com RLS: liderança tudo, colaborador só as próprias |
 
 ### 4. Rodar em desenvolvimento
@@ -190,6 +191,7 @@ Detalhes e regras de cada módulo ficam no [`CLAUDE.md`](CLAUDE.md).
 
 | Versão | O que mudou |
 |---|---|
+| **1.72.0** | Perfis comportamentais: cartões com "Posição dominante" e "Secundário" por extenso e data da pesquisa; histórico das pesquisas (migration 0092) e, no perfil, gráfico e tabela de **evolução entre pesquisas** (para comparar com a de janeiro) |
 | **1.71.5** | Perfis comportamentais: Jessica Esteves removida (saiu da equipe); a sincronização com a DISC RH passa a ignorar e-mails de `EMAILS_FORA_DA_EQUIPE` |
 | **1.71.4** | Relatórios: aba "SEO (Surfer)" retirada da tela (código em `relatorio-surfer.tsx` e `lib/surfer.ts` mantido) |
 | **1.71.3** | Menu lateral: item "Criação" oculto (a rota `/criacao` continua existindo, só saiu do menu; para voltar, recoloque o item em `src/lib/navigation.ts`) |

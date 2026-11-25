@@ -14,9 +14,8 @@ import {
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
+import { cn, formatarData } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -96,16 +95,27 @@ export default async function PerfisPage() {
                             {p.nome}
                           </h3>
                           <p className="truncate text-xs text-muted-foreground">
-                            {p.pesquisa ?? "—"}
+                            {p.concluido_em ? `Pesquisa feita em ${formatarData(p.concluido_em)}` : p.pesquisa ?? "—"}
                           </p>
                         </div>
                       </div>
-                      <Badge
-                        className={cn("shrink-0 text-white", meta.cor)}
-                      >
-                        {p.perfil_primario}
-                        {p.perfil_secundario ? ` / ${p.perfil_secundario}` : ""}
-                      </Badge>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="rounded-lg border p-2">
+                        <p className="text-[11px] text-muted-foreground">Posição dominante</p>
+                        <p className={cn("font-semibold", meta.texto)}>{meta.nome} ({p.perfil_primario})</p>
+                      </div>
+                      <div className="rounded-lg border p-2">
+                        <p className="text-[11px] text-muted-foreground">Secundário</p>
+                        {p.perfil_secundario ? (
+                          <p className={cn("font-semibold", FATOR_META[p.perfil_secundario].texto)}>
+                            {FATOR_META[p.perfil_secundario].nome} ({p.perfil_secundario})
+                          </p>
+                        ) : (
+                          <p className="font-semibold text-muted-foreground">—</p>
+                        )}
+                      </div>
                     </div>
 
                     <div className="space-y-1.5">
