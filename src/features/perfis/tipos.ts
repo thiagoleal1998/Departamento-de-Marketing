@@ -70,3 +70,6 @@ export function nivelSubtraco(valor: number): {
   if (valor >= 26) return { rotulo: "Adaptado", classe: "text-amber-600" };
   return { rotulo: "Limitado", classe: "text-red-600" };
 }
+
+/** Quem saiu da equipe: a sincronização com a DISC RH não recria o perfil dessas pessoas (e-mails em minúsculas). */
+export const EMAILS_FORA_DA_EQUIPE: string[] = ["social.media@litoralverde.com.br"]; // Jessica Esteves

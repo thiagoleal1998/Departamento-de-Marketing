@@ -160,6 +160,7 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 - v1.68.1: o payload leva a **URL absoluta** do painel atual (`NEXT_PUBLIC_SITE_URL` ou `https://departamento-de-marketing-lv.vercel.app`). Quem ativou os avisos no domínio antigo `departamento-de-marketing.vercel.app` (conta antiga, hoje 404 `DEPLOYMENT_NOT_FOUND`) ainda tem assinatura no banco; com URL relativa o clique abria o domínio morto. O service worker só reaproveita aba do mesmo endereço do destino. Sem migration.
 
 ### Menu lateral
+- v1.71.5 (Perfis comportamentais): quem sai da equipe tem o perfil apagado **e** o e-mail incluído em `EMAILS_FORA_DA_EQUIPE` (`src/features/perfis/tipos.ts`), senão a sincronização com a DISC RH recria a linha. Jessica Esteves (social.media@litoralverde.com.br) foi removida; backup da linha no scratchpad. Sem migration.
 - v1.71.4: a aba **SEO (Surfer)** saiu de Relatórios (`relatorios/page.tsx`; `?aba=surfer` agora cai em Divulgação). `relatorio-surfer.tsx`, `lib/surfer.ts` e o texto em `como-apuramos.tsx` ficam no projeto; para reativar, recoloque a aba e o ramo `aba === "surfer"`. Sem migration.
 - v1.71.3: o item **Criação** foi removido de `NAVEGACAO` (`src/lib/navigation.ts`) a pedido do usuário ("não está servindo pra nada"). A rota `/criacao` e o código de `src/features/criacao/` continuam no projeto; para reativar, recoloque o item (href `/criacao`, ícone `Palette`, gradiente `from-fuchsia-500 to-purple-600`). Sem migration.
 

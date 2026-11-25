@@ -8,6 +8,7 @@ import {
   listarPesquisas,
   type DiscParticipante,
 } from "@/lib/discrh";
+import { EMAILS_FORA_DA_EQUIPE } from "./tipos";
 
 export type EstadoSync = {
   ok?: boolean;
@@ -67,6 +68,7 @@ export async function sincronizarDiscRh(): Promise<EstadoSync> {
       for (const p of await listarConcluidos(ps.id)) {
         if (!p.email || !perfilDe(p)) continue;
         const chave = p.email.trim().toLowerCase();
+        if (EMAILS_FORA_DA_EQUIPE.includes(chave)) continue;
         const atual = porEmail.get(chave);
         if (!atual || (p.completedAt ?? "") > (atual.p.completedAt ?? "")) {
           porEmail.set(chave, { p, pesquisa: ps.name });

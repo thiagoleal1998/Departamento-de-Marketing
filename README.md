@@ -190,6 +190,7 @@ Detalhes e regras de cada módulo ficam no [`CLAUDE.md`](CLAUDE.md).
 
 | Versão | O que mudou |
 |---|---|
+| **1.71.5** | Perfis comportamentais: Jessica Esteves removida (saiu da equipe); a sincronização com a DISC RH passa a ignorar e-mails de `EMAILS_FORA_DA_EQUIPE` |
 | **1.71.4** | Relatórios: aba "SEO (Surfer)" retirada da tela (código em `relatorio-surfer.tsx` e `lib/surfer.ts` mantido) |
 | **1.71.3** | Menu lateral: item "Criação" oculto (a rota `/criacao` continua existindo, só saiu do menu; para voltar, recoloque o item em `src/lib/navigation.ts`) |
 | **1.71.2** | Notificações: a estrela da marca no ícone (colorida) e no ícone pequeno do Android (silhueta branca, rota `/marca-badge.png`), título por assunto ("Ausência no time", "Escala de feriados") com a frase no corpo, vibração e idioma |
