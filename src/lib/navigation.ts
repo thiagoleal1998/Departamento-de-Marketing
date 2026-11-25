@@ -2,7 +2,6 @@ import {
   LayoutDashboard,
   Ticket,
   HeartHandshake,
-  Palette,
   BarChart3,
   KanbanSquare,
   FolderKanban,
@@ -88,13 +87,6 @@ export const NAVEGACAO: ItemNav[] = [
     icone: HeartHandshake,
     gradiente: "from-orange-500 to-rose-500",
     descricao: "Feedbacks, 1:1 e planos",
-  },
-  {
-    href: "/criacao",
-    label: "Criação",
-    icone: Palette,
-    gradiente: "from-fuchsia-500 to-purple-600",
-    descricao: "Materiais e peças",
   },
   {
     href: "/gestao",
