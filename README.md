@@ -24,7 +24,7 @@ Construído com **Next.js 15 (App Router) + TypeScript + Tailwind CSS + Supabase
 ### Área autenticada (menu lateral)
 | Módulo | O que faz |
 |---|---|
-| **Dashboard** | Resumo do dia: agenda, alertas de destinos (notícias de risco), divulgação do dia, painel da liderança, calendário do mês e notícias do turismo/economia. Fotos do turismo ausentes no RSS são buscadas nos metadados da matéria. Cada bloco lento tem limite de tempo próprio |
+| **Dashboard** | Resumo do dia: agenda, alertas de destinos (notícias de risco), divulgação do dia, próximas folgas e férias do time (liderança), painel da liderança, calendário do mês e notícias do turismo/economia. Fotos do turismo ausentes no RSS são buscadas nos metadados da matéria. Cada bloco lento tem limite de tempo próprio |
 | **Visão geral** | Resumo para o celular e aprovações da diretoria |
 | **Chamados** | Abrir, triar, atribuir, comentar e acompanhar solicitações (SLA, histórico de status, conversão em tarefa) |
 | **Feedbacks e Desenvolvimento** | Construtor de feedback guiado com IA e conversas 1:1 com campos de altura automática e colagem que preserva negrito, listas e tabelas; roteiro salvo e impressão com texto formatado; planos de ação (com objetivos, checklist, anexos e exclusão), histórico por colaborador |
@@ -190,6 +190,7 @@ Detalhes e regras de cada módulo ficam no [`CLAUDE.md`](CLAUDE.md).
 
 | Versão | O que mudou |
 |---|---|
+| **1.71.0** | Dashboard da liderança: quadro **Próximas folgas e férias** (agora e próximos 45 dias, com tipo, período e retorno) abaixo dos alertas de destino e da divulgação de hoje |
 | **1.70.1** | Notificações: com o painel aberto e em foco o pop-up do navegador não era exibido (só o chat tinha aviso interno); agora todo aviso fora do chat aparece e o sino se atualiza sozinho |
 | **1.70.0** | Folgas: **data de retorno** (sugerida no próximo dia útil, editável; vai no aviso do time) e RH com as pessoas Raquel Sampaio, Luiza Zanelatto e Rayane Gomes na autorização; migration 0091 |
 | **1.69.0** | Nova aba **Gestão › Folgas**: registro de folga TRE e outros tipos, justificativa visível só à pessoa e à liderança, quem autorizou (Supervisão, Liderança operacional, Gerência, RH), aviso imediato à pessoa e botão "Avisar equipe" (sem justificativa); colaborador vê "Minhas folgas" e as ausências do time; migration 0090 |

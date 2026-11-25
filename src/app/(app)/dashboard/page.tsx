@@ -14,6 +14,7 @@ import { exigirUsuario } from "@/lib/auth";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { ehLideranca } from "@/lib/permissions";
 import { PainelLideranca } from "@/features/dashboard/painel-lideranca";
+import { ProximasAusencias } from "@/features/dashboard/proximas-ausencias";
 import { DivulgacaoHoje } from "@/features/divulgacao/divulgacao-hoje";
 import { AlertasDestinos } from "@/features/noticias/alertas-destinos";
 import { AgendaHoje } from "@/features/agenda/agenda-hoje";
@@ -99,6 +100,10 @@ export default async function DashboardPage() {
               </Suspense>
             </div>
           </div>
+          {/* Quem estará de folga ou de férias nas próximas semanas (abaixo dos alertas e da divulgação). */}
+          <Suspense fallback={<div className="h-40 animate-pulse rounded-2xl bg-muted/50" />}>
+            <ComLimite de={ProximasAusencias} titulo="As próximas folgas e férias" ms={15_000} />
+          </Suspense>
         </div>
       ) : (
         <PageHeader titulo={`Olá, ${usuario.nome.split(" ")[0]} 👋`} descricao="Aqui está o resumo do seu dia." />
