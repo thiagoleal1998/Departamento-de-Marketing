@@ -59,6 +59,9 @@ export async function enviarPush(
       titulo: payload.titulo,
       corpo: payload.corpo ?? "",
       url: urlAbsoluta(payload.url),
+      // Endereços completos: o ícone da estrela aparece mesmo se o navegador resolver o caminho de outro jeito.
+      icone: `${SITE_PUBLICO}/marca-icone.png`,
+      badge: `${SITE_PUBLICO}/marca-badge.png`,
       tag: payload.tag,
     });
 

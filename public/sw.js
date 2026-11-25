@@ -13,13 +13,25 @@ self.addEventListener("push", (event) => {
     dados = { titulo: "Nova notificação", corpo: event.data ? event.data.text() : "" };
   }
 
-  const titulo = dados.titulo || "Painel de Marketing";
+  // Avisos sem texto de corpo (folga, escala…): o título vira o assunto e a frase vai no corpo, mais legível.
+  const ASSUNTOS = { folga: "Ausência no time", "escala-feriado": "Escala de feriados" };
+  let titulo = dados.titulo || "Painel de Marketing";
+  let corpo = dados.corpo || "";
+  const assunto = typeof dados.tag === "string" ? ASSUNTOS[dados.tag] : undefined;
+  if (assunto && !corpo) {
+    corpo = titulo;
+    titulo = assunto;
+  }
   const opcoes = {
-    body: dados.corpo || "",
-    icon: "/marca-icone.png",
-    badge: "/marca-icone.png",
+    body: corpo,
+    // A estrela da marca: colorida no ícone grande e em silhueta branca no pequeno (Android).
+    icon: dados.icone || "/marca-icone.png",
+    badge: dados.badge || "/marca-badge.png",
     tag: dados.tag || undefined,
     renotify: Boolean(dados.tag),
+    lang: "pt-BR",
+    timestamp: Date.now(),
+    vibrate: [120, 60, 120],
     data: { url: dados.url || "/" },
   };
 

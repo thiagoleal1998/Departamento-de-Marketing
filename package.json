@@ -1,6 +1,6 @@
 {
   "name": "painel-marketing",
-  "version": "1.71.1",
+  "version": "1.71.2",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -25,6 +25,7 @@
     "react-hook-form": "^7.54.2",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
+    "sharp": "^0.34.5",
     "tailwind-merge": "^2.6.0",
     "turndown": "^7.2.4",
     "turndown-plugin-gfm": "^1.0.2",

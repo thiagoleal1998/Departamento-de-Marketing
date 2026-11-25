@@ -190,6 +190,7 @@ Detalhes e regras de cada módulo ficam no [`CLAUDE.md`](CLAUDE.md).
 
 | Versão | O que mudou |
 |---|---|
+| **1.71.2** | Notificações: a estrela da marca no ícone (colorida) e no ícone pequeno do Android (silhueta branca, rota `/marca-badge.png`), título por assunto ("Ausência no time", "Escala de feriados") com a frase no corpo, vibração e idioma |
 | **1.71.1** | Dashboard: o quadro de próximas folgas e férias virou carrossel (folgas primeiro, depois férias, com setas e atalhos) e a etiqueta de quando começa ganhou mais espaço |
 | **1.71.0** | Dashboard da liderança: quadro **Próximas folgas e férias** (agora e próximos 45 dias, com tipo, período e retorno) abaixo dos alertas de destino e da divulgação de hoje |
 | **1.70.1** | Notificações: com o painel aberto e em foco o pop-up do navegador não era exibido (só o chat tinha aviso interno); agora todo aviso fora do chat aparece e o sino se atualiza sozinho |
