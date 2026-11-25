@@ -190,6 +190,7 @@ Detalhes e regras de cada módulo ficam no [`CLAUDE.md`](CLAUDE.md).
 
 | Versão | O que mudou |
 |---|---|
+| **1.70.1** | Notificações: com o painel aberto e em foco o pop-up do navegador não era exibido (só o chat tinha aviso interno); agora todo aviso fora do chat aparece e o sino se atualiza sozinho |
 | **1.70.0** | Folgas: **data de retorno** (sugerida no próximo dia útil, editável; vai no aviso do time) e RH com as pessoas Raquel Sampaio, Luiza Zanelatto e Rayane Gomes na autorização; migration 0091 |
 | **1.69.0** | Nova aba **Gestão › Folgas**: registro de folga TRE e outros tipos, justificativa visível só à pessoa e à liderança, quem autorizou (Supervisão, Liderança operacional, Gerência, RH), aviso imediato à pessoa e botão "Avisar equipe" (sem justificativa); colaborador vê "Minhas folgas" e as ausências do time; migration 0090 |
 | **1.68.2** | Solicitações de tarefa pelo chat: o print de prova passa a ser anexado ao card da tarefa (e acompanha a edição); o solicitante vai para o campo próprio do card |

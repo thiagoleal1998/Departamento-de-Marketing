@@ -31,10 +31,14 @@ self.addEventListener("push", (event) => {
         includeUncontrolled: true,
       });
       const emFoco = janelas.some((c) => c.focused);
-      if (emFoco) return;
+      const ehChat = typeof dados.tag === "string" && dados.tag.startsWith("chat-");
+      // Chat com o painel em foco: o próprio painel mostra a mensagem e toca o som.
+      if (emFoco && ehChat) return;
+      // Qualquer outro aviso (folga, escala, tarefa…) NUNCA é engolido: não existe aviso interno para eles, então o
+      // pop-up sai mesmo com o painel em foco, e as janelas abertas atualizam o sino.
+      if (!ehChat) for (const c of janelas) c.postMessage({ tipo: "notificacao" });
       // Mensagem do chat com o painel aberto em outra aba/janela: quem toca é o próprio painel, com o som do painel
       // (o aviso do navegador vai em silêncio para não tocar o som padrão do computador por cima).
-      const ehChat = typeof dados.tag === "string" && dados.tag.startsWith("chat-");
       if (ehChat && janelas.length > 0) {
         for (const c of janelas) c.postMessage({ tipo: "som-chat" });
         await self.registration.showNotification(titulo, { ...opcoes, silent: true });

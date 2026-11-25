@@ -155,6 +155,7 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
   - v1.70.0: **retorno** (`folgas.retorno`, migration 0091): sugerido por `proximoDiaUtil` (pula fim de semana, não conhece feriado) e editável; entra no aviso do time e na lista de ausências. Sem a 0091, grava/lê sem a coluna e avisa. **RH** (`PESSOAS_RH` em `tipos.ts`: Raquel Sampaio, Luiza Zanelatto, Rayane Gomes) não são usuárias do painel: a autorização do RH guarda o `nome`, as demais funções guardam `profile_id` (`Autorizacao` aceita os dois). Para mudar a equipe do RH, edite `PESSOAS_RH`.
 
 ### Notificações push (`src/lib/push.ts`, `public/sw.js`)
+- v1.70.1: o service worker antes **engolia todo push se o painel estivesse em foco** (supunha aviso interno, que só existe no chat) — caso real: aviso de folga não chegou ao Jonas. Agora só o chat com o painel em foco é suprimido; os demais sempre mostram o pop-up e mandam `postMessage({tipo:"notificacao"})` às janelas, e `bell.tsx` faz `router.refresh()` para atualizar o sino. Ao criar notificações de outros tipos, não conte com aviso interno. Sem migration.
 - v1.68.1: o payload leva a **URL absoluta** do painel atual (`NEXT_PUBLIC_SITE_URL` ou `https://departamento-de-marketing-lv.vercel.app`). Quem ativou os avisos no domínio antigo `departamento-de-marketing.vercel.app` (conta antiga, hoje 404 `DEPLOYMENT_NOT_FOUND`) ainda tem assinatura no banco; com URL relativa o clique abria o domínio morto. O service worker só reaproveita aba do mesmo endereço do destino. Sem migration.
 
 ### Dashboard

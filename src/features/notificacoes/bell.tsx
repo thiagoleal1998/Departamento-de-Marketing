@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Link from "@/components/shared/link";
 import { Bell } from "lucide-react";
 import { marcarTodasLidas, marcarLida } from "./actions";
@@ -18,6 +19,17 @@ export function NotificacoesBell({
   const [open, setOpen] = useState(false);
   const [pendente, startTransition] = useTransition();
   const ref = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  // Chegou um aviso (push): atualiza o sino sem precisar recarregar a página.
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return;
+    const ouvir = (e: MessageEvent) => {
+      if (e.data?.tipo === "notificacao") router.refresh();
+    };
+    navigator.serviceWorker.addEventListener("message", ouvir);
+    return () => navigator.serviceWorker.removeEventListener("message", ouvir);
+  }, [router]);
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
