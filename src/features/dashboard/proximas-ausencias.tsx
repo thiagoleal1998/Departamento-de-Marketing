@@ -1,9 +1,9 @@
 import Link from "@/components/shared/link";
-import { ArrowRight, CalendarOff, Palmtree } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { criarClienteServidor } from "@/lib/supabase/server";
 import { hojeSP } from "@/features/divulgacao/tipos";
 import { proximoDiaUtil, rotuloTipo, textoPeriodo, textoRetorno } from "@/features/folgas/tipos";
-import { cn } from "@/lib/utils";
+import { CarrosselAusencias, type ItemAusencia } from "./carrossel-ausencias";
 
 /** Quantos dias à frente o quadro olha (cobre a próxima semana e o próximo mês). */
 const DIAS_A_FRENTE = 45;
@@ -76,7 +76,21 @@ export async function ProximasAusencias() {
       fim: f.fim,
       retorno: f.retorno ?? null,
     })),
-  ].sort((a, b) => a.inicio.localeCompare(b.inicio) || a.nome.localeCompare(b.nome, "pt-BR"));
+  ].sort((a, b) => (a.tipo === b.tipo ? 0 : a.tipo === "folga" ? -1 : 1) || a.inicio.localeCompare(b.inicio) || a.nome.localeCompare(b.nome, "pt-BR"));
+
+  const itens: ItemAusencia[] = lista.map((a) => {
+    const q = quando(a.inicio, a.fim, hoje);
+    return {
+      chave: a.chave,
+      tipo: a.tipo,
+      nome: a.nome,
+      rotulo: a.rotulo,
+      periodo: textoPeriodo(a),
+      volta: a.retorno ? textoRetorno(a) : null,
+      quando: q.texto,
+      quandoCor: q.cor,
+    };
+  });
 
   return (
     <section className="rounded-2xl border bg-card p-5 shadow-sm">
@@ -95,32 +109,10 @@ export async function ProximasAusencias() {
         </div>
       </div>
 
-      {lista.length === 0 ? (
+      {itens.length === 0 ? (
         <p className="rounded-lg border border-dashed py-6 text-center text-sm text-muted-foreground">Ninguém com folga ou férias programadas nesse período.</p>
       ) : (
-        <ul className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-          {lista.map((a) => {
-            const q = quando(a.inicio, a.fim, hoje);
-            const Icone = a.tipo === "ferias" ? Palmtree : CalendarOff;
-            return (
-              <li key={a.chave} className="flex items-start gap-3 rounded-xl border bg-background/60 p-3">
-                <span className={cn("mt-0.5 grid size-8 shrink-0 place-items-center rounded-full", a.tipo === "ferias" ? "bg-emerald-100 text-emerald-700" : "bg-sky-100 text-sky-700")}>
-                  <Icone className="size-4" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center justify-between gap-1.5">
-                    <p className="truncate text-sm font-semibold">{a.nome}</p>
-                    <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-semibold", q.cor)}>{q.texto}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {a.rotulo} · {textoPeriodo(a)}
-                    {a.retorno ? ` · volta em ${textoRetorno(a)}` : ""}
-                  </p>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+        <CarrosselAusencias itens={itens} />
       )}
     </section>
   );

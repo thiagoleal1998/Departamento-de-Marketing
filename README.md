@@ -190,6 +190,7 @@ Detalhes e regras de cada módulo ficam no [`CLAUDE.md`](CLAUDE.md).
 
 | Versão | O que mudou |
 |---|---|
+| **1.71.1** | Dashboard: o quadro de próximas folgas e férias virou carrossel (folgas primeiro, depois férias, com setas e atalhos) e a etiqueta de quando começa ganhou mais espaço |
 | **1.71.0** | Dashboard da liderança: quadro **Próximas folgas e férias** (agora e próximos 45 dias, com tipo, período e retorno) abaixo dos alertas de destino e da divulgação de hoje |
 | **1.70.1** | Notificações: com o painel aberto e em foco o pop-up do navegador não era exibido (só o chat tinha aviso interno); agora todo aviso fora do chat aparece e o sino se atualiza sozinho |
 | **1.70.0** | Folgas: **data de retorno** (sugerida no próximo dia útil, editável; vai no aviso do time) e RH com as pessoas Raquel Sampaio, Luiza Zanelatto e Rayane Gomes na autorização; migration 0091 |
