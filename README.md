@@ -190,6 +190,7 @@ Detalhes e regras de cada módulo ficam no [`CLAUDE.md`](CLAUDE.md).
 
 | Versão | O que mudou |
 |---|---|
+| **1.71.4** | Relatórios: aba "SEO (Surfer)" retirada da tela (código em `relatorio-surfer.tsx` e `lib/surfer.ts` mantido) |
 | **1.71.3** | Menu lateral: item "Criação" oculto (a rota `/criacao` continua existindo, só saiu do menu; para voltar, recoloque o item em `src/lib/navigation.ts`) |
 | **1.71.2** | Notificações: a estrela da marca no ícone (colorida) e no ícone pequeno do Android (silhueta branca, rota `/marca-badge.png`), título por assunto ("Ausência no time", "Escala de feriados") com a frase no corpo, vibração e idioma |
 | **1.71.1** | Dashboard: o quadro de próximas folgas e férias virou carrossel (folgas primeiro, depois férias, com setas e atalhos) e a etiqueta de quando começa ganhou mais espaço |
