@@ -93,6 +93,7 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 | 0087 | `tarefa_historico` |
 | 0088 | `profiles.whatsapp`, opcional, somente dígitos (10 a 15) |
 | 0089 | `escala_feriados.modalidade` (`presencial`/`home_office`, padrão presencial) |
+| 0090 | `folgas` (`tipo`, `inicio`/`fim`, `justificativa`, `autorizacoes` jsonb, `equipe_avisada_em`); RLS: liderança tudo, colaborador lê só as próprias |
 
 ## Banco de dados (Supabase)
 
@@ -148,6 +149,8 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 - **Indicadores** são dos **chamados** (Central de Solicitações) e a tela diz isso; o tempo médio de resolução usa a data real da conclusão (histórico) e informa quantos chamados entram.
 - **Escala de feriados**: diretoria e gerência (cargo com "Diretor" ou "Gerente") ficam fora da estatística (`features/feriados/participantes.ts`).
 - **Modalidade na escala** (v1.68.0): cada escalado é Presencial ou Home office (`features/feriados/modalidade.ts`, coluna da migration 0089). `definirEscala(data, nome, ItemEscala[])` grava, atualiza modalidade de quem continua e avisa quem entra ou muda. Sem a migration, lê/grava sem a coluna (tudo presencial) e devolve `aviso`; a página `gestao/feriados` tenta o select com `modalidade` e cai para o sem ela.
+
+- **Folgas** (v1.69.0, `src/features/folgas/`, página `gestao/folgas`, migration 0090): tipos em `tipos.ts` (Folga TRE, compensação, abono, outro); autorizações = uma pessoa por função (Supervisão, Liderança operacional, Gerência, RH) em jsonb. **Privacidade:** `justificativa` e `autorizacoes` só a liderança e a própria pessoa veem (RLS). O time **nunca** recebe isso: o aviso (`avisarEquipeFolga`, manual pelo botão) leva só nome, período e tipo, e a lista "Ausências do time" do colaborador é lida com a chave de serviço **sem** essas colunas. Registrar avisa só a pessoa (com quem autorizou); mudar período/tipo/pessoa de folga já avisada ao time zera `equipe_avisada_em` para o botão voltar. Colaborador acessa por "Minhas folgas" (menu `soColaborador`). Notificação tipo `folga`.
 
 ### Notificações push (`src/lib/push.ts`, `public/sw.js`)
 - v1.68.1: o payload leva a **URL absoluta** do painel atual (`NEXT_PUBLIC_SITE_URL` ou `https://departamento-de-marketing-lv.vercel.app`). Quem ativou os avisos no domínio antigo `departamento-de-marketing.vercel.app` (conta antiga, hoje 404 `DEPLOYMENT_NOT_FOUND`) ainda tem assinatura no banco; com URL relativa o clique abria o domínio morto. O service worker só reaproveita aba do mesmo endereço do destino. Sem migration.

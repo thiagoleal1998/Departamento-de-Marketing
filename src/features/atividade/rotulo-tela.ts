@@ -13,6 +13,7 @@ const MAPA = (() => {
   m.set("/gestao", "Gestão · Indicadores");
   m.set("/gestao/perfis", "Gestão · Perfis comportamentais");
   m.set("/gestao/ferias", "Gestão · Férias");
+  m.set("/gestao/folgas", "Gestão · Folgas");
   m.set("/gestao/feriados", "Gestão · Escala de feriados");
   return m;
 })();

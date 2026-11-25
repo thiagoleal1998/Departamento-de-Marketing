@@ -27,6 +27,7 @@ import {
   KeyRound,
   Settings,
   Palmtree,
+  CalendarOff,
   Newspaper,
   FileBarChart,
   type LucideIcon,
@@ -118,6 +119,14 @@ export const NAVEGACAO: ItemNav[] = [
     gradiente: "from-emerald-500 to-teal-600",
     soColaborador: true,
     descricao: "Seus períodos de férias",
+  },
+  {
+    href: "/gestao/folgas",
+    label: "Minhas folgas",
+    icone: CalendarOff,
+    gradiente: "from-sky-500 to-indigo-600",
+    soColaborador: true,
+    descricao: "Suas folgas e as ausências do time",
   },
   {
     href: "/operacional",

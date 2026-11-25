@@ -1,9 +1,9 @@
 import Link from "@/components/shared/link";
-import { BarChart3, Brain, CalendarCheck, Palmtree, Workflow } from "lucide-react";
+import { BarChart3, Brain, CalendarCheck, CalendarOff, Palmtree, Workflow } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /** Abas da área de Gestão: indicadores, perfis comportamentais e férias. */
-export function GestaoAbas({ ativa }: { ativa: "indicadores" | "processos" | "perfis" | "ferias" | "feriados" }) {
+export function GestaoAbas({ ativa }: { ativa: "indicadores" | "processos" | "perfis" | "ferias" | "folgas" | "feriados" }) {
   const abas = [
     { chave: "indicadores", href: "/gestao", label: "Indicadores", icone: BarChart3 },
     { chave: "processos", href: "/gestao/processos", label: "Fluxos e processos", icone: Workflow },
@@ -14,6 +14,7 @@ export function GestaoAbas({ ativa }: { ativa: "indicadores" | "processos" | "pe
       icone: Brain,
     },
     { chave: "ferias", href: "/gestao/ferias", label: "Férias", icone: Palmtree },
+    { chave: "folgas", href: "/gestao/folgas", label: "Folgas", icone: CalendarOff },
     { chave: "feriados", href: "/gestao/feriados", label: "Escala de feriados", icone: CalendarCheck },
   ] as const;
 

@@ -29,7 +29,7 @@ Construído com **Next.js 15 (App Router) + TypeScript + Tailwind CSS + Supabase
 | **Chamados** | Abrir, triar, atribuir, comentar e acompanhar solicitações (SLA, histórico de status, conversão em tarefa) |
 | **Feedbacks e Desenvolvimento** | Construtor de feedback guiado com IA e conversas 1:1 com campos de altura automática e colagem que preserva negrito, listas e tabelas; roteiro salvo e impressão com texto formatado; planos de ação (com objetivos, checklist, anexos e exclusão), histórico por colaborador |
 | **Criação** | Gerador de peças (integração Canva) e catálogo de modelos |
-| **Gestão** | Abas: **Indicadores** (chamados e escala de feriados), **Fluxos e processos**, **Perfis comportamentais**, **Férias** e **Escala de feriados** |
+| **Gestão** | Abas: **Indicadores** (chamados e escala de feriados), **Fluxos e processos**, **Perfis comportamentais**, **Férias**, **Folgas** (TRE, compensação, abono; justificativa privada e quem autorizou) e **Escala de feriados** |
 | **Relatórios** | Abas: **Divulgação**, **E-mails (RD Station)**, **Evolução do operacional** (gráficos, leitura rápida, pontos de correção, quem solicita, motivos de adiamento) e **Acessos e atividade**. Cada aba tem o bloco "Como apuramos estes dados" |
 | **Operacional** | **Tarefas** (kanban, duplicação de cards, solicitante, motivo ao adiar prazo, linha do tempo do card), Landing Pages, Conteúdos do site, Controle de conteúdo das LPs, **Calendário geral**, Divulgação diária e Senhas (cofre criptografado) |
 | **Projetos** | Eventos, feiras, famtours, projetos de Marketing e VTs, com etapas, documentos, comparativos, capa e logo do parceiro; cada projeto também vira card em Tarefas |
@@ -108,6 +108,8 @@ As migrations podem ser repetidas sem problema. O código foi feito para **conti
 
 Migrations mais recentes:
 
+Folgas: aplique manualmente `supabase/migrations/0090_folgas.sql`; antes disso a aba avisa que falta rodar a migration.
+
 Modalidade na escala de feriados: aplique manualmente `supabase/migrations/0089_escala_modalidade.sql`; antes disso a escala salva normalmente e tudo vale como presencial (a tela avisa se houver home office não gravado).
 
 WhatsApp nos perfis: aplique manualmente `supabase/migrations/0088_profile_whatsapp.sql` no SQL Editor do Supabase. Antes disso, os demais dados continuam salvando; ao preencher WhatsApp, a tela informa a pendência. O número não é publicado na página de contatos.
@@ -123,6 +125,7 @@ WhatsApp nos perfis: aplique manualmente `supabase/migrations/0088_profile_whats
 | 0087 | Tarefas: histórico (`tarefa_historico`), base da linha do tempo e dos motivos de adiamento |
 | 0088 | WhatsApp opcional no perfil, com validação de 10 a 15 dígitos |
 | 0089 | `escala_feriados.modalidade` (presencial ou home office), padrão presencial |
+| 0090 | `folgas` (tipo, período, justificativa, autorizações, aviso à equipe) com RLS: liderança tudo, colaborador só as próprias |
 
 ### 4. Rodar em desenvolvimento
 
@@ -186,6 +189,7 @@ Detalhes e regras de cada módulo ficam no [`CLAUDE.md`](CLAUDE.md).
 
 | Versão | O que mudou |
 |---|---|
+| **1.69.0** | Nova aba **Gestão › Folgas**: registro de folga TRE e outros tipos, justificativa visível só à pessoa e à liderança, quem autorizou (Supervisão, Liderança operacional, Gerência, RH), aviso imediato à pessoa e botão "Avisar equipe" (sem justificativa); colaborador vê "Minhas folgas" e as ausências do time; migration 0090 |
 | **1.68.2** | Solicitações de tarefa pelo chat: o print de prova passa a ser anexado ao card da tarefa (e acompanha a edição); o solicitante vai para o campo próprio do card |
 | **1.68.1** | Notificações push: o clique abre sempre o endereço atual do painel (corrige a página 404 para quem ativou os avisos no domínio antigo) |
 | **1.68.0** | Escala de feriados: cada pessoa escalada fica como Presencial ou Home office (etiqueta no chip, seletor no menu Escalar, aviso à pessoa); migration 0089 |
