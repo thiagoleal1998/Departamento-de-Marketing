@@ -147,3 +147,10 @@
     animation: none !important;
   }
 }
+
+/* Página inicial: os atalhos do menu superior rolam suavemente. */
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.home-menu) {
+    scroll-behavior: smooth;
+  }
+}

@@ -42,7 +42,7 @@ export async function SetoresPublicos() {
   if (!setores.some((s) => s.descricao.trim() || s.membros.length > 0)) return null;
 
   return (
-    <section aria-labelledby="setores-titulo" className="mb-14 space-y-5">
+    <section id="setores" aria-labelledby="setores-titulo" className="mb-14 scroll-mt-32 space-y-5 lg:scroll-mt-24">
       <h2 id="setores-titulo" className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
         Liderança e setores
       </h2>

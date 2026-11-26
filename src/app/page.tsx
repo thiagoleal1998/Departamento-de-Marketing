@@ -1,9 +1,8 @@
 import Link from "@/components/shared/link";
-import { ArrowRight, ArrowUpRight, Inbox, LogIn, Mail, Radar, Search, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Inbox, Mail, Radar, Search, Sparkles } from "lucide-react";
 import { obterConfig } from "@/lib/config";
 import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
-import { NomeMarca } from "@/components/shared/nome-marca";
-import { Marca } from "@/components/shared/marca";
+import { MenuSuperior } from "@/features/portal/menu-superior";
 import { SetoresPublicos } from "@/features/setores/setores-publicos";
 import { CartaoHolofote, Contador, TextoRotativo } from "@/features/portal/home-efeitos";
 
@@ -40,7 +39,7 @@ export default async function HomePage() {
   const versao = process.env.NEXT_PUBLIC_APP_VERSION;
 
   return (
-    <div className="dark relative min-h-screen overflow-hidden bg-[#060a12] text-foreground">
+    <div className="dark relative min-h-screen overflow-clip bg-[#060a12] text-foreground">
       {/* Aurora: luzes nas cores da marca */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div className="home-aurora absolute -left-32 -top-32 size-[520px] rounded-full bg-emerald-500/30 blur-[120px]" />
@@ -57,18 +56,7 @@ export default async function HomePage() {
         />
       </div>
 
-      <header className="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-5 py-6">
-        <div className="flex items-center gap-3">
-          <Marca logoUrl={logo} boxClassName="size-10 rounded-xl" iconClassName="size-5" imgClassName="h-10 max-w-[160px]" />
-          <NomeMarca />
-        </div>
-        <Link
-          href="/login"
-          className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white backdrop-blur transition hover:border-white/30 hover:bg-white/10"
-        >
-          <LogIn className="size-4" /> Área do time
-        </Link>
-      </header>
+      <MenuSuperior logo={logo} />
 
       <main className="relative z-10 mx-auto max-w-6xl px-5 pb-20">
         {/* Hero */}

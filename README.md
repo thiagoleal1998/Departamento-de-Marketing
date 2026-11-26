@@ -194,6 +194,7 @@ Detalhes e regras de cada módulo ficam no [`CLAUDE.md`](CLAUDE.md).
 
 | Versão | O que mudou |
 |---|---|
+| **1.76.0** | Página inicial com **menu superior** fixo (Liderança e setores, Pedir ao marketing, Acompanhar pedido, Consulta, Contatos, Área do time) |
 | **1.75.2** | Página inicial: chaves laterais separando **Lideranças** e **Setores** (no celular viram subtítulos) |
 | **1.75.1** | Página inicial em organograma: Diretoria, Gerência e Supervisão; Liderança Operacional sozinha no centro; os três setores embaixo |
 | **1.75.0** | Página inicial: **Liderança Operacional** como área própria (Gustavo saiu do cartão Operacional); liderança numa linha e os três setores em outra; migration 0095 |

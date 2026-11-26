@@ -171,6 +171,9 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 - v1.74.0: seis áreas, na ordem Diretoria, Gerência, Supervisão (primeira linha) e Operacional, Criação, Mídias Digitais (segunda). Novas áreas entram como linhas em `setores` (id, nome, ordem), sem mudar código. Migration 0094.
 - v1.75.0/1.75.1: **Liderança Operacional** é área própria (`lideranca-operacional`, migration 0095): quem lidera fica nela, não no cartão Operacional. Organograma em 3 linhas (`setores-publicos.tsx`): `TOPO` (Diretoria, Gerência, Supervisão), `MEIO` (Liderança Operacional, na coluna central) e os demais (setores) embaixo. v1.75.2: chaves laterais (`Chave`, SVG que estica com o grupo) rotulam Lideranças (topo + meio) e Setores; abaixo de `lg` viram subtítulos.
 
+### Página inicial
+- v1.76.0: menu superior fixo em `src/features/portal/menu-superior.tsx` (itens em `ITENS`). A raiz da página usa `overflow-clip` (com `overflow-hidden` o `sticky` não funciona). Sem migration.
+
 ### Menu lateral
 - v1.71.5 (Perfis comportamentais): quem sai da equipe tem o perfil apagado **e** o e-mail incluído em `EMAILS_FORA_DA_EQUIPE` (`src/features/perfis/tipos.ts`), senão a sincronização com a DISC RH recria a linha. Jessica Esteves (social.media@litoralverde.com.br) foi removida; backup da linha no scratchpad. Sem migration.
 - v1.71.4: a aba **SEO (Surfer)** saiu de Relatórios (`relatorios/page.tsx`; `?aba=surfer` agora cai em Divulgação). `relatorio-surfer.tsx`, `lib/surfer.ts` e o texto em `como-apuramos.tsx` ficam no projeto; para reativar, recoloque a aba e o ramo `aba === "surfer"`. Sem migration.
