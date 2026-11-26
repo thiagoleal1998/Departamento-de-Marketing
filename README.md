@@ -194,6 +194,7 @@ Detalhes e regras de cada módulo ficam no [`CLAUDE.md`](CLAUDE.md).
 
 | Versão | O que mudou |
 |---|---|
+| **1.75.1** | Página inicial em organograma: Diretoria, Gerência e Supervisão; Liderança Operacional sozinha no centro; os três setores embaixo |
 | **1.75.0** | Página inicial: **Liderança Operacional** como área própria (Gustavo saiu do cartão Operacional); liderança numa linha e os três setores em outra; migration 0095 |
 | **1.74.0** | Página inicial: **Diretoria, Gerência e Supervisão** antes dos três setores, editáveis em Gestão → Setores; bloco passa a se chamar "Liderança e setores"; migration 0094 |
 | **1.73.0** | Página inicial com os **setores** do departamento (Operacional, Criação, Mídias Digitais): o que cada um faz, quem está nele e o que cada pessoa faz; edição em Gestão → Setores (gerente); migration 0093 |

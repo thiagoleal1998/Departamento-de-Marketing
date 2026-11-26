@@ -4,8 +4,9 @@ import { lerMembros, type Setor } from "./tipos";
 
 const CORES = ["from-emerald-300 to-teal-300", "from-fuchsia-300 to-violet-300", "from-amber-300 to-orange-300"];
 
-/** Áreas de liderança: ficam na linha de cima, separadas dos setores. */
-const LIDERANCA = ["diretoria", "gerencia", "supervisao", "lideranca-operacional"];
+/** Organograma da página: linha de cima, depois a liderança operacional (no centro) e, embaixo, os setores. */
+const TOPO = ["diretoria", "gerencia", "supervisao"];
+const MEIO = ["lideranca-operacional"];
 
 /**
  * Seção da página inicial: os setores do departamento, o que cada um faz e quem está neles.
@@ -31,8 +32,10 @@ export async function SetoresPublicos() {
         Liderança e setores
       </h2>
       {[
-        { chave: "lideranca", itens: setores.filter((s) => LIDERANCA.includes(s.id)), grade: "sm:grid-cols-2 xl:grid-cols-4" },
-        { chave: "setores", itens: setores.filter((s) => !LIDERANCA.includes(s.id)), grade: "lg:grid-cols-3" },
+        { chave: "topo", itens: setores.filter((s) => TOPO.includes(s.id)), grade: "lg:grid-cols-3" },
+        // Um cartão só, na coluna do meio.
+        { chave: "meio", itens: setores.filter((s) => MEIO.includes(s.id)), grade: "lg:grid-cols-3 lg:[&>*]:col-start-2" },
+        { chave: "setores", itens: setores.filter((s) => !TOPO.includes(s.id) && !MEIO.includes(s.id)), grade: "lg:grid-cols-3" },
       ].map((linha) => (
         <div key={linha.chave} className={`grid gap-4 ${linha.grade}`}>
           {linha.itens.map((s) => (
