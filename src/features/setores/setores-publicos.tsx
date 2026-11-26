@@ -25,7 +25,7 @@ export async function SetoresPublicos() {
   return (
     <section aria-labelledby="setores-titulo" className="mb-14 space-y-5">
       <h2 id="setores-titulo" className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-        Nossos setores
+        Liderança e setores
       </h2>
       <div className="grid gap-4 lg:grid-cols-3">
         {setores.map((s, i) => (

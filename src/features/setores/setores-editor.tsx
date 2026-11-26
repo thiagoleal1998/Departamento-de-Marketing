@@ -39,7 +39,7 @@ function CartaoSetor({ setor, pessoas, podeEditar }: { setor: Setor; pessoas: Pe
       <CardContent className="space-y-4 p-5">
         <h2 className="text-lg font-semibold">{setor.nome}</h2>
         <div className="space-y-1.5">
-          <Label htmlFor={`d-${setor.id}`}>O que o setor faz</Label>
+          <Label htmlFor={`d-${setor.id}`}>O que esta área faz</Label>
           <Textarea
             id={`d-${setor.id}`}
             autoAjustar
@@ -55,8 +55,8 @@ function CartaoSetor({ setor, pessoas, podeEditar }: { setor: Setor; pessoas: Pe
         </div>
 
         <div className="space-y-3">
-          <Label>Quem está no setor e o que cada pessoa faz</Label>
-          {membros.length === 0 ? <p className="text-sm text-muted-foreground">Ninguém neste setor ainda.</p> : null}
+          <Label>Quem está aqui e o que cada pessoa faz</Label>
+          {membros.length === 0 ? <p className="text-sm text-muted-foreground">Ninguém aqui ainda.</p> : null}
           {membros.map((m, i) => (
             <div key={m.profile_id} className="space-y-2 rounded-lg border p-3">
               <div className="flex items-center justify-between gap-2">
@@ -69,7 +69,7 @@ function CartaoSetor({ setor, pessoas, podeEditar }: { setor: Setor; pessoas: Pe
               </div>
               <Textarea
                 aria-label="O que a pessoa faz"
-                placeholder="O que essa pessoa faz neste setor"
+                placeholder="O que essa pessoa faz"
                 autoAjustar
                 rows={2}
                 value={m.funcao}

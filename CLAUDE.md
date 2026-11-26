@@ -94,6 +94,7 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 | 0088 | `profiles.whatsapp`, opcional, somente dígitos (10 a 15) |
 | 0089 | `escala_feriados.modalidade` (`presencial`/`home_office`, padrão presencial) |
 | 0091 | `folgas.retorno` (date): dia em que a pessoa volta |
+| 0094 | Diretoria, Gerência e Supervisão em `setores` |
 | 0093 | `setores` (setores da página inicial) |
 | 0092 | `perfis_historico`: histórico das pesquisas DISC por pessoa |
 | 0090 | `folgas` (`tipo`, `inicio`/`fim`, `justificativa`, `autorizacoes` jsonb, `equipe_avisada_em`); RLS: liderança tudo, colaborador lê só as próprias |
@@ -166,6 +167,7 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 
 ### Setores (página inicial, `src/features/setores/`)
 - v1.73.0: tabela `setores` (migration 0093; `membros` jsonb `{profile_id, funcao}`; semente: Operacional, Criação, Mídias Digitais). Edição em Gestão → Setores: liderança vê, **só o gerente** grava (RLS `eh_gerente()`). A página pública (`src/app/page.tsx`, `SetoresPublicos`) lê com a chave de serviço, mostra só perfis ativos (nome, foto, função) e **some** enquanto não houver texto nem pessoa, ou sem a migration. O conteúdo é público: nada interno.
+- v1.74.0: seis áreas, na ordem Diretoria, Gerência, Supervisão (primeira linha) e Operacional, Criação, Mídias Digitais (segunda). Novas áreas entram como linhas em `setores` (id, nome, ordem), sem mudar código. Migration 0094.
 
 ### Menu lateral
 - v1.71.5 (Perfis comportamentais): quem sai da equipe tem o perfil apagado **e** o e-mail incluído em `EMAILS_FORA_DA_EQUIPE` (`src/features/perfis/tipos.ts`), senão a sincronização com a DISC RH recria a linha. Jessica Esteves (social.media@litoralverde.com.br) foi removida; backup da linha no scratchpad. Sem migration.
