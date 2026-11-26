@@ -126,6 +126,7 @@ WhatsApp nos perfis: aplique manualmente `supabase/migrations/0088_profile_whats
 | 0088 | WhatsApp opcional no perfil, com validação de 10 a 15 dígitos |
 | 0089 | `escala_feriados.modalidade` (presencial ou home office), padrão presencial |
 | 0091 | `folgas.retorno`: data de retorno ao trabalho |
+| 0095 | Área Liderança Operacional em `setores` e nova ordem |
 | 0094 | Linhas Diretoria, Gerência e Supervisão em `setores` |
 | 0093 | `setores`: os três setores, descrição e pessoas (página inicial) |
 | 0092 | `perfis_historico`: uma linha por pesquisa DISC concluída de cada pessoa (comparativo de evolução) |
@@ -193,6 +194,7 @@ Detalhes e regras de cada módulo ficam no [`CLAUDE.md`](CLAUDE.md).
 
 | Versão | O que mudou |
 |---|---|
+| **1.75.0** | Página inicial: **Liderança Operacional** como área própria (Gustavo saiu do cartão Operacional); liderança numa linha e os três setores em outra; migration 0095 |
 | **1.74.0** | Página inicial: **Diretoria, Gerência e Supervisão** antes dos três setores, editáveis em Gestão → Setores; bloco passa a se chamar "Liderança e setores"; migration 0094 |
 | **1.73.0** | Página inicial com os **setores** do departamento (Operacional, Criação, Mídias Digitais): o que cada um faz, quem está nele e o que cada pessoa faz; edição em Gestão → Setores (gerente); migration 0093 |
 | **1.72.0** | Perfis comportamentais: cartões com "Posição dominante" e "Secundário" por extenso e data da pesquisa; histórico das pesquisas (migration 0092) e, no perfil, gráfico e tabela de **evolução entre pesquisas** (para comparar com a de janeiro) |
