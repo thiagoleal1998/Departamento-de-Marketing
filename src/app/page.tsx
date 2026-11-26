@@ -4,6 +4,7 @@ import { obterConfig } from "@/lib/config";
 import { criarClienteAdmin, servicoDisponivel } from "@/lib/supabase/admin";
 import { NomeMarca } from "@/components/shared/nome-marca";
 import { Marca } from "@/components/shared/marca";
+import { SetoresPublicos } from "@/features/setores/setores-publicos";
 import { CartaoHolofote, Contador, TextoRotativo } from "@/features/portal/home-efeitos";
 
 export const dynamic = "force-dynamic";
@@ -140,6 +141,9 @@ export default async function HomePage() {
             ))}
           </div>
         </section>
+
+        {/* Setores do departamento (editados em Gestão > Setores) */}
+        <SetoresPublicos />
 
         {/* Atalhos (bento) */}
         <section className="grid gap-4 md:grid-cols-3 md:grid-rows-2">

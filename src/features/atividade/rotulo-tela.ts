@@ -15,6 +15,7 @@ const MAPA = (() => {
   m.set("/gestao/ferias", "Gestão · Férias");
   m.set("/gestao/folgas", "Gestão · Folgas");
   m.set("/gestao/feriados", "Gestão · Escala de feriados");
+  m.set("/gestao/setores", "Gestão · Setores");
   return m;
 })();
 

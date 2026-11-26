@@ -94,6 +94,7 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 | 0088 | `profiles.whatsapp`, opcional, somente dígitos (10 a 15) |
 | 0089 | `escala_feriados.modalidade` (`presencial`/`home_office`, padrão presencial) |
 | 0091 | `folgas.retorno` (date): dia em que a pessoa volta |
+| 0093 | `setores` (setores da página inicial) |
 | 0092 | `perfis_historico`: histórico das pesquisas DISC por pessoa |
 | 0090 | `folgas` (`tipo`, `inicio`/`fim`, `justificativa`, `autorizacoes` jsonb, `equipe_avisada_em`); RLS: liderança tudo, colaborador lê só as próprias |
 
@@ -162,6 +163,9 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 
 ### Perfis comportamentais (Gestão, `src/features/perfis/`)
 - v1.72.0: cartões mostram "Posição dominante" e "Secundário" por extenso (nome + letra) e a data da pesquisa, no lugar da etiqueta "S / D". **Histórico** em `perfis_historico` (migration 0092; `unique(perfil_id, participante_id)`): a sincronização com a DISC RH grava **todas** as pesquisas concluídas de cada e-mail (o perfil principal continua sendo a mais recente). O perfil individual tem "Evolução entre pesquisas" (`grafico-evolucao.tsx`: SVG, escala fixa -24..+24, 4 linhas D/I/S/C, tabela e diferenças da anterior para a mais recente). Sem a 0092 ou sem registros, mostra só a pesquisa atual; a sincronização avisa que falta a migration. A nova pesquisa (janeiro) aparece depois de **Sincronizar com a DISC RH**.
+
+### Setores (página inicial, `src/features/setores/`)
+- v1.73.0: tabela `setores` (migration 0093; `membros` jsonb `{profile_id, funcao}`; semente: Operacional, Criação, Mídias Digitais). Edição em Gestão → Setores: liderança vê, **só o gerente** grava (RLS `eh_gerente()`). A página pública (`src/app/page.tsx`, `SetoresPublicos`) lê com a chave de serviço, mostra só perfis ativos (nome, foto, função) e **some** enquanto não houver texto nem pessoa, ou sem a migration. O conteúdo é público: nada interno.
 
 ### Menu lateral
 - v1.71.5 (Perfis comportamentais): quem sai da equipe tem o perfil apagado **e** o e-mail incluído em `EMAILS_FORA_DA_EQUIPE` (`src/features/perfis/tipos.ts`), senão a sincronização com a DISC RH recria a linha. Jessica Esteves (social.media@litoralverde.com.br) foi removida; backup da linha no scratchpad. Sem migration.
