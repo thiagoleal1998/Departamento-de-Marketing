@@ -173,6 +173,7 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 
 ### Página inicial
 - v1.76.0: menu superior fixo em `src/features/portal/menu-superior.tsx` (itens em `ITENS`). A raiz da página usa `overflow-clip` (com `overflow-hidden` o `sticky` não funciona). Sem migration.
+- v1.76.1: a palavra rotativa do título (`TextoRotativo`) é `block`: fica sempre na linha de baixo, qualquer que seja o tamanho.
 
 ### Menu lateral
 - v1.71.5 (Perfis comportamentais): quem sai da equipe tem o perfil apagado **e** o e-mail incluído em `EMAILS_FORA_DA_EQUIPE` (`src/features/perfis/tipos.ts`), senão a sincronização com a DISC RH recria a linha. Jessica Esteves (social.media@litoralverde.com.br) foi removida; backup da linha no scratchpad. Sem migration.

@@ -85,7 +85,8 @@ export function TextoRotativo({ palavras }: { palavras: string[] }) {
     return () => clearInterval(t);
   }, [palavras.length]);
   return (
-    <span className="relative inline-block align-bottom">
+    // Sempre na linha de baixo: palavra curta não sobe para junto da frase (o título não muda de altura).
+    <span className="relative block">
       <span key={i} className="home-palavra -mb-[0.22em] inline-block bg-gradient-to-r from-emerald-300 via-teal-300 to-amber-300 bg-clip-text pb-[0.22em] text-transparent">
         {palavras[i]}
       </span>
