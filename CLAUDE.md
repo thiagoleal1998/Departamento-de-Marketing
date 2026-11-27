@@ -53,6 +53,7 @@ npx vercel deploy --prod --yes --scope marketing-2073 --token "$VERCEL_TOKEN"
 - Se aparecer erro estranho de tela logo após publicar (ex.: `e[o] is not a function`), pode ser cache de build: publicar de novo com `--force`.
 
 ### 4. Interface sempre moderna e consistente
+- `Select` (v1.77.0): a lista só fecha por rolagem se o botão **mudar de lugar**. Não voltar a fechar em qualquer evento de scroll: o chat rola sozinho ao carregar e fechava a lista dentro das janelas.
 - `Select` (v1.64.1): não usar `scrollIntoView` para mostrar a opção ativa de listas em portal: ele pode rolar os ancestrais e acionar o fechamento por scroll externo. Usar `rolarOpcaoNaLista` (altera apenas `scrollTop` do listbox) e `focus({ preventScroll: true })` na busca e ao devolver foco ao botão.
 - **Nunca** usar `<select>` nativo: usar sempre o componente `Select` (`src/components/ui/select.tsx`).
 - Datas de formulário com o seletor de data do projeto quando já existir (`SeletorData`); botões, cards e modais seguem o visual dos módulos existentes (nada "feito nas coxas").
@@ -94,6 +95,7 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 | 0088 | `profiles.whatsapp`, opcional, somente dígitos (10 a 15) |
 | 0089 | `escala_feriados.modalidade` (`presencial`/`home_office`, padrão presencial) |
 | 0091 | `folgas.retorno` (date): dia em que a pessoa volta |
+| 0096 | `chat_solicitacoes.link_cta` (link do botão das solicitações) |
 | 0095 | Liderança Operacional em `setores` |
 | 0094 | Diretoria, Gerência e Supervisão em `setores` |
 | 0093 | `setores` (setores da página inicial) |
@@ -206,6 +208,8 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 
 ### Solicitações pelo chat (`src/features/chat/solicitacoes-actions.ts`)
 - v1.68.2: toda informação da solicitação tem de chegar ao card: título, descrição (detalhes, link, solicitante), prazo, link, `tarefas.solicitante` (com fallback se faltar a 0086) e o **print de prova**, copiado do bucket `chat-solicitacoes` para `tarefa-anexos` + linha em `tarefa_anexos` (caminho `<tarefa>/sol-<arquivo>`, ver `copiarProvaParaCard`). Ao editar a solicitação, o anexo do card é trocado/removido junto. Falha ao anexar não impede a criação da tarefa. Tarefas criadas antes da 1.68.2 não receberam o print (sem backfill). Sem migration nova.
+
+- v1.77.0: o menu do clipe se chama **Fazer uma solicitação**. Campo opcional **Link do botão (CTA)** (`chat_solicitacoes.link_cta`, migration 0096): aparece no cartão e na descrição da tarefa. Sem a 0096, o link é gravado dentro dos detalhes.
 
 ### Atas (`src/features/atas/`)
 - Pendências vêm da última ata, com o andamento real da tarefa ligada (`vivo.ts`). Itens têm "Falar no chat".

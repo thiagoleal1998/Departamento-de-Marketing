@@ -912,7 +912,7 @@ export function ChatJanela({
                 <ItemMenu
                   icone={<ClipboardPlus className="size-4" />}
                   cor="bg-emerald-500/15 text-emerald-500"
-                  texto="Solicitar criação"
+                  texto="Fazer uma solicitação"
                   detalhe="LP, banner, lâmina, vídeo…"
                   onClick={() => {
                     fechar();

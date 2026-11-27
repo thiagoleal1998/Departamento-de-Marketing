@@ -110,8 +110,13 @@ const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HT
       const alvo = e.target as Node;
       if (!botao.current?.contains(alvo) && !lista.current?.contains(alvo)) setAberto(false);
     };
+    // Só fecha se a rolagem tirar o botão do lugar. Rolagens em outras partes da tela (ex.: o chat
+    // descendo enquanto os cartões carregam atrás de uma janela) não podem fechar a lista.
+    const origem = botao.current?.getBoundingClientRect();
     const rolar = (e: Event) => {
-      if (!lista.current?.contains(e.target as Node)) setAberto(false);
+      if (lista.current?.contains(e.target as Node)) return;
+      const r = botao.current?.getBoundingClientRect();
+      if (!origem || !r || Math.abs(r.top - origem.top) > 1 || Math.abs(r.left - origem.left) > 1) setAberto(false);
     };
     const fechar = () => setAberto(false);
     document.addEventListener("mousedown", fora);

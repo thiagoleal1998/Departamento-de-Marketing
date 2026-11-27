@@ -49,6 +49,8 @@ export interface NovaSolicitacao {
   tipo: TipoSolicitacao;
   produto: string;
   linkReferencia: string;
+  /** Destino do botão (CTA): a página para onde a peça leva a pessoa. */
+  linkCta: string;
   solicitante: string;
   prazo: string | null;
   detalhes: string;
@@ -62,6 +64,7 @@ export interface SolicitacaoView {
   tipo: string;
   produto: string;
   linkReferencia: string | null;
+  linkCta: string | null;
   solicitante: string;
   prazo: string | null;
   detalhes: string | null;

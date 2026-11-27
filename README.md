@@ -127,6 +127,7 @@ WhatsApp nos perfis: aplique manualmente `supabase/migrations/0088_profile_whats
 | 0089 | `escala_feriados.modalidade` (presencial ou home office), padrão presencial |
 | 0091 | `folgas.retorno`: data de retorno ao trabalho |
 | 0095 | Área Liderança Operacional em `setores` e nova ordem |
+| 0096 | `chat_solicitacoes.link_cta`: link do botão (CTA) nas solicitações do chat |
 | 0094 | Linhas Diretoria, Gerência e Supervisão em `setores` |
 | 0093 | `setores`: os três setores, descrição e pessoas (página inicial) |
 | 0092 | `perfis_historico`: uma linha por pesquisa DISC concluída de cada pessoa (comparativo de evolução) |
@@ -194,6 +195,7 @@ Detalhes e regras de cada módulo ficam no [`CLAUDE.md`](CLAUDE.md).
 
 | Versão | O que mudou |
 |---|---|
+| **1.77.0** | Chat: **Fazer uma solicitação** (novo nome) com campo de **link do botão (CTA)** (migration 0096); listas de seleção não fecham mais sozinhas enquanto o chat carrega |
 | **1.76.1** | Página inicial: a palavra que alterna no título fica sempre na segunda linha |
 | **1.76.0** | Página inicial com **menu superior** fixo (Liderança e setores, Pedir ao marketing, Acompanhar pedido, Consulta, Contatos, Área do time) |
 | **1.75.2** | Página inicial: chaves laterais separando **Lideranças** e **Setores** (no celular viram subtítulos) |

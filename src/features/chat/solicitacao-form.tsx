@@ -41,6 +41,7 @@ export function SolicitacaoForm({
   const [tipo, setTipo] = useState<TipoSolicitacao>((edicao?.tipo as TipoSolicitacao) ?? "landing_page");
   const [produto, setProduto] = useState(edicao?.produto ?? "");
   const [link, setLink] = useState(edicao?.linkReferencia ?? "");
+  const [linkCta, setLinkCta] = useState(edicao?.linkCta ?? "");
   const [solicitante, setSolicitante] = useState(edicao?.solicitante ?? meuNome);
   const [prazo, setPrazo] = useState(diaBrasilia(edicao?.prazo));
   const [detalhes, setDetalhes] = useState(edicao?.detalhes ?? "");
@@ -111,6 +112,7 @@ export function SolicitacaoForm({
         tipo,
         produto,
         linkReferencia: link,
+        linkCta,
         solicitante,
         prazo: prazo || null,
         detalhes,
@@ -135,12 +137,12 @@ export function SolicitacaoForm({
         onPaste={aoColar}
         role="dialog"
         aria-modal="true"
-        aria-label="Solicitar criação"
+        aria-label="Fazer uma solicitação"
         className="w-full max-w-xl space-y-4 rounded-xl border bg-card p-5 shadow-xl"
       >
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">{edicao ? "Editar solicitação" : "Solicitar criação"}</h2>
+            <h2 className="text-lg font-semibold">{edicao ? "Editar solicitação" : "Fazer uma solicitação"}</h2>
             <p className="text-sm text-muted-foreground">
               {edicao
                 ? "Ao salvar, o cartão mostra “Editado” para todos na conversa."
@@ -201,6 +203,11 @@ export function SolicitacaoForm({
               placeholder="https://"
               required={meta.exigeReferencia}
             />
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="sol-cta">Link do botão (CTA)</Label>
+            <Input id="sol-cta" type="url" inputMode="url" value={linkCta} onChange={(e) => setLinkCta(e.target.value)} placeholder="https://" />
+            <p className="text-xs text-muted-foreground">A página para onde a pessoa deve ser levada ao clicar.</p>
           </div>
           <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor="sol-det">Detalhes</Label>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { CalendarClock, ClipboardList, ExternalLink, FileText, Link2, Loader2, Pencil, UserRound, X } from "lucide-react";
+import { CalendarClock, ClipboardList, ExternalLink, FileText, Link2, Loader2, MousePointerClick, Pencil, UserRound, X } from "lucide-react";
 import { criarClienteBrowser } from "@/lib/supabase/client";
 import { SolicitacaoForm } from "./solicitacao-form";
 import { atualizarStatusSolicitacao, dadosSolicitacao } from "./solicitacoes-actions";
@@ -144,6 +144,15 @@ export function SolicitacaoCard({
             <Link2 className="size-3.5 shrink-0" />
             <a href={s.linkReferencia} target="_blank" rel="noopener noreferrer" className="min-w-0 truncate font-medium underline underline-offset-2">
               {s.linkReferencia.replace(/^https?:\/\//, "")}
+            </a>
+          </div>
+        ) : null}
+        {s.linkCta ? (
+          <div className="flex items-center gap-1.5 sm:col-span-2">
+            <MousePointerClick className="size-3.5 shrink-0" />
+            <span className="shrink-0 opacity-70">Link do botão (CTA):</span>
+            <a href={s.linkCta} target="_blank" rel="noopener noreferrer" className="min-w-0 truncate font-medium underline underline-offset-2">
+              {s.linkCta.replace(/^https?:\/\//, "")}
             </a>
           </div>
         ) : null}

@@ -42,6 +42,7 @@ function validar(d: NovaSolicitacao) {
   const produto = d.produto.trim().slice(0, 200);
   const solicitante = d.solicitante.trim().slice(0, 120);
   const link = d.linkReferencia.trim().slice(0, 1000);
+  const cta = (d.linkCta ?? "").trim().slice(0, 1000);
   const detalhes = d.detalhes.trim().slice(0, 3000);
   const prazo = /^\d{4}-\d{2}-\d{2}$/.test(d.prazo ?? "") ? d.prazo : null;
 
@@ -50,15 +51,22 @@ function validar(d: NovaSolicitacao) {
   else if (!solicitante) erro = "Informe quem solicitou.";
   else if (meta.exigeReferencia && !link) erro = "Informe o link de referência.";
   else if (link && !/^https?:\/\//i.test(link)) erro = "O link de referência deve começar com http:// ou https://.";
+  else if (cta && !/^https?:\/\//i.test(cta)) erro = "O link do botão (CTA) deve começar com http:// ou https://.";
   else if (meta.exigeProva && !d.prova) erro = "Anexe o print de prova da solicitação.";
-  return { meta, produto, solicitante, link, detalhes, prazo, erro };
+  return { meta, produto, solicitante, link, cta, detalhes, prazo, erro };
 }
 
+const semColuna = (c?: string) => c === "42703" || c === "PGRST204";
+
+/** Sem a coluna do CTA (migration 0096), o link vai junto dos detalhes para não se perder. */
+const detalhesComCta = (detalhes: string, cta: string) => [detalhes, cta ? `Link do botão (CTA): ${cta}` : null].filter(Boolean).join("\n") || null;
+
 /** Descrição da tarefa criada a partir da solicitação. */
-function descricaoTarefa(v: { solicitante: string; link: string; detalhes: string; prazo: string | null }, temProva: boolean): string {
+function descricaoTarefa(v: { solicitante: string; link: string; cta: string; detalhes: string; prazo: string | null }, temProva: boolean): string {
   return [
     `Solicitado por: ${v.solicitante}`,
     v.link ? `Referência: ${v.link}` : null,
+    v.cta ? `Link do botão (CTA): ${v.cta}` : null,
     v.detalhes ? `\n${v.detalhes}` : null,
     `\n(Pedido feito pelo chat${temProva ? "; o print de prova está nos anexos do card" : ""}.)`,
   ]
@@ -146,22 +154,26 @@ export async function criarSolicitacaoChat(conversaId: string, d: NovaSolicitaca
   const v = validar(d);
   if (v.erro) return { erro: v.erro };
 
-  const { data: sol, error } = await supabase
-    .from("chat_solicitacoes")
-    .insert({
-      conversa_id: conversaId,
-      tipo: d.tipo,
-      produto: v.produto,
-      link_referencia: v.link || null,
-      solicitante: v.solicitante,
-      prazo: v.prazo,
-      detalhes: v.detalhes || null,
-      prova_caminho: d.prova?.caminho ?? null,
-      prova_nome: d.prova?.nome?.slice(0, 200) ?? null,
-      criado_por: user.id,
-    })
-    .select("id")
-    .single();
+  const nova = {
+    conversa_id: conversaId,
+    tipo: d.tipo,
+    produto: v.produto,
+    link_referencia: v.link || null,
+    solicitante: v.solicitante,
+    prazo: v.prazo,
+    detalhes: v.detalhes || null,
+    prova_caminho: d.prova?.caminho ?? null,
+    prova_nome: d.prova?.nome?.slice(0, 200) ?? null,
+    criado_por: user.id,
+  };
+  let { data: sol, error } = await supabase.from("chat_solicitacoes").insert({ ...nova, link_cta: v.cta || null }).select("id").single();
+  if (error && semColuna(error.code)) {
+    ({ data: sol, error } = await supabase
+      .from("chat_solicitacoes")
+      .insert({ ...nova, detalhes: detalhesComCta(v.detalhes, v.cta) })
+      .select("id")
+      .single());
+  }
   if (error || !sol) return { erro: semTabela(error?.code) ? MIGRACAO : "Não foi possível criar a solicitação." };
   const solId = (sol as { id: string }).id;
 
@@ -227,21 +239,22 @@ export async function editarSolicitacaoChat(id: string, d: NovaSolicitacao): Pro
   if (v.erro) return { erro: v.erro };
 
   const agora = new Date().toISOString();
-  const { error } = await supabase
-    .from("chat_solicitacoes")
-    .update({
-      tipo: d.tipo,
-      produto: v.produto,
-      link_referencia: v.link || null,
-      solicitante: v.solicitante,
-      prazo: v.prazo,
-      detalhes: v.detalhes || null,
-      prova_caminho: d.prova?.caminho ?? null,
-      prova_nome: d.prova?.nome?.slice(0, 200) ?? null,
-      editado_em: agora,
-      updated_at: agora,
-    })
-    .eq("id", id);
+  const campos = {
+    tipo: d.tipo,
+    produto: v.produto,
+    link_referencia: v.link || null,
+    solicitante: v.solicitante,
+    prazo: v.prazo,
+    detalhes: v.detalhes || null,
+    prova_caminho: d.prova?.caminho ?? null,
+    prova_nome: d.prova?.nome?.slice(0, 200) ?? null,
+    editado_em: agora,
+    updated_at: agora,
+  };
+  let { error } = await supabase.from("chat_solicitacoes").update({ ...campos, link_cta: v.cta || null }).eq("id", id);
+  if (error && semColuna(error.code)) {
+    ({ error } = await supabase.from("chat_solicitacoes").update({ ...campos, detalhes: detalhesComCta(v.detalhes, v.cta) }).eq("id", id));
+  }
   if (error) return { erro: semTabela(error.code) ? MIGRACAO_EDICAO : "Não foi possível salvar a edição." };
 
   if (s.tarefa_id && servicoDisponivel()) {
@@ -279,6 +292,7 @@ export async function dadosSolicitacao(id: string): Promise<SolicitacaoView | nu
     tipo: string;
     produto: string;
     link_referencia: string | null;
+    link_cta?: string | null;
     solicitante: string;
     prazo: string | null;
     detalhes: string | null;
@@ -308,6 +322,7 @@ export async function dadosSolicitacao(id: string): Promise<SolicitacaoView | nu
     tipo: s.tipo,
     produto: s.produto,
     linkReferencia: s.link_referencia,
+    linkCta: s.link_cta ?? null,
     solicitante: s.solicitante,
     prazo: s.prazo,
     detalhes: s.detalhes,
