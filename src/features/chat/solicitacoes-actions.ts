@@ -43,7 +43,7 @@ function validar(d: NovaSolicitacao) {
   const solicitante = d.solicitante.trim().slice(0, 120);
   const link = d.linkReferencia.trim().slice(0, 1000);
   const cta = (d.linkCta ?? "").trim().slice(0, 1000);
-  const detalhes = d.detalhes.trim().slice(0, 3000);
+  const detalhes = d.detalhes.trim().slice(0, 8000);
   const prazo = /^\d{4}-\d{2}-\d{2}$/.test(d.prazo ?? "") ? d.prazo : null;
 
   let erro: string | null = null;

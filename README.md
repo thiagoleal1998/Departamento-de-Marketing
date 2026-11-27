@@ -195,6 +195,7 @@ Detalhes e regras de cada módulo ficam no [`CLAUDE.md`](CLAUDE.md).
 
 | Versão | O que mudou |
 |---|---|
+| **1.78.0** | Detalhes da solicitação e descrição da tarefa **mantêm a formatação colada** (negrito, listas, títulos, links, tabelas), no campo e na exibição |
 | **1.77.0** | Chat: **Fazer uma solicitação** (novo nome) com campo de **link do botão (CTA)** (migration 0096); listas de seleção não fecham mais sozinhas enquanto o chat carrega |
 | **1.76.1** | Página inicial: a palavra que alterna no título fica sempre na segunda linha |
 | **1.76.0** | Página inicial com **menu superior** fixo (Liderança e setores, Pedir ao marketing, Acompanhar pedido, Consulta, Contatos, Área do time) |

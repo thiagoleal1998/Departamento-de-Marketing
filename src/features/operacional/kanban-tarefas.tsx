@@ -1,5 +1,6 @@
 "use client";
 
+import { textoPlano } from "@/lib/texto-plano";
 import { Fragment, useEffect, useRef, useState, useTransition } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, GripVertical, Link2, Plus, Search } from "lucide-react";
 import { KanbanSquare } from "lucide-react";
@@ -201,7 +202,7 @@ export function KanbanTarefas({
       (!termo ||
         t.titulo.toLowerCase().includes(termo) ||
         (t.codigo ?? "").toLowerCase().includes(termo) ||
-        (t.descricao ?? "").toLowerCase().includes(termo) ||
+        textoPlano(t.descricao).toLowerCase().includes(termo) ||
         (t.responsavel_nome ?? "").toLowerCase().includes(termo) ||
         (t.tag ?? "").toLowerCase().includes(termo))
   );
@@ -384,7 +385,7 @@ export function KanbanTarefas({
                         </p>
                         {t.descricao ? (
                           <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                            {t.descricao}
+                            {textoPlano(t.descricao)}
                           </p>
                         ) : null}
                         <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">

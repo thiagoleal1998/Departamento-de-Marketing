@@ -211,6 +211,8 @@ Todo o painel trabalha no **horário de Brasília (America/Sao_Paulo)**. Regras 
 
 - v1.77.0: o menu do clipe se chama **Fazer uma solicitação**. Campo opcional **Link do botão (CTA)** (`chat_solicitacoes.link_cta`, migration 0096): aparece no cartão e na descrição da tarefa. Sem a 0096, o link é gravado dentro dos detalhes.
 
+- v1.78.0: **Detalhes** da solicitação e **Descrição** da tarefa usam `EditorFormatado` (`components/shared/editor-formatado.tsx`, contentEditable que grava Markdown; conversão em `lib/markdown-editor.tsx`). Exibir com `TextoFormatado`; em resumos e busca, `textoPlano()` (`lib/texto-plano.ts`). Nunca inserir HTML colado direto. Sem migration.
+
 ### Atas (`src/features/atas/`)
 - Pendências vêm da última ata, com o andamento real da tarefa ligada (`vivo.ts`). Itens têm "Falar no chat".
 

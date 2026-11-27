@@ -4,7 +4,12 @@ import { tabelasDoTexto } from "./texto-formatado";
 
 let conversor: TurndownService | null = null;
 function obterConversor(): TurndownService {
-  if (conversor) return conversor;
+  conversor ??= criarConversor();
+  return conversor;
+}
+
+/** Conversor de HTML em Markdown com as regras de negrito por estilo e de tabelas. */
+export function criarConversor(): TurndownService {
   const c = new TurndownService({ headingStyle: "atx", bulletListMarker: "-", strongDelimiter: "**" });
   c.use(gfm);
   c.remove((node) => ["SCRIPT", "STYLE", "IFRAME", "OBJECT", "SVG", "IMG", "META", "LINK"].includes(node.nodeName));
@@ -31,15 +36,17 @@ function obterConversor(): TurndownService {
       return "\n\n" + [linha(cabecalho), linha(Array(n).fill("---")), ...celulas.map(linha)].join("\n") + "\n\n";
     },
   });
-  conversor = c;
   return c;
 }
+
+const TEM_FORMATACAO = /<(?:strong|b|em|i|ul|ol|table|h[1-6]|blockquote|pre|s|del)\b|font-weight\s*:\s*(?:bold|[6-9]00)|font-style\s*:\s*italic/i;
+export const temFormatacao = (html: string) => TEM_FORMATACAO.test(html);
 
 /** Converte formatação semântica da colagem; nunca insere HTML no documento. */
 export function textoDaColagem(dados: Pick<DataTransfer, "getData">): string | null {
   const html = dados.getData("text/html");
   const texto = dados.getData("text/plain");
-  if (/<(?:strong|b|em|i|ul|ol|table|h[1-6]|blockquote|pre|s|del)\b|font-weight\s*:\s*(?:bold|[6-9]00)|font-style\s*:\s*italic/i.test(html)) {
+  if (temFormatacao(html)) {
     try {
       const convertido = obterConversor().turndown(html);
       if (convertido.trim()) return convertido;

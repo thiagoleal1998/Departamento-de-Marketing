@@ -19,8 +19,8 @@ import { TAREFA_STATUS_META, type TarefaStatus } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { EditorFormatado } from "@/components/shared/editor-formatado";
 import { Select } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { diaBrasilia } from "@/lib/utils";
 import { InputData } from "@/components/ui/input-data";
 import { SelectSolicitante } from "./select-solicitante";
@@ -395,12 +395,7 @@ export function TarefaDetalhe({
             <CampoPasta id="td-pasta" raiz={pasta.raiz} caminho={pasta.caminho} unidades={unidades} onChange={setPasta} />
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="td-desc">Descrição</Label>
-              <Textarea
-                id="td-desc"
-                value={descricao}
-                onChange={(e) => setDescricao(e.target.value)}
-                className="min-h-[70px]"
-              />
+              <EditorFormatado id="td-desc" rotulo="Descrição" value={descricao} onChange={setDescricao} className="min-h-[70px]" />
             </div>
           </div>
 

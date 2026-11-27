@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { EditorFormatado } from "@/components/shared/editor-formatado";
 import { diaBrasilia } from "@/lib/utils";
 import { InputData } from "@/components/ui/input-data";
 
@@ -211,7 +211,7 @@ export function SolicitacaoForm({
           </div>
           <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor="sol-det">Detalhes</Label>
-            <Textarea id="sol-det" value={detalhes} onChange={(e) => setDetalhes(e.target.value)} rows={3} maxLength={3000} placeholder="Objetivo, medidas, referências, o que espera receber…" />
+            <EditorFormatado id="sol-det" rotulo="Detalhes" value={detalhes} onChange={setDetalhes} placeholder="Objetivo, medidas, referências, o que espera receber…" />
           </div>
         </div>
 

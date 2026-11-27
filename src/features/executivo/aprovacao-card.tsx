@@ -1,5 +1,6 @@
 "use client";
 
+import { textoPlano } from "@/lib/texto-plano";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarClock, Check, ExternalLink, Loader2, MessageSquareWarning } from "lucide-react";
@@ -57,7 +58,7 @@ export function AprovacaoCard({ item, podeDecidir }: { item: ItemAprovacao; pode
             </span>
           ) : null}
         </p>
-        {item.descricao ? <p className="line-clamp-4 whitespace-pre-line text-sm text-foreground/80">{item.descricao}</p> : null}
+        {item.descricao ? <p className="line-clamp-4 whitespace-pre-line text-sm text-foreground/80">{textoPlano(item.descricao)}</p> : null}
         {item.link ? (
           <a
             href={item.link}

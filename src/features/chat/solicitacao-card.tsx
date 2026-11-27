@@ -12,6 +12,7 @@ import {
   type StatusSolicitacao,
 } from "./solicitacao-tipos";
 import { Select } from "@/components/ui/select";
+import { TextoFormatado } from "@/components/shared/texto-formatado";
 import { cn } from "@/lib/utils";
 
 const COR_STATUS: Record<StatusSolicitacao, string> = {
@@ -158,7 +159,11 @@ export function SolicitacaoCard({
         ) : null}
       </dl>
 
-      {s.detalhes ? <p className="whitespace-pre-line opacity-90">{s.detalhes}</p> : null}
+      {s.detalhes ? (
+        <div className="opacity-90 [&>div]:text-xs [&>div]:text-inherit [&_a]:text-inherit [&_h3]:text-inherit [&_h4]:text-inherit [&_strong]:text-inherit">
+          <TextoFormatado texto={s.detalhes} />
+        </div>
+      ) : null}
 
       {s.provaUrl ? (
         s.provaEhImagem ? (
